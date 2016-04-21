@@ -54,6 +54,7 @@
     <Compile Include="NiceIO.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Scanner.cs" />
     <Compile Include="Shell.cs" />
     <Compile Include="Tests\ComparisonTests.cs" />
     <Compile Include="JamRunner.cs" />

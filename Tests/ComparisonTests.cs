@@ -19,7 +19,6 @@ namespace jamconverter.Tests
             AssertConvertedProgramHasIdenticalOutput("Echo Hello ; Echo There ;");
         }
 
-
         [Test]
         public void EchoMultipleLiterals()
         {
@@ -30,6 +29,20 @@ namespace jamconverter.Tests
         public void VariableExpansion()
         {
             AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; Echo $(myvar) ;");
+        }
+
+        [Test]
+        public void DoubleVariableAssignment()
+        {
+            AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; myvar = 234 ; Echo $(myvar) ;");
+        }
+
+        [Test]
+        public void CustomRule()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"rule customrule { Echo Hello ; } customrule ;"
+);
         }
 
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
