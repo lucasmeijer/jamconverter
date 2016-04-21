@@ -126,6 +126,15 @@ namespace jamconverter
             if (literal == ")")
                 return TokenType.ParenthesisClose;
 
+            if (literal == "{")
+                return TokenType.AccoladeOpen;
+
+            if (literal == "}")
+                return TokenType.AccoladeClose;
+
+            if (literal == "=")
+                return TokenType.Assignment;
+
             return TokenType.Literal;
         }
 
@@ -217,6 +226,9 @@ namespace jamconverter
         BracketOpen,
         VariableDereferencer,
         ParenthesisClose,
-        ParenthesisOpen
+        ParenthesisOpen,
+        Assignment,
+        AccoladeOpen,
+        AccoladeClose
     }
 }

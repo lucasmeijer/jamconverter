@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using NUnit.Framework.Constraints;
 
 namespace jamconverter
 {
@@ -14,8 +15,7 @@ namespace jamconverter
             var parser = new Parser("somerule ;");
             var node = parser.Parse();
            
-            Assert.IsTrue(node is InvocationExpression);
-            var invocationExpression = node as InvocationExpression;
+            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
 
             Assert.IsTrue(invocationExpression.RuleExpression is LiteralExpression);
             var literalExpression = invocationExpression.RuleExpression as LiteralExpression;
@@ -30,7 +30,7 @@ namespace jamconverter
             var parser = new Parser("input a ;");
             var node = parser.Parse();
 
-            var invocationExpression = node as InvocationExpression;
+            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
 
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
@@ -45,7 +45,7 @@ namespace jamconverter
             var parser = new Parser("input a : b ;");
             var node = parser.Parse();
 
-            var invocationExpression = node as InvocationExpression;
+            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
 
             Assert.AreEqual(2, invocationExpression.Arguments.Length);
 
@@ -62,7 +62,7 @@ namespace jamconverter
             var parser = new Parser("input a b c ;");
             var node = parser.Parse();
 
-            var invocationExpression = node as InvocationExpression;
+            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
 
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
@@ -79,13 +79,80 @@ namespace jamconverter
             var parser = new Parser("input $(myvar) ;");
             var node = parser.Parse();
 
-            var invocationExpression = node as InvocationExpression;
+            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
             var variableDereferenceExpression = (VariableDereferenceExpression) invocationExpression.Arguments[0];
             Assert.AreEqual("myvar",((LiteralExpression) variableDereferenceExpression.VariableExpression).Value);
         }
 
+        [Test]
+        public void NestedVariableDereference()
+        {
+            var parser = new Parser("input $($(myvar)) ;");
+            var node = parser.Parse();
+
+            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
+            Assert.AreEqual(1, invocationExpression.Arguments.Length);
+
+            var variableDereferenceExpression = (VariableDereferenceExpression)invocationExpression.Arguments[0];
+
+            var nestedVariableDereferenceExpression = (VariableDereferenceExpression) variableDereferenceExpression.VariableExpression;
+
+            Assert.AreEqual("myvar", ((LiteralExpression)nestedVariableDereferenceExpression.VariableExpression).Value);
+        }
+
+        [Test]
+        public void Assignment()
+        {
+            var parser = new Parser("a = b ;");
+            var node = parser.Parse();
+
+            var assignmentExpression = (AssignmentExpression)((ExpressionStatement)node).Expression;
+
+            var left = (LiteralExpression) assignmentExpression.Left;
+            var right = (LiteralExpression) assignmentExpression.Right;
+
+            Assert.AreEqual("a", left.Value);
+            Assert.AreEqual("b", right.Value);
+            Assert.AreEqual(Operator.Assignment, assignmentExpression.Operator);
+        }
+
+
+        [Test]
+        public void BlockStatement()
+        {
+            var parser = new Parser("{ Echo ; }");
+            var node = parser.Parse();
+
+            var blockStatement = (BlockStatement) node;
+
+            Assert.AreEqual(1, blockStatement.Statements.Length);
+
+            var invocationExpression =(InvocationExpression) ((ExpressionStatement) blockStatement.Statements[0]).Expression;
+            Assert.AreEqual("Echo", ((LiteralExpression)invocationExpression.RuleExpression).Value);
+        }
+    }
+
+    public class BlockStatement : Statement
+    {
+        public Statement[] Statements { get; set; }
+    }
+
+    public class Statement : Node
+    {
+    }
+
+    public class AssignmentExpression : Expression
+    {
+        public Expression Left { get; set; }
+        public Expression Right { get; set; }
+        public Operator Operator { get; set; }
+    }
+
+    public enum Operator
+    {
+        Assignment
     }
 
     public class VariableDereferenceExpression : Expression
@@ -117,7 +184,7 @@ namespace jamconverter
             _scanner = new Scanner(input);
         }
 
-        public Node Parse(bool topLevel = true)
+        public Node Parse(bool parseStatement = true)
         {
             var sr = _scanner.ScanSkippingWhiteSpace();
 
@@ -145,39 +212,64 @@ namespace jamconverter
                 return result;
             }
 
+            if (sr.tokenType == TokenType.AccoladeOpen)
+            {
+                var statements = new List<Statement>();
+                while (true)
+                {
+                    var peek = _scanner.ScanSkippingWhiteSpace();
+                    if (peek.tokenType == TokenType.AccoladeClose)
+                        return new BlockStatement() {Statements = statements.ToArray()};
+                    _scanner.UnScan(peek);
+                    statements.Add((Statement)Parse(parseStatement=true));
+                }
+            }
+
             if (sr.tokenType == TokenType.Literal)
             {
-                if (topLevel)
+                if (parseStatement)
                 {
+                    var sr2 = _scanner.ScanSkippingWhiteSpace();
+                    if (sr2.tokenType == TokenType.Assignment)
+                    {
+                        return new ExpressionStatement() {Expression = new AssignmentExpression()
+                        {
+                            Left = new LiteralExpression(sr.literal),
+                            Right = (Expression) Parse(false),
+                            Operator = Operator.Assignment
+                        }};
+                    }
+                    _scanner.UnScan(sr2);
+
                     var arguments = ParseArgumentList().ToArray();
-                    return new InvocationExpression
+                    var invocationExpression = new InvocationExpression
                     {
                         RuleExpression = new LiteralExpression(sr.literal),
                         Arguments = arguments
                     };
+
+                    return new ExpressionStatement() {Expression = invocationExpression};
                 }
-                else
+
+                var literalExpression = new LiteralExpression(sr.literal);
+                var additional = Parse(false);
+                if (additional == null)
+                    return literalExpression;
+
+                if (additional is LiteralExpression)
                 {
-                    var literalExpression = new LiteralExpression(sr.literal);
-                    var additional = Parse(false);
-                    if (additional == null)
-                        return literalExpression;
-
-                    if (additional is LiteralExpression)
+                    return new ExpressionListExpression()
                     {
-                        return new ExpressionListExpression()
-                        {
-                            Expressions = new[] {literalExpression, (LiteralExpression) additional}
-                        };
-                    }
-
-                    if (additional is EmptyExpression)
-                        return literalExpression;
-                    
-                    var expressionListExpression = additional as ExpressionListExpression;
-                    expressionListExpression.Expressions = expressionListExpression.Expressions.Prepend(literalExpression).ToArray();
-                    return expressionListExpression;
+                        Expressions = new[] {literalExpression, (LiteralExpression) additional}
+                    };
                 }
+
+                if (additional is EmptyExpression)
+                    return literalExpression;
+                    
+                var expressionListExpression = additional as ExpressionListExpression;
+                expressionListExpression.Expressions = expressionListExpression.Expressions.Prepend(literalExpression).ToArray();
+                return expressionListExpression;
             }
 
             throw new NotSupportedException("expected Value, got: " + sr.tokenType);
@@ -187,7 +279,7 @@ namespace jamconverter
         {
             while (true)
             {
-                var node = Parse(topLevel: false);
+                var node = Parse(parseStatement: false);
                 if (node == null)
                     yield break;
 
@@ -218,12 +310,17 @@ namespace jamconverter
     {
     }
 
+    public class ExpressionStatement : Statement
+    {
+        public Expression Expression { get; set; }
+    }
+
     public class EmptyExpression : Expression
     {
         
     }
 
-    public class InvocationExpression : Node
+    public class InvocationExpression : Expression
     {
         public Node RuleExpression { get; set; }
         public Expression[] Arguments { get; set; }
