@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -31,10 +32,17 @@ class Dummy
                 if (expression[0] != "Echo")
                     throw new NotSupportedException();
 
-                var token = expression[1];
-                var value = IsVariableExpansion(token) ? ExpandVariable(token) : "\""+token + "\"";
+                bool first = true;
+                foreach (var token in expression.Skip(1))
+                {
+                    if (!first)
+                        builder.AppendLine("System.Console.Write(\" \");");
+                    var value = IsVariableExpansion(token) ? ExpandVariable(token) : "\"" + token + "\"";
+                    builder.AppendLine("System.Console.Write(" + value + ");");
 
-                builder.AppendLine("System.Console.WriteLine(" + value + ");");
+                    first = false;
+                }
+                builder.AppendLine("System.Console.WriteLine();");
             }
 
 

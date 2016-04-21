@@ -19,6 +19,13 @@ namespace jamconverter.Tests
             AssertConvertedProgramHasIdenticalOutput("Echo Hello ; Echo There ;");
         }
 
+
+        [Test]
+        public void EchoMultipleLiterals()
+        {
+            AssertConvertedProgramHasIdenticalOutput("Echo Hello There Sailor ;");
+        }
+
         [Test]
         public void VariableExpansion()
         {
