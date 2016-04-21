@@ -17,7 +17,7 @@ Echo $(a)$(a) ;
 
             var jamRunner = new JamRunner();
             var output = jamRunner.Run(program);
-            CollectionAssert.AreEqual(new[] { "harryharry harrysally sallyharry sallysally " }, output);
+            CollectionAssert.AreEqual(new[] { "harryharry harrysally sallyharry sallysally" }, output);
         }
     }
 }

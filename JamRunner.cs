@@ -12,19 +12,19 @@ namespace jamconverter
         {
             var tempDir = NPath.CreateTempDirectory("jam");
             var jamFile = tempDir.Combine("Jambase.jam");
-            jamFile.WriteAllText(program);
+            jamFile.WriteAllText("NotFile all ; " + program);
 
             var jamBinary = ConverterRoot.Combine("external/jamplus/win32/jam.exe");
 
             var execute = Shell.Execute(jamBinary, "-f " + jamFile + " -C " + jamFile.Parent);
 
-            var lines = execute.Split(new[] {Environment.NewLine}, StringSplitOptions.None);
+            var lines = execute.Split(new[] {Environment.NewLine}, StringSplitOptions.None).Select(s => s.TrimEnd());
             var relevance = RelevantLinesFrom(lines);
 
             return relevance.ToArray();
         }
 
-        private IEnumerable<string> RelevantLinesFrom(string[] lines)
+        private IEnumerable<string> RelevantLinesFrom(IEnumerable<string> lines)
         {
             foreach (var line in lines)
             {
