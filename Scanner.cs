@@ -47,11 +47,30 @@ namespace jamconverter
                 new ScanResult() {tokenType = TokenType.Terminator, literal = ";"},
             };
 
-            var result = a.ScanAll();
+            var result = a.ScanAll().ToArray();
             
             //regular CollectionAssert.AreEqual only works with IComparer<T>
-            CollectionAssert.AreEqual(expected.Select(sr => sr.tokenType), result.Select(sr=>sr.tokenType));
+            CollectionAssert.AreEqual(expected.Select(sr => sr.tokenType).ToArray(), result.Select(sr=>sr.tokenType).ToArray());
             CollectionAssert.AreEqual(expected.Select(sr => sr.literal), result.Select(sr => sr.literal));
+        }
+
+        [Test]
+        public void DereferencingVariable()
+        {
+            var a = new Scanner("$(myvar)");
+
+            var scanResult1 = a.Scan();
+            Assert.AreEqual(TokenType.VariableDereferencer, scanResult1.tokenType);
+
+            var scanResult2 = a.Scan();
+            Assert.AreEqual(TokenType.ParenthesisOpen, scanResult2.tokenType);
+
+            var scanResult3 = a.Scan();
+            Assert.AreEqual(TokenType.Literal, scanResult3.tokenType);
+            Assert.AreEqual("myvar", scanResult3.literal);
+
+            var scanResult4 = a.Scan();
+            Assert.AreEqual(TokenType.ParenthesisClose, scanResult4.tokenType);
         }
     }
 
@@ -81,19 +100,33 @@ namespace jamconverter
 
             var literal = ReadLiteral();
 
+            return new ScanResult() {tokenType = TokenTypeFor(literal), literal = literal};
+        }
+
+        private TokenType TokenTypeFor(string literal)
+        {
             if (literal == ";")
-                return new ScanResult() {tokenType = TokenType.Terminator, literal = literal};
+                return TokenType.Terminator;
 
             if (literal == "[")
-                return new ScanResult() { tokenType = TokenType.BracketOpen, literal = literal };
+                return TokenType.BracketOpen;
 
             if (literal == "]")
-                return new ScanResult() { tokenType = TokenType.BracketClose, literal = literal };
+                return TokenType.BracketClose;
 
             if (literal == ":")
-                return new ScanResult() { tokenType = TokenType.ArgumentSeperator, literal = literal };
+                return TokenType.ArgumentSeperator;
 
-            return new ScanResult() {tokenType = TokenType.Literal, literal = literal};
+            if (literal == "$")
+                return TokenType.VariableDereferencer;
+
+            if (literal == "(")
+                return TokenType.ParenthesisOpen;
+
+            if (literal == ")")
+                return TokenType.ParenthesisClose;
+
+            return TokenType.Literal;
         }
 
         public IEnumerable<ScanResult> ScanAll()
@@ -112,20 +145,36 @@ namespace jamconverter
             int i;
             for (i = nextChar; i != _input.Length; i++)
             {
-                if (!char.IsWhiteSpace(_input[i]))
+                if (IsLiteral(_input[i]))
                     continue;
                 break;
             }
-            var result = _input.Substring(nextChar, i - nextChar);
+
+            if (i == nextChar)
+            {
+                nextChar++;
+                return _input[i].ToString();
+            }
+
+            var result = _input.Substring(nextChar, Math.Max(1,i - nextChar));
             nextChar = i;
             return result;
+        }
+
+        private bool IsLiteral(char c)
+        {
+            if (c == ')')
+                return false;
+            if (c == '(')
+                return false;
+            return !char.IsWhiteSpace(c);
         }
 
         private string ReadWhiteSpace()
         {
             for (int i = nextChar; i != _input.Length; i++)
             {
-                if (!char.IsWhiteSpace(_input[i]))
+                if (IsLiteral(_input[i]))
                 {
                     var result = _input.Substring(nextChar, i - nextChar);
                     nextChar = i;
@@ -165,6 +214,9 @@ namespace jamconverter
         WhiteSpace,
         BracketClose,
         ArgumentSeperator,
-        BracketOpen
+        BracketOpen,
+        VariableDereferencer,
+        ParenthesisClose,
+        ParenthesisOpen
     }
 }

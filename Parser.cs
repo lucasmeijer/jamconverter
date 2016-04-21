@@ -73,6 +73,24 @@ namespace jamconverter
             Assert.AreEqual("c", ((LiteralExpression)expressionListExpression.Expressions[2]).Value);
         }
 
+        [Test]
+        public void VariableDereference()
+        {
+            var parser = new Parser("input $(myvar) ;");
+            var node = parser.Parse();
+
+            var invocationExpression = node as InvocationExpression;
+            Assert.AreEqual(1, invocationExpression.Arguments.Length);
+
+            var variableDereferenceExpression = (VariableDereferenceExpression) invocationExpression.Arguments[0];
+            Assert.AreEqual("myvar",((LiteralExpression) variableDereferenceExpression.VariableExpression).Value);
+        }
+
+    }
+
+    public class VariableDereferenceExpression : Expression
+    {
+        public Expression VariableExpression { get; set; }
     }
 
     public class ExpressionListExpression : Expression
@@ -92,7 +110,7 @@ namespace jamconverter
 
     public class Parser
     {
-        private Scanner _scanner;
+        private readonly Scanner _scanner;
 
         public Parser(string input)
         {
@@ -106,21 +124,36 @@ namespace jamconverter
             if (sr == null)
                 return null;
 
-            if (sr.tokenType == TokenType.ArgumentSeperator || sr.tokenType == TokenType.Terminator)
+            if (sr.tokenType == TokenType.ArgumentSeperator || sr.tokenType == TokenType.Terminator || sr.tokenType == TokenType.ParenthesisClose)
             {
                 _scanner.UnScan(sr);
                  return new EmptyExpression();
+            }
+
+            if (sr.tokenType == TokenType.VariableDereferencer)
+            {
+                var open = _scanner.Scan();
+                if (open.tokenType != TokenType.ParenthesisOpen)
+                    throw new ParsingException("All $ should be followed by ( but got: "+open.tokenType);
+
+                var result = new VariableDereferenceExpression() {VariableExpression = (Expression)Parse(false)};
+
+                var close = _scanner.Scan();
+                if (close.tokenType != TokenType.ParenthesisClose)
+                    throw new ParsingException("All $(something should be followed by ) but got: " + open.tokenType);
+
+                return result;
             }
 
             if (sr.tokenType == TokenType.Literal)
             {
                 if (topLevel)
                 {
-                    var arguments = ParseArgumentList();
+                    var arguments = ParseArgumentList().ToArray();
                     return new InvocationExpression
                     {
                         RuleExpression = new LiteralExpression(sr.literal),
-                        Arguments = arguments.ToArray()
+                        Arguments = arguments
                     };
                 }
                 else
@@ -168,16 +201,12 @@ namespace jamconverter
                     yield break;
             }
         }
+    }
 
-        private IEnumerable<ScanResult> ScanUntil(TokenType untilTokenType)
+    public class ParsingException : Exception
+    {
+        public ParsingException(string s) : base(s)
         {
-            while (true)
-            {
-                var sr = _scanner.ScanSkippingWhiteSpace();
-                yield return sr;
-                if (sr.tokenType == untilTokenType)
-                    yield break;
-            }
         }
     }
 
