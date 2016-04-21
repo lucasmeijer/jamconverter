@@ -59,6 +59,7 @@ namespace jamconverter
     {
         private readonly string _input;
         private int nextChar = 0;
+        private readonly Queue<ScanResult> _unscanBuffer = new Queue<ScanResult>();
 
         public Scanner(string input)
         {
@@ -67,6 +68,9 @@ namespace jamconverter
 
         public ScanResult Scan()
         {
+            if (_unscanBuffer.Any())
+                return _unscanBuffer.Dequeue();
+
             if (nextChar >= _input.Length)
                 return null;
             
@@ -129,6 +133,22 @@ namespace jamconverter
                 }
             }
             throw new Exception();
+        }
+
+        public ScanResult ScanSkippingWhiteSpace()
+        {
+            while (true)
+            {
+                var sr = Scan();
+                if (sr != null && sr.tokenType == TokenType.WhiteSpace)
+                    continue;
+                return sr;
+            }
+        }
+
+        public void UnScan(ScanResult sr)
+        {
+            _unscanBuffer.Enqueue(sr);
         }
     }
 

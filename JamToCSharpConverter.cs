@@ -119,14 +119,4 @@ class Dummy
             yield break;
         }
     }
-
-    static class Extensions
-    {
-        public static IEnumerable<T> Prepend<T>(this IEnumerable<T> collection, T element)
-        {
-            yield return element;
-            foreach (var e in collection)
-                yield return e;
-        }
-    }
 }
