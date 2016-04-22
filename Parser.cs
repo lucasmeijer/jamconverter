@@ -325,8 +325,8 @@ namespace jamconverter
                     return resultExpression;
 
                 var additional = Parse(ParseMode.ExpressionList);
-                if (additional == null || additional is EmptyExpression)
-                    return new ExpressionListExpression() {Expressions = new Expression[] { resultExpression } };
+                if (additional == null)
+                    return new ExpressionListExpression() {Expressions = new[] { resultExpression } };
                 var tailExpressionList = additional as ExpressionListExpression;
                 if (tailExpressionList != null)
                     return new ExpressionListExpression() { Expressions = tailExpressionList.Expressions.Prepend(resultExpression).ToArray() };
@@ -402,7 +402,7 @@ namespace jamconverter
                     return resultExpression;
                 
                 var additional = Parse(ParseMode.ExpressionList);
-                if (additional == null || additional is EmptyExpression)
+                if (additional == null)
                     return new ExpressionListExpression { Expressions = new[] { resultExpression } };
 
                 var tailExpressionList = additional as ExpressionListExpression;
@@ -504,11 +504,6 @@ namespace jamconverter
     public class ExpressionStatement : Statement
     {
         public Expression Expression { get; set; }
-    }
-
-    public class EmptyExpression : Expression
-    {
-        
     }
 
     public class InvocationExpression : Expression

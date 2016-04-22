@@ -58,9 +58,6 @@ class Dummy
 
         private void ProcessNode(Node node, StringBuilder csharpbody, List<string> variables)
         {
-            if (node is EmptyExpression)
-                return;
-
             var ifStatement = node as IfStatement;
             if (ifStatement != null)
             {
