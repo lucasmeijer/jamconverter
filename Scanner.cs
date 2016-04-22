@@ -92,6 +92,18 @@ namespace jamconverter
 
             CollectionAssert.AreEqual(new[] { TokenType.AccoladeOpen, TokenType.WhiteSpace, TokenType.Literal, TokenType.WhiteSpace, TokenType.AccoladeClose}, result.Select(r => r.tokenType));
         }
+
+
+        [Test]
+        public void LetterFollowedByDollar()
+        {
+            var a = new Scanner("a$");
+            var result = a.ScanAll().ToArray();
+            Assert.AreEqual(2, result.Length);
+
+            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.VariableDereferencer }, result.Select(r => r.tokenType));
+        }
+
     }
 
     public class Scanner
@@ -205,6 +217,8 @@ namespace jamconverter
             if (c == '}')
                 return false;
             if (c == '{')
+                return false;
+            if (c == '$')
                 return false;
             return !char.IsWhiteSpace(c);
         }

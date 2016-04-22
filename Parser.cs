@@ -168,7 +168,29 @@ namespace jamconverter
             var parser = new Parser("myvar = 123 ; Echo $(myvar); ");
             parser.Parse();
         }
-        
+
+        [Test]
+        public void CombineExpression()
+        {
+            var parser = new Parser("a = $(b)c$(d) ;");
+            var node = parser.Parse();
+
+            var right = ((AssignmentExpression) ((ExpressionStatement) node).Expression).Right;
+
+            Assert.IsTrue(right is CombineExpression);
+
+            var combineExpression = (CombineExpression) right;
+            Assert.AreEqual(3, combineExpression.Elements.Length);
+            Assert.IsTrue(combineExpression.Elements[0] is VariableDereferenceExpression);
+            Assert.IsTrue(combineExpression.Elements[1] is LiteralExpression);
+            Assert.IsTrue(combineExpression.Elements[2] is VariableDereferenceExpression);
+        }
+
+    }
+
+    public class CombineExpression : Expression
+    {
+        public Expression[] Elements { get; set; }
     }
 
     public class IfStatement : Statement
@@ -280,6 +302,10 @@ namespace jamconverter
                 if (close.tokenType != TokenType.ParenthesisClose)
                     throw new ParsingException("All $(something should be followed by ) but got: " + open.tokenType);
 
+                var combineExpression = ScanForCombineExpression(variableDereferenceExpression);
+                if (combineExpression != null)
+                    return combineExpression;
+
                 if (parseMode == ParseMode.SingleExpression)
                     return variableDereferenceExpression;
 
@@ -314,7 +340,7 @@ namespace jamconverter
                     if (sr2.tokenType == TokenType.Assignment)
                     {
                         var right = (Expression) Parse(ParseMode.ExpressionList);
-                        var terminator = _scanner.Scan();
+                        var terminator = _scanner.ScanSkippingWhiteSpace();
                         if (terminator.tokenType != TokenType.Terminator)
                             throw new ParsingException();
 
@@ -338,6 +364,12 @@ namespace jamconverter
                 }
 
                 var literalExpression = new LiteralExpression(sr.literal);
+
+                var combineExpression = ScanForCombineExpression(literalExpression);
+                if (combineExpression != null)
+                    return combineExpression;
+
+
                 if (parseMode == ParseMode.SingleExpression)
                     return literalExpression;
                 
@@ -360,6 +392,30 @@ namespace jamconverter
             }
 
             throw new NotSupportedException("expected Value, got: " + sr.tokenType);
+        }
+
+        private CombineExpression ScanForCombineExpression(Expression variableDereferenceExpression)
+        {
+            var peek = _scanner.Scan();
+            _scanner.UnScan(peek);
+            if (peek.tokenType == TokenType.Literal || peek.tokenType == TokenType.VariableDereferencer)
+            {
+                var tail = Parse(ParseMode.SingleExpression);
+                var combineExpressionTail = tail as CombineExpression;
+
+                var tailElements = (combineExpressionTail != null)
+                    ? combineExpressionTail.Elements
+                    : new[] {(Expression) tail};
+
+                {
+                    return new CombineExpression()
+                    {
+                        Elements = tailElements.Prepend(variableDereferenceExpression).ToArray()
+                    };
+                }
+            }
+            
+            return null;
         }
 
         private IEnumerable<Expression> ParseArgumentList()

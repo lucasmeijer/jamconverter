@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 
 namespace jamconverter
 {
@@ -20,22 +21,25 @@ Echo $(a)$(a) ;
         }
 
         [Test]
-        [Ignore("PlayGround")]
+    //    [Ignore("PlayGround")]
         public void PlayGround()
         {
             var program =
 @"
 
-hallo = vier ;
-a = hallo ;
-Echo joh $($(a) bb) ;
+hallo = vier vijf ;
+b = ja dus ;
 
-if ! $(pieter) { Echo yes ; } else { Echo no ; }
+Echo $(hallo)john$(b) ;
+
 ";
 
             var jamRunner = new JamRunner();
             var output = jamRunner.Run(program);
-            CollectionAssert.AreEqual(new[] { "harryharry harrysally sallyharry sallysally " }, output);
+            foreach (var line in output)
+                Console.WriteLine(line);
+
+            
         }
     }
 }
