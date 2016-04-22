@@ -34,7 +34,10 @@ namespace jamconverter
 
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
-            var arg1 = invocationExpression.Arguments[0] as LiteralExpression;
+            var expressionListExpression = (ExpressionListExpression) invocationExpression.Arguments[0];
+
+            Assert.AreEqual(1, expressionListExpression.Expressions.Length);
+            var arg1 = (LiteralExpression) expressionListExpression.Expressions[0];
             Assert.AreEqual("a", arg1.Value);
         }
 
@@ -49,10 +52,10 @@ namespace jamconverter
 
             Assert.AreEqual(2, invocationExpression.Arguments.Length);
 
-            var arg1 = invocationExpression.Arguments[0] as LiteralExpression;
+            var arg1 = (LiteralExpression) ((ExpressionListExpression) invocationExpression.Arguments[0]).Expressions[0];
             Assert.AreEqual("a", arg1.Value);
 
-            var arg2 = invocationExpression.Arguments[1] as LiteralExpression;
+            var arg2 = (LiteralExpression) ((ExpressionListExpression) invocationExpression.Arguments[1]).Expressions[0];
             Assert.AreEqual("b", arg2.Value);
         }
 
@@ -82,7 +85,9 @@ namespace jamconverter
             var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
-            var variableDereferenceExpression = (VariableDereferenceExpression) invocationExpression.Arguments[0];
+            var variableDereferenceExpression =
+                (VariableDereferenceExpression)
+                    ((ExpressionListExpression) invocationExpression.Arguments[0]).Expressions[0];
             Assert.AreEqual("myvar",((LiteralExpression) variableDereferenceExpression.VariableExpression).Value);
         }
 
@@ -95,7 +100,9 @@ namespace jamconverter
             var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
-            var variableDereferenceExpression = (VariableDereferenceExpression)invocationExpression.Arguments[0];
+            var variableDereferenceExpression =
+                (VariableDereferenceExpression)
+                    ((ExpressionListExpression) invocationExpression.Arguments[0]).Expressions[0];
 
             var nestedVariableDereferenceExpression = (VariableDereferenceExpression) variableDereferenceExpression.VariableExpression;
 
@@ -111,14 +118,14 @@ namespace jamconverter
             var assignmentExpression = (AssignmentExpression)((ExpressionStatement)node).Expression;
 
             var left = (LiteralExpression) assignmentExpression.Left;
-            var right = (LiteralExpression) assignmentExpression.Right;
-
             Assert.AreEqual("a", left.Value);
-            Assert.AreEqual("b", right.Value);
+
+            var right = (ExpressionListExpression) assignmentExpression.Right;
+            Assert.AreEqual(1, right.Expressions.Length);
+            Assert.AreEqual("b", ((LiteralExpression)right.Expressions[0]).Value);
             Assert.AreEqual(Operator.Assignment, assignmentExpression.Operator);
         }
-
-
+        
         [Test]
         public void BlockStatement()
         {
@@ -150,8 +157,17 @@ namespace jamconverter
         public void IfStatement()
         {
             var parser = new Parser("if $(somevar) {}");
-            var ifStatement = (IfStatement) parser.Parse(true);
+            var ifStatement = (IfStatement) parser.Parse();
         }
+
+
+        [Test]
+        public void TwoStatements()
+        {
+            var parser = new Parser("myvar = 123 ; Echo $(myvar); ");
+            parser.Parse();
+        }
+        
     }
 
     public class IfStatement : Statement
@@ -201,6 +217,14 @@ namespace jamconverter
         }
     }
 
+   public  enum ParseMode
+    {
+        SingleExpression,
+        ExpressionList,
+        Statement,
+        Condition
+    }
+
     public class Parser
     {
         private readonly Scanner _scanner;
@@ -210,13 +234,22 @@ namespace jamconverter
             _scanner = new Scanner(input);
         }
 
-        public Node Parse(bool parseStatement = true)
+
+
+
+        public Node Parse(ParseMode parseMode = ParseMode.Statement)
         {
+            if (parseMode == ParseMode.Condition)
+            {
+                return Parse(ParseMode.SingleExpression);
+            }
+
             var sr = _scanner.ScanSkippingWhiteSpace();
 
             if (sr == null)
                 return null;
 
+            
             if (sr.tokenType == TokenType.ArgumentSeperator || sr.tokenType == TokenType.Terminator || sr.tokenType == TokenType.ParenthesisClose)
             {
                 _scanner.UnScan(sr);
@@ -225,8 +258,8 @@ namespace jamconverter
 
             if (sr.tokenType == TokenType.If)
             {
-                var condition = Parse(false);
-                var body = Parse(true);
+                var condition = Parse(ParseMode.Condition);
+                var body = Parse(ParseMode.Statement);
 
                 if (!(condition is Expression))
                     throw new ParsingException("if keyword always needs to be followed by an expression");
@@ -242,13 +275,24 @@ namespace jamconverter
                 if (open.tokenType != TokenType.ParenthesisOpen)
                     throw new ParsingException("All $ should be followed by ( but got: "+open.tokenType);
 
-                var result = new VariableDereferenceExpression() {VariableExpression = (Expression)Parse(false)};
+                var variableDereferenceExpression = new VariableDereferenceExpression() {VariableExpression = (Expression)Parse(ParseMode.SingleExpression)};
 
+                
                 var close = _scanner.Scan();
                 if (close.tokenType != TokenType.ParenthesisClose)
                     throw new ParsingException("All $(something should be followed by ) but got: " + open.tokenType);
 
-                return result;
+                if (parseMode == ParseMode.SingleExpression)
+                    return variableDereferenceExpression;
+
+                var additional = Parse(ParseMode.ExpressionList);
+                if (additional == null || additional is EmptyExpression)
+                    return new ExpressionListExpression() {Expressions = new Expression[] {variableDereferenceExpression}};
+                var tailExpressionList = additional as ExpressionListExpression;
+                if (tailExpressionList != null)
+                    return new ExpressionListExpression() { Expressions = tailExpressionList.Expressions.Prepend(variableDereferenceExpression).ToArray() };
+
+                throw new ParsingException();
             }
 
             if (sr.tokenType == TokenType.AccoladeOpen)
@@ -260,21 +304,26 @@ namespace jamconverter
                     if (peek.tokenType == TokenType.AccoladeClose)
                         return new BlockStatement() {Statements = statements.ToArray()};
                     _scanner.UnScan(peek);
-                    statements.Add((Statement)Parse(parseStatement=true));
+                    statements.Add((Statement)Parse(ParseMode.Statement));
                 }
             }
 
             if (sr.tokenType == TokenType.Literal)
             {
-                if (parseStatement)
+                if (parseMode == ParseMode.Statement)
                 {
                     var sr2 = _scanner.ScanSkippingWhiteSpace();
                     if (sr2.tokenType == TokenType.Assignment)
                     {
+                        var right = (Expression) Parse(ParseMode.ExpressionList);
+                        var terminator = _scanner.Scan();
+                        if (terminator.tokenType != TokenType.Terminator)
+                            throw new ParsingException();
+
                         return new ExpressionStatement() {Expression = new AssignmentExpression()
                         {
                             Left = new LiteralExpression(sr.literal),
-                            Right = (Expression) Parse(false),
+                            Right = right,
                             Operator = Operator.Assignment
                         }};
                     }
@@ -291,21 +340,22 @@ namespace jamconverter
                 }
 
                 var literalExpression = new LiteralExpression(sr.literal);
-                var additional = Parse(false);
-                if (additional == null)
+                if (parseMode == ParseMode.SingleExpression)
                     return literalExpression;
+                
+                var additional = Parse(ParseMode.ExpressionList);
+                if (additional == null || additional is EmptyExpression)
+                    return new ExpressionListExpression { Expressions = new Expression[] { literalExpression}};
 
-                if (additional is LiteralExpression)
+                var tailExpressionList = additional as ExpressionListExpression;
+                if (tailExpressionList != null)
                 {
                     return new ExpressionListExpression()
                     {
-                        Expressions = new[] {literalExpression, (LiteralExpression) additional}
+                        Expressions = tailExpressionList.Expressions.Prepend(literalExpression).ToArray()
                     };
                 }
-
-                if (additional is EmptyExpression)
-                    return literalExpression;
-                    
+                
                 var expressionListExpression = additional as ExpressionListExpression;
                 expressionListExpression.Expressions = expressionListExpression.Expressions.Prepend(literalExpression).ToArray();
                 return expressionListExpression;
@@ -318,7 +368,7 @@ namespace jamconverter
         {
             while (true)
             {
-                var node = Parse(parseStatement: false);
+                var node = Parse(ParseMode.ExpressionList);
                 if (node == null)
                     yield break;
 
@@ -337,6 +387,10 @@ namespace jamconverter
     public class ParsingException : Exception
     {
         public ParsingException(string s) : base(s)
+        {
+        }
+
+        public ParsingException()
         {
         }
     }

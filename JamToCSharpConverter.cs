@@ -11,112 +11,79 @@ namespace jamconverter
     {
         public string Convert(string simpleProgram)
         {
-            var expressions = new Lexer().Lex(simpleProgram);
+   
+            var csharpbody = new StringBuilder();
 
-            var builder = new StringBuilder(
-            @"
-class Dummy
-{
-    static void Main()
-    {
-");
-
+            var parser = new Parser(simpleProgram);
             var variables = new List<string>();
-            foreach (var expression in expressions)
+            while (true)
             {
-                if (IsAssignment(expression))
-                {
-                    var targetVariableName = expression[0];
-                    if (!variables.Contains(targetVariableName))
-                    {
-                        builder.AppendLine($"string {targetVariableName};");
-                        variables.Add(targetVariableName);
-                    }
-                    builder.Append($"{targetVariableName} = \"{expression[2]}\";");
+                var node = parser.Parse();
+                if (node == null)
+                    break;
+
+                if (node is EmptyExpression)
                     continue;
-                }
 
-                if (expression[0] == "Echo")
+                var expressionStatement = node as ExpressionStatement;
+                
+                var invocationExpression = expressionStatement.Expression as InvocationExpression;
+
+                if (invocationExpression != null)
                 {
-                    bool first = true;
-                    foreach (var token in expression.Skip(1))
+                    var literalRule = invocationExpression.RuleExpression as LiteralExpression;
+                    if (literalRule.Value == "Echo")
                     {
-                        if (!first)
-                            builder.AppendLine("System.Console.Write(\" \");");
-                        var value = IsVariableExpansion(token) ? ExpandVariable(token) : "\"" + token + "\"";
-                        builder.AppendLine("System.Console.Write(" + value + ");");
 
-                        first = false;
+                        var expressionListExpression = invocationExpression.Arguments[0] as ExpressionListExpression;
+                        if (expressionListExpression != null)
+                        {
+                            foreach (var expression in expressionListExpression.Expressions)
+                            {
+                                csharpbody.AppendLine($"System.Console.Write({ CSharpFor(expression)});");
+                            }
+                            csharpbody.AppendLine($"System.Console.WriteLine();");
+                        }
                     }
-                    builder.AppendLine("System.Console.WriteLine();");
                 }
 
-
-            }
-
-
-            builder.Append(@"
-    }
-}
-");              
-
-            return builder.ToString();
-        }
-
-        private static Regex s_variableRegex = new Regex(@"\$\((.*)\)");
-
-        private bool IsVariableExpansion(string token)
-        {
-            return s_variableRegex.IsMatch(token);
-        }
-
-        string ExpandVariable(string token)
-        {
-            return s_variableRegex.Match(token).Groups[1].Value;
-        }
-
-        private bool IsAssignment(string[] expression)
-        {
-            if (expression.Length < 2)
-                return false;
-            return expression[1] == "=";
-        }
-    }
-
-    internal class Lexer
-    {
-        public IEnumerable<string[]> Lex(string simpleProgram)
-        {
-            var buf = new List<string>();
-            var tokens = new Queue<string>(simpleProgram.Split(new[] {" "}, StringSplitOptions.RemoveEmptyEntries));
-
-            while (tokens.Any())
-            {
-                var token = tokens.Dequeue();
-
-                if (token == "rule")
+                var assignmentExpression = expressionStatement.Expression as AssignmentExpression;
+                if (assignmentExpression != null)
                 {
-                    yield return EatTokensUntilEndOfScopeBlock(tokens).Prepend(token).ToArray();
+                    var variableName = ((LiteralExpression) assignmentExpression.Left).Value;
+                    if (!variables.Contains(variableName))
+                        variables.Add(variableName);
+
+                    var value =
+                        ((LiteralExpression) ((ExpressionListExpression) assignmentExpression.Right).Expressions[0])
+                            .Value;
+                    csharpbody.AppendLine($"{variableName} = \"{value}\";");
                 }
             }
 
-            foreach (var token in tokens)
-            {
-                if (token == "rule")
+            var variableDeclarations = variables.Select(v => "string " + v + ";\n").SeperateWithSpace();
 
-                if (token != ";")
-                    buf.Add(token);
-                else
-                {
-                    yield return buf.ToArray();
-                    buf.Clear();
-                }
-            }
+            return 
+       $@"
+class Dummy
+{{
+    static void Main()
+    {{
+       {variableDeclarations}
+       {csharpbody}
+    }}
+}}";
         }
 
-        private IEnumerable<string> EatTokensUntilEndOfScopeBlock(Queue<string> tokens)
+        string CSharpFor(Expression e)
         {
-            yield break;
+            var literalExpression = e as LiteralExpression;
+            if (literalExpression != null)
+                return "\"" + literalExpression.Value + "\"";
+            var dereferenceExpression = e as VariableDereferenceExpression;
+            if (dereferenceExpression != null)
+                return ((LiteralExpression) dereferenceExpression.VariableExpression).Value;
+            throw new ParsingException();
         }
     }
 }

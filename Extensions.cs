@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Windows.Markup;
 
 namespace jamconverter
 {
@@ -9,6 +12,21 @@ namespace jamconverter
             yield return element;
             foreach (var e in collection)
                 yield return e;
+        }
+
+        public static string SeperateWithSpace(this IEnumerable<String> values )
+        {
+            var result = new StringBuilder();
+
+            bool first = true;
+            foreach (var v in values)
+            {
+                if (!first)
+                    result.Append(" ");
+                result.Append(v);
+                first = false;
+            }
+            return result.ToString();
         }
     }
 }

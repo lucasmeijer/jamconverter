@@ -5,7 +5,7 @@ namespace jamconverter
     [TestFixture]
     class JamRunnerTests
     {
-          [Test]
+        [Test]
         public void CanRunJamProgram()
         {
             var program =
@@ -17,6 +17,25 @@ Echo $(a)$(a) ;
             var jamRunner = new JamRunner();
             var output = jamRunner.Run(program);
             CollectionAssert.AreEqual(new[] {"harryharry harrysally sallyharry sallysally "}, output);
+        }
+
+        [Test]
+        //[Ignore("ASD")]
+        public void PlayGround()
+        {
+            var program =
+@"
+
+hallo = vier ;
+a = hallo ;
+Echo joh $($(a) bb) ;
+
+if ! $(pieter) { Echo yes ; } else { Echo no ; }
+";
+
+            var jamRunner = new JamRunner();
+            var output = jamRunner.Run(program);
+            CollectionAssert.AreEqual(new[] { "harryharry harrysally sallyharry sallysally " }, output);
         }
     }
 }
