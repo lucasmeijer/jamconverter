@@ -177,16 +177,33 @@ namespace jamconverter
 
             var right = ((AssignmentExpression) ((ExpressionStatement) node).Expression).Right;
 
-            Assert.IsTrue(right is CombineExpression);
-
-            var combineExpression = (CombineExpression) right;
+            var combineExpression = (CombineExpression) ((ExpressionListExpression) right).Expressions[0];
+            
             Assert.AreEqual(3, combineExpression.Elements.Length);
             Assert.IsTrue(combineExpression.Elements[0] is VariableDereferenceExpression);
             Assert.IsTrue(combineExpression.Elements[1] is LiteralExpression);
             Assert.IsTrue(combineExpression.Elements[2] is VariableDereferenceExpression);
         }
 
+
+        [Test]
+        public void RuleDeclaration()
+        {
+            var parser = new Parser("rule myrule arg1 : arg2 { Echo hello ; }");
+            var node = parser.Parse();
+
+            Assert.IsTrue(node is RuleDeclaration);
+            var ruleDeclaration = (RuleDeclaration)node;
+
+            Assert.AreEqual("myrule", ruleDeclaration.Name);
+
+            CollectionAssert.AreEqual(new[] { "arg1", "arg2"}, ruleDeclaration.Arguments);
+
+            Assert.AreEqual(1, ruleDeclaration.Body.Statements.Length);
+            Assert.IsTrue(ruleDeclaration.Body.Statements[0] is ExpressionStatement);
+        }
     }
+
 
     public class CombineExpression : Expression
     {
@@ -319,6 +336,12 @@ namespace jamconverter
 
             if (sr.tokenType == TokenType.AccoladeOpen)
             {
+                if (parseMode != ParseMode.Statement)
+                {
+                    _scanner.UnScan(sr);
+                    return null;
+                }
+
                 var statements = new List<Statement>();
                 while (true)
                 {
@@ -328,6 +351,16 @@ namespace jamconverter
                     _scanner.UnScan(peek);
                     statements.Add((Statement)Parse(ParseMode.Statement));
                 }
+            }
+
+            if (sr.tokenType == TokenType.Rule)
+            {
+                var ruleName = Parse(ParseMode.SingleExpression);
+                var arguments = ParseArgumentList().ToArray();
+                var body = Parse(ParseMode.Statement);
+
+                var ruleNameStr = ((LiteralExpression) ruleName).Value;
+                return new RuleDeclaration {Name = ruleNameStr, Arguments = arguments.OfType<ExpressionListExpression>().SelectMany(ele=>ele.Expressions.OfType<LiteralExpression>()).Select(le=>le.Value).ToArray(), Body = (BlockStatement) body};
             }
 
             if (sr.tokenType == TokenType.Literal)
@@ -358,6 +391,8 @@ namespace jamconverter
                         Arguments = arguments
                     };
 
+                    ScanTerminator();
+
                     return new ExpressionStatement() {Expression = invocationExpression};
                 }
 
@@ -385,6 +420,13 @@ namespace jamconverter
             }
 
             throw new NotSupportedException("expected Value, got: " + sr.tokenType);
+        }
+
+        private void ScanTerminator()
+        {
+            var sr = _scanner.ScanSkippingWhiteSpace();
+            if (sr.tokenType != TokenType.Terminator)
+                throw new ParsingException();
         }
 
         private Expression ScanForCombineExpression(Expression firstExpression)
@@ -425,10 +467,19 @@ namespace jamconverter
                 yield return expression;
 
                 var nextToken = _scanner.ScanSkippingWhiteSpace();
-                if (nextToken.tokenType == TokenType.Terminator)
-                    yield break;
+                if (nextToken.tokenType == TokenType.ArgumentSeperator)
+                    continue;
+                _scanner.UnScan(nextToken);
+                yield break;
             }
         }
+    }
+
+    public class RuleDeclaration : Node
+    {
+        public string Name { get; set; }
+        public BlockStatement Body { get; set; }
+        public string[] Arguments { get; set; }
     }
 
     public class ParsingException : Exception

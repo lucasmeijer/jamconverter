@@ -14,8 +14,7 @@ namespace jamconverter.Tests
         {
             AssertConvertedProgramHasIdenticalOutput("Echo Hello ;");
         }
-
-
+        
         [Test]
         public void TwoEchos()
         {
@@ -58,6 +57,7 @@ namespace jamconverter.Tests
             AssertConvertedProgramHasIdenticalOutput("myvar = john doe ; Echo $(myvar)postfix ; ");
         }
 
+        [Test]
         public void CustomRule()
         {
             AssertConvertedProgramHasIdenticalOutput(
