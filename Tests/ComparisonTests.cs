@@ -14,37 +14,42 @@ namespace jamconverter.Tests
             AssertConvertedProgramHasIdenticalOutput("Echo Hello ;");
         }
 
-     
+
         [Test]
         public void TwoEchos()
         {
             AssertConvertedProgramHasIdenticalOutput("Echo Hello ; Echo There ;");
         }
-        
-     [Test]
-     public void EchoMultipleLiterals()
-     {
-         AssertConvertedProgramHasIdenticalOutput("Echo Hello There Sailor ;");
-     }
-        
-     [Test]
-     public void VariableExpansion()
-     {
-         AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; Echo $(myvar) ;");
-     }
-        /*
-     [Test]
-     public void DoubleVariableAssignment()
-     {
-         AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; myvar = 234 ; Echo $(myvar) ;");
-     }*/
 
-        // [Test]
+        [Test]
+        public void EchoMultipleLiterals()
+        {
+            AssertConvertedProgramHasIdenticalOutput("Echo Hello There Sailor ;");
+        }
+
+        [Test]
+        public void VariableExpansion()
+        {
+            AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; Echo $(myvar) ;");
+        }
+
+        [Test]
+        public void DoubleVariableAssignment()
+        {
+            AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; myvar = 234 ; Echo $(myvar) ;");
+        }
+
+        [Test]
+        public void IfStatement()
+        {
+            AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; if $(myvar) { Echo Yes ; } ");
+        }
+    
         public void CustomRule()
         {
             AssertConvertedProgramHasIdenticalOutput(
-@"rule customrule { Echo Hello ; } customrule ;"
-);
+                @"rule customrule { Echo Hello ; } customrule ;"
+                );
         }
 
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)

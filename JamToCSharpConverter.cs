@@ -22,43 +22,7 @@ namespace jamconverter
                 if (node == null)
                     break;
 
-                if (node is EmptyExpression)
-                    continue;
-
-                var expressionStatement = node as ExpressionStatement;
-                
-                var invocationExpression = expressionStatement.Expression as InvocationExpression;
-
-                if (invocationExpression != null)
-                {
-                    var literalRule = invocationExpression.RuleExpression as LiteralExpression;
-                    if (literalRule.Value == "Echo")
-                    {
-
-                        var expressionListExpression = invocationExpression.Arguments[0] as ExpressionListExpression;
-                        if (expressionListExpression != null)
-                        {
-                            foreach (var expression in expressionListExpression.Expressions)
-                            {
-                                csharpbody.AppendLine($"System.Console.Write({ CSharpFor(expression)});");
-                            }
-                            csharpbody.AppendLine($"System.Console.WriteLine();");
-                        }
-                    }
-                }
-
-                var assignmentExpression = expressionStatement.Expression as AssignmentExpression;
-                if (assignmentExpression != null)
-                {
-                    var variableName = ((LiteralExpression) assignmentExpression.Left).Value;
-                    if (!variables.Contains(variableName))
-                        variables.Add(variableName);
-
-                    var value =
-                        ((LiteralExpression) ((ExpressionListExpression) assignmentExpression.Right).Expressions[0])
-                            .Value;
-                    csharpbody.AppendLine($"{variableName} = \"{value}\";");
-                }
+                ProcessNode(node, csharpbody, variables);
             }
 
             var variableDeclarations = variables.Select(v => "string " + v + ";\n").SeperateWithSpace();
@@ -73,6 +37,61 @@ class Dummy
        {csharpbody}
     }}
 }}";
+        }
+
+        private void ProcessNode(Node node, StringBuilder csharpbody, List<string> variables)
+        {
+            if (node is EmptyExpression)
+                return;
+
+            var ifStatement = node as IfStatement;
+            if (ifStatement != null)
+            {
+                var vde = (VariableDereferenceExpression) ifStatement.Condition;
+                var variableName = ((LiteralExpression) vde.VariableExpression).Value;
+
+                csharpbody.AppendLine($"if ({variableName} != null) {{");
+
+                foreach (var statement in ifStatement.Body.Statements)
+                    ProcessNode(statement, csharpbody, variables);
+
+                csharpbody.AppendLine("}");
+                return;
+            }
+
+            var expressionStatement = node as ExpressionStatement;
+
+            var invocationExpression = expressionStatement.Expression as InvocationExpression;
+
+            if (invocationExpression != null)
+            {
+                var literalRule = invocationExpression.RuleExpression as LiteralExpression;
+                if (literalRule.Value == "Echo")
+                {
+                    var expressionListExpression = invocationExpression.Arguments[0] as ExpressionListExpression;
+                    if (expressionListExpression != null)
+                    {
+                        foreach (var expression in expressionListExpression.Expressions)
+                        {
+                            csharpbody.AppendLine($"System.Console.Write({CSharpFor(expression)});");
+                        }
+                        csharpbody.AppendLine($"System.Console.WriteLine();");
+                    }
+                }
+            }
+
+            var assignmentExpression = expressionStatement.Expression as AssignmentExpression;
+            if (assignmentExpression != null)
+            {
+                var variableName = ((LiteralExpression) assignmentExpression.Left).Value;
+                if (!variables.Contains(variableName))
+                    variables.Add(variableName);
+
+                var value =
+                    ((LiteralExpression) ((ExpressionListExpression) assignmentExpression.Right).Expressions[0])
+                        .Value;
+                csharpbody.AppendLine($"{variableName} = \"{value}\";");
+            }
         }
 
         string CSharpFor(Expression e)

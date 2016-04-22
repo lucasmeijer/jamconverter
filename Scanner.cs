@@ -158,6 +158,9 @@ namespace jamconverter
             if (literal == "if")
                 return TokenType.If;
 
+            if (literal == "rule")
+                return TokenType.Rule;
+
             return TokenType.Literal;
         }
 
@@ -259,6 +262,7 @@ namespace jamconverter
         Assignment,
         AccoladeOpen,
         AccoladeClose,
-        If
+        If,
+        Rule
     }
 }

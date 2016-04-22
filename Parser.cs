@@ -158,8 +158,9 @@ namespace jamconverter
         {
             var parser = new Parser("if $(somevar) {}");
             var ifStatement = (IfStatement) parser.Parse();
+            Assert.IsTrue(ifStatement.Condition is VariableDereferenceExpression);
+            Assert.AreEqual(0, ifStatement.Body.Statements.Length);
         }
-
 
         [Test]
         public void TwoStatements()
@@ -233,9 +234,6 @@ namespace jamconverter
         {
             _scanner = new Scanner(input);
         }
-
-
-
 
         public Node Parse(ParseMode parseMode = ParseMode.Statement)
         {
