@@ -65,6 +65,14 @@ namespace jamconverter.Tests
                 );
         }
 
+        [Test]
+        public void CustomRuleWithArgument()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+                @"rule customrule arg1 { Echo $(arg1) ; } customrule hello ;"
+                );
+        }
+
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
             var csharp = new JamToCSharpConverter().Convert(simpleProgram);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,6 +10,8 @@ namespace jamconverter
 {
     class JamToCSharpConverter
     {
+        readonly StringBuilder ruleMethods = new StringBuilder();
+
         public string Convert(string simpleProgram)
         {
    
@@ -29,8 +32,22 @@ namespace jamconverter
 
             return 
        $@"
+using System;
+
 class Dummy
 {{
+    {ruleMethods}
+
+    static void Echo(params JamList[] values)
+    {{
+        foreach(var value in values)
+        {{
+               Console.Write(value.ToString());
+               Console.Write("" "");
+        }}
+        Console.WriteLine();
+    }}
+
     static void Main()
     {{
        {variableDeclarations}
@@ -59,13 +76,29 @@ class Dummy
                 return;
             }
 
-            var expressionStatement = node as ExpressionStatement;
+            var ruleDeclaration = node as RuleDeclaration;
+            if (ruleDeclaration != null)
+            {
+                var ruleMethodCsharp = new StringBuilder();
+                ruleMethodCsharp.AppendLine($"public static JamList {ruleDeclaration.Name}({ruleDeclaration.Arguments.Select(a => $"JamList {a}").SeperateWithComma()}) {{");
+                foreach (var statement in ruleDeclaration.Body.Statements)
+                    ProcessNode(statement, ruleMethodCsharp, variables);
+                ruleMethodCsharp.AppendLine("return null;");
+                ruleMethodCsharp.AppendLine("}");
+                ruleMethods.Append(ruleMethodCsharp);
+                return;
+            }
 
+            var expressionStatement = (ExpressionStatement)node;
             var invocationExpression = expressionStatement.Expression as InvocationExpression;
 
             if (invocationExpression != null)
             {
-                var literalRule = invocationExpression.RuleExpression as LiteralExpression;
+                var literalRule = (LiteralExpression)invocationExpression.RuleExpression;
+
+                csharpbody.AppendLine($"{literalRule.Value}({invocationExpression.Arguments.Select(CSharpFor).SeperateWithComma()});");
+
+                /*
                 if (literalRule.Value == "Echo")
                 {
                     var expressionListExpression = invocationExpression.Arguments[0] as ExpressionListExpression;
@@ -74,7 +107,7 @@ class Dummy
                         csharpbody.AppendLine($"System.Console.Write({CSharpFor(expressionListExpression)});");
                         csharpbody.AppendLine("System.Console.WriteLine();");
                     }
-                }
+                }*/
             }
 
             var assignmentExpression = expressionStatement.Expression as AssignmentExpression;
@@ -109,7 +142,7 @@ class Dummy
             if (expressionListExpression != null)
                 return $"new JamList({expressionListExpression.Expressions.Select(CSharpFor).SeperateWithComma()})";
 
-            throw new ParsingException();
+            throw new ParsingException("CSharpFor cannot deal with " + e);
         }
     }
 }

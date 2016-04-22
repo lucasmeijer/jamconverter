@@ -290,7 +290,7 @@ namespace jamconverter
             if (sr.tokenType == TokenType.ArgumentSeperator || sr.tokenType == TokenType.Terminator || sr.tokenType == TokenType.ParenthesisClose)
             {
                 _scanner.UnScan(sr);
-                 return new EmptyExpression();
+                return null;
             }
 
             if (sr.tokenType == TokenType.If)
