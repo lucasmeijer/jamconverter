@@ -18,7 +18,7 @@ namespace jamconverter
 
             var execute = Shell.Execute(jamBinary, "-f " + jamFile + " -C " + jamFile.Parent);
 
-            var lines = execute.Split(new[] {Environment.NewLine}, StringSplitOptions.None).Select(s => s.TrimEnd());
+            var lines = execute.Split(new[] {Environment.NewLine}, StringSplitOptions.None);
             var relevance = RelevantLinesFrom(lines);
 
             return relevance.ToArray();

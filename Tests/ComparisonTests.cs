@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Linq;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
 
@@ -50,8 +51,8 @@ namespace jamconverter.Tests
         {
             var csharp = new JamToCSharpConverter().Convert(simpleProgram);
 
-            var jamResult = new JamRunner().Run(simpleProgram);
-            var csharpResult = new CSharpRunner().Run(csharp);
+            var jamResult = new JamRunner().Run(simpleProgram).Select(s => s.TrimEnd());
+            var csharpResult = new CSharpRunner().Run(csharp).Select(s => s.TrimEnd());
 
             CollectionAssert.AreEqual(jamResult, csharpResult);
         }

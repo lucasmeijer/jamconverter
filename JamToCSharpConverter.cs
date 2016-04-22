@@ -79,7 +79,7 @@ class Dummy
         {
             var literalExpression = e as LiteralExpression;
             if (literalExpression != null)
-                return "\"" + literalExpression.Value + "\"";
+                return "\"" + literalExpression.Value + " \"";
             var dereferenceExpression = e as VariableDereferenceExpression;
             if (dereferenceExpression != null)
                 return ((LiteralExpression) dereferenceExpression.VariableExpression).Value;

@@ -20,7 +20,7 @@ Echo $(a)$(a) ;
         }
 
         [Test]
-        //[Ignore("ASD")]
+        [Ignore("PlayGround")]
         public void PlayGround()
         {
             var program =
