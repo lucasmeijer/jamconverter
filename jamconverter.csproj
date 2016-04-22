@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="CSharpRunner.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="JamList.cs" />
     <Compile Include="JamRunnerTests.cs" />
     <Compile Include="JamToCSharpConverter.cs" />
     <Compile Include="NiceIO.cs" />

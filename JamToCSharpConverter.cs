@@ -25,7 +25,7 @@ namespace jamconverter
                 ProcessNode(node, csharpbody, variables);
             }
 
-            var variableDeclarations = variables.Select(v => "string " + v + ";\n").SeperateWithSpace();
+            var variableDeclarations = variables.Select(v => "JamList " + v + ";\n").SeperateWithSpace();
 
             return 
        $@"
@@ -90,7 +90,7 @@ class Dummy
                 var value =
                     ((LiteralExpression) ((ExpressionListExpression) assignmentExpression.Right).Expressions[0])
                         .Value;
-                csharpbody.AppendLine($"{variableName} = \"{value}\";");
+                csharpbody.AppendLine($"{variableName} = new JamList(\"{value}\");");
             }
         }
 
