@@ -5,6 +5,7 @@ using System.Net;
 using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
+using jamconverter.AST;
 
 namespace jamconverter
 {
