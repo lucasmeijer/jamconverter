@@ -302,19 +302,17 @@ namespace jamconverter
                 if (close.tokenType != TokenType.ParenthesisClose)
                     throw new ParsingException("All $(something should be followed by ) but got: " + open.tokenType);
 
-                var combineExpression = ScanForCombineExpression(variableDereferenceExpression);
-                if (combineExpression != null)
-                    return combineExpression;
+                var resultExpression = ScanForCombineExpression(variableDereferenceExpression);
 
                 if (parseMode == ParseMode.SingleExpression)
-                    return variableDereferenceExpression;
+                    return resultExpression;
 
                 var additional = Parse(ParseMode.ExpressionList);
                 if (additional == null || additional is EmptyExpression)
-                    return new ExpressionListExpression() {Expressions = new Expression[] {variableDereferenceExpression}};
+                    return new ExpressionListExpression() {Expressions = new Expression[] { resultExpression } };
                 var tailExpressionList = additional as ExpressionListExpression;
                 if (tailExpressionList != null)
-                    return new ExpressionListExpression() { Expressions = tailExpressionList.Expressions.Prepend(variableDereferenceExpression).ToArray() };
+                    return new ExpressionListExpression() { Expressions = tailExpressionList.Expressions.Prepend(resultExpression).ToArray() };
 
                 throw new ParsingException();
             }
@@ -363,38 +361,33 @@ namespace jamconverter
                     return new ExpressionStatement() {Expression = invocationExpression};
                 }
 
-                var literalExpression = new LiteralExpression(sr.literal);
-
-                var combineExpression = ScanForCombineExpression(literalExpression);
-                if (combineExpression != null)
-                    return combineExpression;
-
+                var resultExpression = ScanForCombineExpression(new LiteralExpression(sr.literal));
 
                 if (parseMode == ParseMode.SingleExpression)
-                    return literalExpression;
+                    return resultExpression;
                 
                 var additional = Parse(ParseMode.ExpressionList);
                 if (additional == null || additional is EmptyExpression)
-                    return new ExpressionListExpression { Expressions = new Expression[] { literalExpression}};
+                    return new ExpressionListExpression { Expressions = new[] { resultExpression } };
 
                 var tailExpressionList = additional as ExpressionListExpression;
                 if (tailExpressionList != null)
                 {
                     return new ExpressionListExpression()
                     {
-                        Expressions = tailExpressionList.Expressions.Prepend(literalExpression).ToArray()
+                        Expressions = tailExpressionList.Expressions.Prepend(resultExpression).ToArray()
                     };
                 }
                 
                 var expressionListExpression = additional as ExpressionListExpression;
-                expressionListExpression.Expressions = expressionListExpression.Expressions.Prepend(literalExpression).ToArray();
+                expressionListExpression.Expressions = expressionListExpression.Expressions.Prepend(resultExpression).ToArray();
                 return expressionListExpression;
             }
 
             throw new NotSupportedException("expected Value, got: " + sr.tokenType);
         }
 
-        private CombineExpression ScanForCombineExpression(Expression variableDereferenceExpression)
+        private Expression ScanForCombineExpression(Expression firstExpression)
         {
             var peek = _scanner.Scan();
             _scanner.UnScan(peek);
@@ -410,12 +403,12 @@ namespace jamconverter
                 {
                     return new CombineExpression()
                     {
-                        Elements = tailElements.Prepend(variableDereferenceExpression).ToArray()
+                        Elements = tailElements.Prepend(firstExpression).ToArray()
                     };
                 }
             }
             
-            return null;
+            return firstExpression;
         }
 
         private IEnumerable<Expression> ParseArgumentList()

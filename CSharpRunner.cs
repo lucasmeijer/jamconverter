@@ -12,7 +12,7 @@ namespace jamconverter
             var tmpDir = NPath.CreateTempDirectory("Csharp");
 
             var file = tmpDir.Combine("Main.cs").WriteAllText(program);
-
+            Console.WriteLine(".cs: "+file);
             var csc = new NPath("C:/il2cpp-dependencies/Roslyn/Binaries/csc.exe");
 
             var executable = tmpDir.Combine("program.exe");

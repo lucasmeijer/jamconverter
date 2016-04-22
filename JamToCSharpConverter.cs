@@ -71,11 +71,8 @@ class Dummy
                     var expressionListExpression = invocationExpression.Arguments[0] as ExpressionListExpression;
                     if (expressionListExpression != null)
                     {
-                        foreach (var expression in expressionListExpression.Expressions)
-                        {
-                            csharpbody.AppendLine($"System.Console.Write({CSharpFor(expression)});");
-                        }
-                        csharpbody.AppendLine($"System.Console.WriteLine();");
+                        csharpbody.AppendLine($"System.Console.Write({CSharpFor(expressionListExpression)});");
+                        csharpbody.AppendLine("System.Console.WriteLine();");
                     }
                 }
             }
@@ -87,10 +84,11 @@ class Dummy
                 if (!variables.Contains(variableName))
                     variables.Add(variableName);
 
-                var value =
-                    ((LiteralExpression) ((ExpressionListExpression) assignmentExpression.Right).Expressions[0])
-                        .Value;
-                csharpbody.AppendLine($"{variableName} = new JamList(\"{value}\");");
+                var values =
+                    ((ExpressionListExpression) assignmentExpression.Right).Expressions.Select(
+                        e => ((LiteralExpression) e).Value);
+
+                csharpbody.AppendLine($"{variableName} = new JamList({values.InQuotes().SeperateWithComma()});");
             }
         }
 
@@ -98,10 +96,19 @@ class Dummy
         {
             var literalExpression = e as LiteralExpression;
             if (literalExpression != null)
-                return "\"" + literalExpression.Value + " \"";
+                return $"new JamList({literalExpression.Value.InQuotes()})";
             var dereferenceExpression = e as VariableDereferenceExpression;
             if (dereferenceExpression != null)
                 return ((LiteralExpression) dereferenceExpression.VariableExpression).Value;
+
+            var combineExpression = e as CombineExpression;
+            if (combineExpression != null)
+                return $"JamList.Combine({combineExpression.Elements.Select(CSharpFor).SeperateWithComma()})";
+
+            var expressionListExpression = e as ExpressionListExpression;
+            if (expressionListExpression != null)
+                return $"new JamList({expressionListExpression.Expressions.Select(CSharpFor).SeperateWithComma()})";
+
             throw new ParsingException();
         }
     }

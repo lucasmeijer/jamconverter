@@ -1,13 +1,19 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 class JamList
 {
-    public List<string> _elements = new List<string>();
+    readonly string[] _elements;
 
-    public JamList(string value)
+    public JamList(params string[] values)
     {
-        _elements.Add(value);
+        _elements = values;
+    }
+
+    public JamList(params JamList[] values)
+    {
+        _elements = values.SelectMany(v => v._elements).ToArray();
     }
 
     public override string ToString()
@@ -24,5 +30,32 @@ class JamList
 
         return sb.ToString();
     }
+
+    public static JamList Combine(params JamList[] values)
+    {
+        IEnumerable<IEnumerable<string>> a = values.Select(v => v._elements);
+        return new JamList(a.CartesianProduct().Select(MakeBigString).ToArray());
+    }
+
+    private static string MakeBigString(IEnumerable<string> inputs)
+    {
+        var sb = new StringBuilder();
+        foreach (var s in inputs)
+            sb.Append(s);
+        return sb.ToString();
+    }
 }
 
+static internal class Helper
+{
+    static internal IEnumerable<IEnumerable<string>> CartesianProduct(this IEnumerable<IEnumerable<string>> sequences)
+    {
+        IEnumerable<IEnumerable<string>> emptyProduct = new[] { Enumerable.Empty<string>() };
+        return sequences.Aggregate(
+          emptyProduct,
+          (accumulator, sequence) =>
+            from accseq in accumulator
+            from item in sequence
+            select accseq.Concat(new[] { item }));
+    }
+}

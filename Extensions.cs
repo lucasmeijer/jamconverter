@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Windows.Markup;
 
@@ -16,17 +17,37 @@ namespace jamconverter
 
         public static string SeperateWithSpace(this IEnumerable<String> values )
         {
+            return SeperateWith(values, " ");
+        }
+
+        public static string SeperateWithComma(this IEnumerable<String> values)
+        {
+            return SeperateWith(values, ",");
+        }
+
+        public static IEnumerable<string> InQuotes(this IEnumerable<String> values)
+        {
+            return values.Select(v => $"\"{v}\"");
+        }
+
+        private static string SeperateWith(IEnumerable<string> values, string seperator)
+        {
             var result = new StringBuilder();
 
             bool first = true;
             foreach (var v in values)
             {
                 if (!first)
-                    result.Append(" ");
+                    result.Append(seperator);
                 result.Append(v);
                 first = false;
             }
             return result.ToString();
+        }
+
+        public static string InQuotes(this string s)
+        {
+            return $"\"{s}\"";
         }
     }
 }

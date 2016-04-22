@@ -45,7 +45,19 @@ namespace jamconverter.Tests
         {
             AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; if $(myvar) { Echo Yes ; } ");
         }
-    
+
+        [Test]
+        public void ExpressionListAssignment()
+        {
+            AssertConvertedProgramHasIdenticalOutput("myvar = a b ; Echo $(myvar) ; ");
+        }
+
+        [Test]
+        public void CombineExpression()
+        {
+            AssertConvertedProgramHasIdenticalOutput("myvar = john doe ; Echo $(myvar)postfix ; ");
+        }
+
         public void CustomRule()
         {
             AssertConvertedProgramHasIdenticalOutput(
