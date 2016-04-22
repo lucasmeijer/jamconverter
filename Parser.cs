@@ -132,6 +132,32 @@ namespace jamconverter
             var invocationExpression =(InvocationExpression) ((ExpressionStatement) blockStatement.Statements[0]).Expression;
             Assert.AreEqual("Echo", ((LiteralExpression)invocationExpression.RuleExpression).Value);
         }
+
+
+        [Test]
+        public void EmptyBlockStatement()
+        {
+            var parser = new Parser("{ }");
+            var node = parser.Parse();
+
+            var blockStatement = (BlockStatement)node;
+
+            Assert.AreEqual(0, blockStatement.Statements.Length);
+         }
+
+
+        [Test]
+        public void IfStatement()
+        {
+            var parser = new Parser("if $(somevar) {}");
+            var ifStatement = (IfStatement) parser.Parse(true);
+        }
+    }
+
+    public class IfStatement : Statement
+    {
+        public Expression Condition { get; set; }
+        public BlockStatement Body { get; set; }
     }
 
     public class BlockStatement : Statement
@@ -195,6 +221,19 @@ namespace jamconverter
             {
                 _scanner.UnScan(sr);
                  return new EmptyExpression();
+            }
+
+            if (sr.tokenType == TokenType.If)
+            {
+                var condition = Parse(false);
+                var body = Parse(true);
+
+                if (!(condition is Expression))
+                    throw new ParsingException("if keyword always needs to be followed by an expression");
+                if (!(body is BlockStatement))
+                    throw new ParsingException("if statements always need to be followed by a blockstatment: {}");
+
+                return new IfStatement() { Condition = (Expression)condition, Body = (BlockStatement) body};
             }
 
             if (sr.tokenType == TokenType.VariableDereferencer)

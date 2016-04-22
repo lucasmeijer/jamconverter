@@ -72,6 +72,26 @@ namespace jamconverter
             var scanResult4 = a.Scan();
             Assert.AreEqual(TokenType.ParenthesisClose, scanResult4.tokenType);
         }
+
+        [Test]
+        public void TwoAccolades()
+        {
+            var a = new Scanner("{}");
+            var result = a.ScanAll().ToArray();
+            Assert.AreEqual(2, result.Length);
+            Assert.AreEqual(TokenType.AccoladeOpen, result[0].tokenType);
+            Assert.AreEqual(TokenType.AccoladeClose, result[1].tokenType);
+        }
+
+        [Test]
+        public void TwoAccoladesWithLiteralInside()
+        {
+            var a = new Scanner("{ harry }");
+            var result = a.ScanAll().ToArray();
+            Assert.AreEqual(5, result.Length);
+
+            CollectionAssert.AreEqual(new[] { TokenType.AccoladeOpen, TokenType.WhiteSpace, TokenType.Literal, TokenType.WhiteSpace, TokenType.AccoladeClose}, result.Select(r => r.tokenType));
+        }
     }
 
     public class Scanner
@@ -135,6 +155,9 @@ namespace jamconverter
             if (literal == "=")
                 return TokenType.Assignment;
 
+            if (literal == "if")
+                return TokenType.If;
+
             return TokenType.Literal;
         }
 
@@ -176,6 +199,10 @@ namespace jamconverter
                 return false;
             if (c == '(')
                 return false;
+            if (c == '}')
+                return false;
+            if (c == '{')
+                return false;
             return !char.IsWhiteSpace(c);
         }
 
@@ -183,14 +210,16 @@ namespace jamconverter
         {
             for (int i = nextChar; i != _input.Length; i++)
             {
-                if (IsLiteral(_input[i]))
+                if (!char.IsWhiteSpace(_input[i]))
                 {
                     var result = _input.Substring(nextChar, i - nextChar);
                     nextChar = i;
                     return result;
                 }
             }
-            throw new Exception();
+            var result2 = _input.Substring(nextChar);
+            nextChar = _input.Length;
+            return result2;
         }
 
         public ScanResult ScanSkippingWhiteSpace()
@@ -229,6 +258,7 @@ namespace jamconverter
         ParenthesisOpen,
         Assignment,
         AccoladeOpen,
-        AccoladeClose
+        AccoladeClose,
+        If
     }
 }
