@@ -52,10 +52,9 @@ namespace jamconverter
                 var variableDereferenceExpression = new VariableDereferenceExpression() {VariableExpression = (Expression)Parse(ParseMode.SingleExpression)};
                 
                 var next = _scanner.Scan();
-
+                var modifiers = new List<VariableDereferenceModifier>();
                 if (next.tokenType == TokenType.Colon)
                 {
-                    var modifiers = new List<VariableDereferenceModifier>();
                     while (true)
                     {
                         var modifier = _scanner.Scan();
@@ -82,9 +81,8 @@ namespace jamconverter
 
                         modifiers.Add(new VariableDereferenceModifier() {Command = modifier.literal[0], Value = modifierValue});
                     }
-                    variableDereferenceExpression.Modifiers = modifiers.ToArray();
                 }
-
+                variableDereferenceExpression.Modifiers = modifiers.ToArray();
                 if (next.tokenType != TokenType.ParenthesisClose)
                     throw new ParsingException("All $(something should be followed by ) but got: " + open.tokenType);
 

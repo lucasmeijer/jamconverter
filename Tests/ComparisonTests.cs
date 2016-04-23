@@ -76,7 +76,17 @@ namespace jamconverter.Tests
         [Test]
         public void SuffixVariableExpansion()
         {
-            AssertConvertedProgramHasIdenticalOutput("myvar = main.cs ; Echo $(myvar:S=.cpp) ;");
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = main.cs ; 
+Echo $(myvar:S=.cpp) ;
+
+myvar = main.cs.pieter ; 
+Echo $(myvar:S=.cpp:S=.exe) ;
+
+myvar = main.cs.pieter ; 
+Echo $(myvar:S=:S=.exe) ;
+");
         }
 
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)

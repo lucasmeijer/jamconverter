@@ -137,7 +137,8 @@ class Dummy
                     switch (modifier.Command)
                     {
                         case 'S':
-                            sb.Append($".WithSuffix({CSharpFor(modifier.Value)})");
+                            var valueStr = modifier.Value == null ? "new JamList(\"\")" : CSharpFor(modifier.Value);
+                            sb.Append($".WithSuffix({valueStr})");
                             break;
                         default:
                             throw new NotSupportedException();
@@ -153,6 +154,8 @@ class Dummy
             if (expressionListExpression != null)
                 return $"new JamList({expressionListExpression.Expressions.Select(CSharpFor).SeperateWithComma()})";
 
+            if (e == null)
+                return "new JamList(new string[0])";
             throw new ParsingException("CSharpFor cannot deal with " + e);
         }
     }
