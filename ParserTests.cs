@@ -232,5 +232,20 @@ namespace jamconverter
             Assert.AreEqual('S', variableDereferenceExpression.Modifiers[1].Command);
             Assert.IsNull(variableDereferenceExpression.Modifiers[1].Value);
         }
+
+        [Test]
+        public void VariableExpansionModifiersWithEmptyValue()
+        {
+            var parser = new Parser("$(harry:B=)");
+            var node = parser.Parse(ParseMode.SingleExpression);
+
+            var variableDereferenceExpression = (VariableDereferenceExpression)node;
+
+            Assert.AreEqual("harry", ((LiteralExpression)variableDereferenceExpression.VariableExpression).Value);
+
+            Assert.AreEqual(1, variableDereferenceExpression.Modifiers.Length);
+            Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
+            Assert.AreEqual("", variableDereferenceExpression.Modifiers[0].Value);
+        }
     }
 }

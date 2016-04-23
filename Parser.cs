@@ -76,9 +76,14 @@ namespace jamconverter
                         if (peek.tokenType == TokenType.Assignment)
                         {
                             var valueLiteral = _scanner.Scan();
-                            if (valueLiteral.tokenType != TokenType.Literal)
+                            if (valueLiteral.tokenType == TokenType.Colon || valueLiteral.tokenType == TokenType.ParenthesisClose)
+                            {
+                                modifierValue = "";
+                                _scanner.UnScan(valueLiteral);
+                            } else if (valueLiteral.tokenType == TokenType.Literal)
+                                modifierValue = valueLiteral.literal;
+                            else
                                 throw new ParsingException();
-                            modifierValue = valueLiteral.literal;
                         }
                         else
                             _scanner.UnScan(peek);
