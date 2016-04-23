@@ -24,7 +24,7 @@ namespace jamconverter
             if (sr == null)
                 return null;
             
-            if (sr.tokenType == TokenType.ArgumentSeperator || sr.tokenType == TokenType.Terminator || sr.tokenType == TokenType.ParenthesisClose)
+            if (sr.tokenType == TokenType.Colon || sr.tokenType == TokenType.Terminator || sr.tokenType == TokenType.ParenthesisClose)
             {
                 _scanner.UnScan(sr);
                 return null;
@@ -51,8 +51,44 @@ namespace jamconverter
 
                 var variableDereferenceExpression = new VariableDereferenceExpression() {VariableExpression = (Expression)Parse(ParseMode.SingleExpression)};
                 
-                var close = _scanner.Scan();
-                if (close.tokenType != TokenType.ParenthesisClose)
+                var next = _scanner.Scan();
+
+                if (next.tokenType == TokenType.Colon)
+                {
+                    var modifiers = new List<VariableDereferenceModifier>();
+                    while (true)
+                    {
+                        var modifier = _scanner.Scan();
+                        if (modifier.tokenType == TokenType.Colon)
+                            continue;
+
+                        if (modifier.tokenType == TokenType.ParenthesisClose)
+                        {
+                            next = modifier;
+                            break;
+                        }
+                        
+                        if (modifier.tokenType != TokenType.VariableExpansionModifier)
+                            throw new ParsingException();
+
+                        var peek = _scanner.Scan();
+                        string modifierValue = null;
+                        if (peek.tokenType == TokenType.Assignment)
+                        {
+                            var valueLiteral = _scanner.Scan();
+                            if (valueLiteral.tokenType != TokenType.Literal)
+                                throw new ParsingException();
+                            modifierValue = valueLiteral.literal;
+                        }
+                        else
+                            _scanner.UnScan(peek);
+
+                        modifiers.Add(new VariableDereferenceModifier() {Command = modifier.literal[0], Value = modifierValue});
+                    }
+                    variableDereferenceExpression.Modifiers = modifiers.ToArray();
+                }
+
+                if (next.tokenType != TokenType.ParenthesisClose)
                     throw new ParsingException("All $(something should be followed by ) but got: " + open.tokenType);
 
                 var resultExpression = ScanForCombineExpression(variableDereferenceExpression);
@@ -165,7 +201,7 @@ namespace jamconverter
         {
             var peek = _scanner.Scan();
             _scanner.UnScan(peek);
-            if (peek.tokenType != TokenType.Literal && peek.tokenType != TokenType.VariableDereferencer)
+            if (peek == null || (peek.tokenType != TokenType.Literal && peek.tokenType != TokenType.VariableDereferencer))
                 return firstExpression;
 
             var tail = Parse(ParseMode.SingleExpression);
@@ -195,7 +231,7 @@ namespace jamconverter
                 yield return expression;
 
                 var nextToken = _scanner.ScanSkippingWhiteSpace();
-                if (nextToken.tokenType == TokenType.ArgumentSeperator)
+                if (nextToken.tokenType == TokenType.Colon)
                     continue;
                 _scanner.UnScan(nextToken);
                 yield break;

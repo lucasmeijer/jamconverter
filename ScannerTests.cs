@@ -32,7 +32,7 @@ namespace jamconverter
                 new ScanResult() {tokenType = TokenType.WhiteSpace, literal = " "},
                 new ScanResult() {tokenType = TokenType.Literal, literal = "arg1"},
                 new ScanResult() {tokenType = TokenType.WhiteSpace, literal = " "},
-                new ScanResult() {tokenType = TokenType.ArgumentSeperator, literal = ":"},
+                new ScanResult() {tokenType = TokenType.Colon, literal = ":"},
                 new ScanResult() {tokenType = TokenType.WhiteSpace, literal = " "},
                 new ScanResult() {tokenType = TokenType.Literal, literal = "arg2"},
                 new ScanResult() {tokenType = TokenType.WhiteSpace, literal = " "},
@@ -98,5 +98,28 @@ namespace jamconverter
             CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.VariableDereferencer }, result.Select(r => r.tokenType));
         }
 
+
+        [Test]
+        public void VariableExpansionModifier()
+        {
+            var a = new Scanner("$(harry:BS");
+            var result = a.ScanAll().ToArray();
+
+            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencer, TokenType.ParenthesisOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.VariableExpansionModifier }, result.Select(r => r.tokenType));
+
+            Assert.AreEqual("B", result[4].literal);
+            Assert.AreEqual("S", result[5].literal);
+        }
+
+        [Test]
+        public void VariableExpansionModifierWithValue()
+        {
+            var a = new Scanner("$(harry:BS=v");
+            var result = a.ScanAll().ToArray();
+
+            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencer, TokenType.ParenthesisOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.VariableExpansionModifier, TokenType.Assignment, TokenType.Literal }, result.Select(r => r.tokenType));
+            
+            Assert.AreEqual("v", result[7].literal);
+        }
     }
 }

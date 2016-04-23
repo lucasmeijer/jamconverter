@@ -9,6 +9,7 @@ namespace jamconverter
         private readonly string _input;
         private int nextChar = 0;
         private readonly Queue<ScanResult> _unscanBuffer = new Queue<ScanResult>();
+        private bool _insideVariableExpansionModifierSpan;
 
         public Scanner(string input)
         {
@@ -24,15 +25,43 @@ namespace jamconverter
                 return null;
             
             var c = _input[nextChar];
-            
+
+            if (_insideVariableExpansionModifierSpan)
+            {
+                if (c == '=')
+                {
+                    nextChar++;
+                    _insideVariableExpansionModifierSpan = false;
+                    return new ScanResult() { tokenType = TokenType.Assignment, literal = c.ToString() };
+                }
+                if (char.IsLetter(c))
+                {
+                    nextChar++;
+                    return new ScanResult() { tokenType = TokenType.VariableExpansionModifier, literal = c.ToString()};
+                }
+                if (c == ')')
+                    _insideVariableExpansionModifierSpan = false;
+            }
+
             if (char.IsWhiteSpace(c))
                 return new ScanResult() { tokenType = TokenType.WhiteSpace, literal = ReadWhiteSpace() };
-
+            
             var literal = ReadLiteral();
+
+            if (literal==":")
+                if (!char.IsWhiteSpace(NextChar()))
+                    _insideVariableExpansionModifierSpan = true;
 
             return new ScanResult() {tokenType = TokenTypeFor(literal), literal = literal};
         }
 
+        char NextChar()
+        {
+            if (_unscanBuffer.Any())
+                return _unscanBuffer.Peek().literal[0];
+            return _input[nextChar];
+        }
+        
         private TokenType TokenTypeFor(string literal)
         {
             if (literal == ";")
@@ -45,7 +74,7 @@ namespace jamconverter
                 return TokenType.BracketClose;
 
             if (literal == ":")
-                return TokenType.ArgumentSeperator;
+                return TokenType.Colon;
 
             if (literal == "$")
                 return TokenType.VariableDereferencer;
@@ -118,6 +147,8 @@ namespace jamconverter
                 return false;
             if (c == '$')
                 return false;
+            if (c == ':')
+                return false;
             return !char.IsWhiteSpace(c);
         }
 
@@ -166,7 +197,7 @@ namespace jamconverter
         Terminator,
         WhiteSpace,
         BracketClose,
-        ArgumentSeperator,
+        Colon,
         BracketOpen,
         VariableDereferencer,
         ParenthesisClose,
@@ -175,6 +206,7 @@ namespace jamconverter
         AccoladeOpen,
         AccoladeClose,
         If,
-        Rule
+        Rule,
+        VariableExpansionModifier
     }
 }

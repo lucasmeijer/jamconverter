@@ -199,5 +199,38 @@ namespace jamconverter
             Assert.AreEqual(1, ruleDeclaration.Body.Statements.Length);
             Assert.IsTrue(ruleDeclaration.Body.Statements[0] is ExpressionStatement);
         }
+
+        [Test]
+        public void VariableExpansionModifiers()
+        {
+            var parser = new Parser("$(harry:BS)");
+            var node = parser.Parse(ParseMode.SingleExpression);
+
+            var variableDereferenceExpression = (VariableDereferenceExpression)node;
+
+            Assert.AreEqual("harry", ((LiteralExpression) variableDereferenceExpression.VariableExpression).Value);
+
+            Assert.AreEqual(2, variableDereferenceExpression.Modifiers.Length);
+            Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
+            Assert.AreEqual('S', variableDereferenceExpression.Modifiers[1].Command);
+        }
+
+        [Test]
+        public void VariableExpansionModifiersWithValue()
+        {
+            var parser = new Parser("$(harry:B=value:S)");
+            var node = parser.Parse(ParseMode.SingleExpression);
+
+            var variableDereferenceExpression = (VariableDereferenceExpression)node;
+
+            Assert.AreEqual("harry", ((LiteralExpression)variableDereferenceExpression.VariableExpression).Value);
+
+            Assert.AreEqual(2, variableDereferenceExpression.Modifiers.Length);
+            Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
+            Assert.AreEqual("value", variableDereferenceExpression.Modifiers[0].Value);
+
+            Assert.AreEqual('S', variableDereferenceExpression.Modifiers[1].Command);
+            Assert.IsNull(variableDereferenceExpression.Modifiers[1].Value);
+        }
     }
 }

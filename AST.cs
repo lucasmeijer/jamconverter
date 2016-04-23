@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-
-namespace jamconverter.AST
+﻿namespace jamconverter.AST
 {
 
     public class Node
@@ -49,6 +42,13 @@ namespace jamconverter.AST
     public class VariableDereferenceExpression : Expression
     {
         public Expression VariableExpression { get; set; }
+        public VariableDereferenceModifier[] Modifiers { get; set; }
+    }
+
+    public class VariableDereferenceModifier : Node
+    {
+        public char Command { get; set; }
+        public string Value { get; set; }
     }
 
     public class ExpressionListExpression : Expression
