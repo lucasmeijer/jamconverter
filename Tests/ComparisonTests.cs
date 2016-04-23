@@ -73,6 +73,12 @@ namespace jamconverter.Tests
                 );
         }
 
+        [Test]
+        public void SuffixVariableExpansion()
+        {
+            AssertConvertedProgramHasIdenticalOutput("myvar = main.cs ; Echo $(myvar:S=.cpp) ;");
+        }
+
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
             var csharp = new JamToCSharpConverter().Convert(simpleProgram);

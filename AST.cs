@@ -48,7 +48,7 @@
     public class VariableDereferenceModifier : Node
     {
         public char Command { get; set; }
-        public string Value { get; set; }
+        public Expression Value { get; set; }
     }
 
     public class ExpressionListExpression : Expression

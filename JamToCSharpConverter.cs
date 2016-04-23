@@ -130,8 +130,21 @@ class Dummy
                 return $"new JamList({literalExpression.Value.InQuotes()})";
             var dereferenceExpression = e as VariableDereferenceExpression;
             if (dereferenceExpression != null)
-                return ((LiteralExpression) dereferenceExpression.VariableExpression).Value;
-
+            {
+                var sb = new StringBuilder(((LiteralExpression) dereferenceExpression.VariableExpression).Value);
+                foreach (var modifier in dereferenceExpression.Modifiers)
+                {
+                    switch (modifier.Command)
+                    {
+                        case 'S':
+                            sb.Append($".WithSuffix({CSharpFor(modifier.Value)})");
+                            break;
+                        default:
+                            throw new NotSupportedException();
+                    }
+                }
+                return sb.ToString();
+            }
             var combineExpression = e as CombineExpression;
             if (combineExpression != null)
                 return $"JamList.Combine({combineExpression.Elements.Select(CSharpFor).SeperateWithComma()})";

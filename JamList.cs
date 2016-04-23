@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -29,6 +30,16 @@ class JamList
         }
 
         return sb.ToString();
+    }
+
+    public JamList WithSuffix(JamList value)
+    {
+        return new JamList(_elements.Select(s => WithSuffix(s,value._elements[0])).ToArray());
+    }
+
+    private string WithSuffix(string value, string suffix)
+    {
+        return System.IO.Path.ChangeExtension(value, suffix);
     }
 
     public static JamList Combine(params JamList[] values)

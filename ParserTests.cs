@@ -227,7 +227,7 @@ namespace jamconverter
 
             Assert.AreEqual(2, variableDereferenceExpression.Modifiers.Length);
             Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
-            Assert.AreEqual("value", variableDereferenceExpression.Modifiers[0].Value);
+            Assert.AreEqual("value", ((LiteralExpression)variableDereferenceExpression.Modifiers[0].Value).Value);
 
             Assert.AreEqual('S', variableDereferenceExpression.Modifiers[1].Command);
             Assert.IsNull(variableDereferenceExpression.Modifiers[1].Value);
@@ -245,7 +245,24 @@ namespace jamconverter
 
             Assert.AreEqual(1, variableDereferenceExpression.Modifiers.Length);
             Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
-            Assert.AreEqual("", variableDereferenceExpression.Modifiers[0].Value);
+            Assert.AreEqual(null, variableDereferenceExpression.Modifiers[0].Value);
+        }
+
+        [Test]
+        public void VariableExpansionModifiersWithNonLiteralValue()
+        {
+            var parser = new Parser("$(harry:B=$(pietje))");
+            var node = parser.Parse(ParseMode.SingleExpression);
+
+            var variableDereferenceExpression = (VariableDereferenceExpression)node;
+
+            Assert.AreEqual("harry", ((LiteralExpression)variableDereferenceExpression.VariableExpression).Value);
+
+            Assert.AreEqual(1, variableDereferenceExpression.Modifiers.Length);
+            Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
+
+            var value = ((VariableDereferenceExpression) variableDereferenceExpression.Modifiers[0].Value);
+            Assert.AreEqual("pietje", ((LiteralExpression) value.VariableExpression).Value);
         }
     }
 }
