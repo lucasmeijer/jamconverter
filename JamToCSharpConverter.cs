@@ -53,7 +53,7 @@ partial class Dummy
             if (ifStatement != null)
             {
                 var vde = (VariableDereferenceExpression) ifStatement.Condition;
-                var variableName = ((LiteralExpression) vde.VariableExpression).Value;
+                var variableName = VariableNameFor((LiteralExpression) vde.VariableExpression);
 
                 csharpbody.AppendLine($"if ({variableName} != null) {{");
 
@@ -68,7 +68,7 @@ partial class Dummy
             if (ruleDeclaration != null)
             {
                 var ruleMethodCsharp = new StringBuilder();
-                ruleMethodCsharp.AppendLine($"public static JamList {ruleDeclaration.Name}({ruleDeclaration.Arguments.Select(a => $"JamList {a}").SeperateWithComma()}) {{");
+                ruleMethodCsharp.AppendLine($"public static JamList {MethodNameFor(ruleDeclaration)}({ruleDeclaration.Arguments.Select(a => $"JamList {ArgumentNameFor(a)}").SeperateWithComma()}) {{");
                 foreach (var statement in ruleDeclaration.Body.Statements)
                     ProcessNode(statement, ruleMethodCsharp, variables);
 
@@ -97,13 +97,13 @@ partial class Dummy
             var assignmentExpression = expressionStatement.Expression as AssignmentExpression;
             if (assignmentExpression != null)
             {
-                var variableName = ((LiteralExpression) assignmentExpression.Left).Value;
+                var variableName = VariableNameFor((LiteralExpression) assignmentExpression.Left);
                 if (!variables.Contains(variableName))
                     variables.Add(variableName);
 
                 var valueArguments =
                     ((ExpressionListExpression) assignmentExpression.Right).Expressions.Select(
-                        e => ((LiteralExpression) e).Value);
+                        e => VariableNameFor((LiteralExpression) e));
 
                 var value = $"new JamList({valueArguments.InQuotes().SeperateWithComma()})";
 
@@ -119,6 +119,31 @@ partial class Dummy
             }
         }
 
+        private string ArgumentNameFor(string argumentName)
+        {
+            return CleanIllegalCharacters(argumentName);
+        }
+
+        private static string MethodNameFor(string ruleName)
+        {
+            return CleanIllegalCharacters(ruleName);
+        }
+
+        private static string MethodNameFor(RuleDeclaration ruleDeclaration)
+        {
+            return MethodNameFor(ruleDeclaration.Name);
+        }
+
+        private static string VariableNameFor(LiteralExpression variableExpression)
+        {
+            return CleanIllegalCharacters(variableExpression.Value);
+        }
+
+        static string CleanIllegalCharacters(string input)
+        {
+            return input.Replace(".", "_");
+        }
+
         string CSharpFor(Expression e)
         {
             var literalExpression = e as LiteralExpression;
@@ -127,7 +152,7 @@ partial class Dummy
             var dereferenceExpression = e as VariableDereferenceExpression;
             if (dereferenceExpression != null)
             {
-                var sb = new StringBuilder(((LiteralExpression) dereferenceExpression.VariableExpression).Value);
+                var sb = new StringBuilder(VariableNameFor((LiteralExpression) dereferenceExpression.VariableExpression));
 
                 if (dereferenceExpression.IndexerExpression != null)
                     sb.Append($".IndexedBy({CSharpFor(dereferenceExpression.IndexerExpression)})");
@@ -157,8 +182,9 @@ partial class Dummy
             var invocationExpression = e as InvocationExpression;
             if (invocationExpression != null)
             {
-                var literalRule = (LiteralExpression)invocationExpression.RuleExpression;
-                return $"{literalRule.Value}({invocationExpression.Arguments.Select(CSharpFor).SeperateWithComma()})";
+                var literalRule = (LiteralExpression) invocationExpression.RuleExpression;
+                var methodName = MethodNameFor(literalRule.Value);
+                return $"{methodName}({invocationExpression.Arguments.Select(CSharpFor).SeperateWithComma()})";
             }
 
             if (e == null)

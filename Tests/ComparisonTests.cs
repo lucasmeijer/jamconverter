@@ -103,6 +103,23 @@ Echo [ GimmeFive ] ;
         }
 
         [Test]
+        public void RuleAndVariableWithDotInName()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+                @"
+
+rule I.Love.Dots dot.in.argument
+{
+  return $(dot.in.argument) dot.in.literal ;
+}
+
+dots.in.variable = 3 ;
+Echo [ I.Love.Dots 18 ] ;
+Echo  $(dots.in.variable) ;
+");
+        }
+
+        [Test]
         public void BuiltinMD5()
         {
             AssertConvertedProgramHasIdenticalOutput("Echo [ MD5 harry ] ;");
