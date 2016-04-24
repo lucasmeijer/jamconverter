@@ -35,19 +35,9 @@ namespace jamconverter
        $@"
 using System;
 
-class Dummy
+partial class Dummy
 {{
     {ruleMethods}
-
-    static void Echo(params JamList[] values)
-    {{
-        foreach(var value in values)
-        {{
-               Console.Write(value.ToString());
-               Console.Write("" "");
-        }}
-        Console.WriteLine();
-    }}
 
     static void Main()
     {{

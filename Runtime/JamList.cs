@@ -17,6 +17,8 @@ class JamList
         _elements = values.SelectMany(v => v._elements).ToArray();
     }
 
+    public IEnumerable<string> Elements => _elements;
+
     public override string ToString()
     {
         var sb = new StringBuilder();

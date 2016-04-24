@@ -102,13 +102,18 @@ Echo [ GimmeFive ] ;
 ");
         }
 
-
+        [Test]
+        public void BuiltinMD5()
+        {
+            AssertConvertedProgramHasIdenticalOutput("Echo [ MD5 harry ] ;");
+        }
+        
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
             var csharp = new JamToCSharpConverter().Convert(simpleProgram);
 
             var jamResult = new JamRunner().Run(simpleProgram).Select(s => s.TrimEnd());
-            var csharpResult = new CSharpRunner().Run(csharp, new [] { new NPath("c:/jamconverter/JamList.cs"), }).Select(s => s.TrimEnd());
+            var csharpResult = new CSharpRunner().Run(csharp, new [] { new NPath("c:/jamconverter/Runtime/JamList.cs"), new NPath("c:/jamconverter/Runtime/BuiltinFunctions.cs") }).Select(s => s.TrimEnd());
 
             CollectionAssert.AreEqual(jamResult, csharpResult);
         }
