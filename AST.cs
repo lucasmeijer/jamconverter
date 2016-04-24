@@ -75,7 +75,7 @@
         Append
     }
 
-    public class RuleDeclaration : Node
+    public class RuleDeclarationStatement : Statement
     {
         public string Name { get; set; }
         public BlockStatement Body { get; set; }

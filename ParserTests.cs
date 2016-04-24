@@ -11,7 +11,7 @@ namespace jamconverter
         [Test]
         public void SimpleInvocationExpression()
         {
-            var node = Parse<ExpressionStatement>("somerule ;");
+            var node = ParseStatement<ExpressionStatement>("somerule ;");
 
             var invocationExpression = (InvocationExpression)node.Expression;
 
@@ -23,7 +23,7 @@ namespace jamconverter
         [Test]
         public void SimpleInvocationWithOneLiteralArguments()
         {
-            var node = Parse<ExpressionStatement>("input a ;");
+            var node = ParseStatement<ExpressionStatement>("input a ;");
 
             var invocationExpression = (InvocationExpression)node.Expression;
 
@@ -40,7 +40,7 @@ namespace jamconverter
         [Test]
         public void SimpleInvocationWithTwoLiteralArguments()
         {
-              var node = Parse<ExpressionStatement>("input a : b ;");
+              var node = ParseStatement<ExpressionStatement>("input a : b ;");
          
             var invocationExpression = (InvocationExpression)node.Expression;
 
@@ -56,7 +56,7 @@ namespace jamconverter
         [Test]
         public void SimpleInvocationWithMultiValueArgument()
         {
-            var node = Parse<ExpressionStatement>("input a b c ;");
+            var node = ParseStatement<ExpressionStatement>("input a b c ;");
 
             var invocationExpression = (InvocationExpression)node.Expression;
 
@@ -95,7 +95,7 @@ namespace jamconverter
         [Test]
         public void Assignment()
         {
-            var assignmentExpression = (BinaryOperatorExpression)Parse<ExpressionStatement>("a = b ;").Expression;
+            var assignmentExpression = (BinaryOperatorExpression)ParseStatement<ExpressionStatement>("a = b ;").Expression;
 
             var left = (LiteralExpression) assignmentExpression.Left;
             Assert.AreEqual("a", left.Value);
@@ -109,7 +109,7 @@ namespace jamconverter
         [Test]
         public void BlockStatement()
         {
-            var blockStatement = Parse<BlockStatement>("{ Echo ; }");
+            var blockStatement = ParseStatement<BlockStatement>("{ Echo ; }");
 
             Assert.AreEqual(1, blockStatement.Statements.Length);
 
@@ -121,14 +121,14 @@ namespace jamconverter
         [Test]
         public void EmptyBlockStatement()
         {
-            Assert.AreEqual(0, Parse<BlockStatement>("{ }").Statements.Length);
+            Assert.AreEqual(0, ParseStatement<BlockStatement>("{ }").Statements.Length);
         }
 
 
         [Test]
         public void IfStatement()
         {
-            var ifStatement = Parse<IfStatement>("if $(somevar) {}");
+            var ifStatement = ParseStatement<IfStatement>("if $(somevar) {}");
             Assert.IsTrue(ifStatement.Condition is VariableDereferenceExpression);
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
         }
@@ -136,12 +136,12 @@ namespace jamconverter
         [Test]
         public void IfStatementWithBinaryOperatorCondition()
         {
-            var ifStatement = Parse<IfStatement>("if $(somevar) = 3 {}");
+            var ifStatement = ParseStatement<IfStatement>("if $(somevar) = 3 {}");
             Assert.IsTrue(ifStatement.Condition is BinaryOperatorExpression);
             var boe = (BinaryOperatorExpression) ifStatement.Condition;
 
             Assert.AreEqual(Operator.Assignment, boe.Operator);
-            Assert.AreEqual("3", ((LiteralExpression)((ExpressionList)  boe.Right).Expressions[0]).Value);
+            Assert.AreEqual("3", ((LiteralExpression)boe.Right.Expressions[0]).Value);
 
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
         }
@@ -161,7 +161,7 @@ namespace jamconverter
         [Test]
         public void RuleDeclaration()
         {
-            var ruleDeclaration = Parse<RuleDeclaration>("rule myrule arg1 : arg2 { Echo hello ; }");
+            var ruleDeclaration = ParseStatement<RuleDeclarationStatement>("rule myrule arg1 : arg2 { Echo hello ; }");
 
             Assert.AreEqual("myrule", ruleDeclaration.Name);
 
@@ -238,7 +238,7 @@ namespace jamconverter
         [Test]
         public void ReturnStatement()
         {
-            var node = Parse<ReturnStatement>("return 123 ;");
+            var node = ParseStatement<ReturnStatement>("return 123 ;");
 
             Assert.AreEqual("123", ((LiteralExpression)((ExpressionList)node.ReturnExpression).Expressions[0]).Value);
         }
@@ -246,7 +246,7 @@ namespace jamconverter
         [Test]
         public void ReturnStatementWithMultipleValues()
         {
-            var returnStatement = Parse<ReturnStatement>("return 123 harry ;");
+            var returnStatement = ParseStatement<ReturnStatement>("return 123 harry ;");
 
             var expressions = ((ExpressionList) returnStatement.ReturnExpression).Expressions.OfType<LiteralExpression>().ToArray();
             Assert.AreEqual("123", expressions[0].Value);
@@ -256,7 +256,7 @@ namespace jamconverter
         [Test]
         public void AppendOperator()
         {
-            var expressionStatement = Parse<ExpressionStatement>("a += 3 ;");
+            var expressionStatement = ParseStatement<ExpressionStatement>("a += 3 ;");
             var assignmentExpression = (BinaryOperatorExpression) expressionStatement.Expression;
             Assert.IsTrue(assignmentExpression.Operator == Operator.Append);
         }
@@ -264,7 +264,7 @@ namespace jamconverter
         [Test]
         public void Comment()
         {
-            var expressionStatement = Parse<ExpressionStatement>(
+            var expressionStatement = ParseStatement<ExpressionStatement>(
 @"#mycomment
 a = 3 ;
 ");
@@ -281,28 +281,48 @@ a = 3 ;
             Assert.IsTrue(expressionList.Expressions[1] is LiteralExpression);
         }
 
+        /*
         static TExpected Parse<TExpected>(string jamcode, ParseMode parseMode = ParseMode.Statement) where TExpected : Node
         {
             var parser = new Parser(jamcode);
-            var node = parser.Parse(parseMode);
-            Assert.IsNull(parser.Parse(ParseMode.SingleExpression));
+            var node = parser.ParseExpression(parseMode);
+            Assert.IsNull(parser.ParseExpression(ParseMode.Expression));
 
+            var returnValue = node as TExpected;
+            if (returnValue == null)
+                throw new ArgumentException($"Expected parser to return type: {typeof(TExpected).Name} but got {node.GetType().Name}");
+            return returnValue;
+        }*/
+
+
+        static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
+        {
+            var parser = new Parser(jamCode);
+            var node = parser.ParseStatement();
+            Assert.IsNull(parser.ParseExpression());
             var returnValue = node as TExpected;
             if (returnValue == null)
                 throw new ArgumentException($"Expected parser to return type: {typeof(TExpected).Name} but got {node.GetType().Name}");
             return returnValue;
         }
 
+
         static TExpected ParseExpression<TExpected>(string jamCode) where TExpected : Expression
         {
-            return Parse<TExpected>(jamCode, ParseMode.SingleExpression);
+            var parser = new Parser(jamCode);
+            var node = parser.ParseExpression();
+            Assert.IsNull(parser.ParseExpression());
+            var returnValue = node as TExpected;
+            if (returnValue == null)
+                throw new ArgumentException($"Expected parser to return type: {typeof(TExpected).Name} but got {node.GetType().Name}");
+            return returnValue;
         }
 
         static ExpressionList ParseExpressionList(string jamCode) 
         {
             var parser = new Parser(jamCode);
             var expressionList = parser.ParseExpressionList();
-            Assert.IsNull(parser.Parse(ParseMode.SingleExpression));
+            Assert.IsNull(parser.ParseExpression());
             return expressionList;
         }
     }

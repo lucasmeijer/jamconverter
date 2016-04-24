@@ -130,7 +130,8 @@ namespace jamconverter
 on_new_line");
             var result = a.ScanAll().ToArray();
 
-            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.WhiteSpace, TokenType.Comment, TokenType.Literal}, result.Select(r => r.tokenType));
+            //we do not expect the comment to be reported by the scanner
+            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.WhiteSpace, TokenType.Literal}, result.Select(r => r.tokenType));
         }
     }
 }

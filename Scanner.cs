@@ -45,10 +45,13 @@ namespace jamconverter
 
             if (char.IsWhiteSpace(c))
                 return new ScanResult() { tokenType = TokenType.WhiteSpace, literal = ReadWhiteSpace() };
-            
-            if (c == '#')
-                return new ScanResult {tokenType = TokenType.Comment, literal = ReadUntilEndOfLine()};
 
+            if (c == '#')
+            {
+                ReadUntilEndOfLine();
+                return Scan();
+            }
+            
             var literal = ReadLiteral();
 
             if (literal==":")

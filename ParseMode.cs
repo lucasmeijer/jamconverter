@@ -2,7 +2,7 @@
 {
     public enum ParseMode
     {
-        SingleExpression,
+        Expression,
         Statement,
         Condition
     }

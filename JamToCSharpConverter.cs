@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Security.Principal;
 using System.Text;
-using System.Text.RegularExpressions;
 using jamconverter.AST;
 
 namespace jamconverter
@@ -22,11 +19,11 @@ namespace jamconverter
             var variables = new List<string>();
             while (true)
             {
-                var node = parser.Parse();
-                if (node == null)
+                var statement = parser.ParseStatement();
+                if (statement == null)
                     break;
 
-                ProcessNode(node, csharpbody, variables);
+                ProcessStatement(statement, csharpbody, variables);
             }
 
             var variableDeclarations = variables.Select(v => "JamList " + v + ";\n").SeperateWithSpace();
@@ -47,9 +44,9 @@ partial class Dummy
 }}";
         }
 
-        private void ProcessNode(Node node, StringBuilder csharpbody, List<string> variables)
+        private void ProcessStatement(Statement statement, StringBuilder csharpbody, List<string> variables)
         {
-            var ifStatement = node as IfStatement;
+            var ifStatement = statement as IfStatement;
             if (ifStatement != null)
             {
                 var condition = ifStatement.Condition;
@@ -66,14 +63,14 @@ partial class Dummy
                 if (boe != null)
                     csharpbody.AppendLine($"if ({CSharpFor(boe.Left)}.JamEquals({CSharpFor(boe.Right)})) {{");
                 
-                foreach (var statement in ifStatement.Body.Statements)
-                    ProcessNode(statement, csharpbody, variables);
+                foreach (var subStatement in ifStatement.Body.Statements)
+                    ProcessStatement(subStatement, csharpbody, variables);
 
                 csharpbody.AppendLine("}");
                 return;
             }
 
-            var ruleDeclaration = node as RuleDeclaration;
+            var ruleDeclaration = statement as RuleDeclarationStatement;
             if (ruleDeclaration != null)
             {
                 var ruleMethodCsharp = new StringBuilder();
@@ -84,8 +81,8 @@ partial class Dummy
                     : ruleDeclaration.Arguments;
 
                 ruleMethodCsharp.AppendLine($"public static JamList {MethodNameFor(ruleDeclaration)}({arguments.Select(a => $"JamList {ArgumentNameFor(a)}").SeperateWithComma()}) {{");
-                foreach (var statement in ruleDeclaration.Body.Statements)
-                    ProcessNode(statement, ruleMethodCsharp, variables);
+                foreach (var subStatement in ruleDeclaration.Body.Statements)
+                    ProcessStatement(subStatement, ruleMethodCsharp, variables);
 
                 if (!(ruleDeclaration.Body.Statements.Last() is ReturnStatement))
                     ruleMethodCsharp.AppendLine("return null;");
@@ -94,14 +91,14 @@ partial class Dummy
                 return;
             }
 
-            var returnStatement = node as ReturnStatement;
+            var returnStatement = statement as ReturnStatement;
             if (returnStatement != null)
             {
                 csharpbody.AppendLine($"return {CSharpFor(returnStatement.ReturnExpression)};");
                 return;
             }
 
-            var expressionStatement = (ExpressionStatement)node;
+            var expressionStatement = (ExpressionStatement)statement;
             var invocationExpression = expressionStatement.Expression as InvocationExpression;
 
             if (invocationExpression != null)
@@ -144,9 +141,9 @@ partial class Dummy
             return CleanIllegalCharacters(ruleName);
         }
 
-        private static string MethodNameFor(RuleDeclaration ruleDeclaration)
+        private static string MethodNameFor(RuleDeclarationStatement ruleDeclarationStatement)
         {
-            return MethodNameFor(ruleDeclaration.Name);
+            return MethodNameFor(ruleDeclarationStatement.Name);
         }
 
         private static string VariableNameFor(LiteralExpression variableExpression)
