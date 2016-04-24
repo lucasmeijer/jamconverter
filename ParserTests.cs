@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace jamconverter
 {
-    [TestFixture()]
+    [TestFixture]
     public class ParserTests
     {
         [Test]
@@ -72,30 +72,15 @@ namespace jamconverter
         [Test]
         public void VariableDereference()
         {
-            var node = Parse<ExpressionStatement>("input $(myvar) ;");
-
-            var invocationExpression = (InvocationExpression)node.Expression;
-            Assert.AreEqual(1, invocationExpression.Arguments.Length);
-
-            var variableDereferenceExpression =
-                (VariableDereferenceExpression)
-                    ((ExpressionListExpression) invocationExpression.Arguments[0]).Expressions[0];
+            var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(myvar)");
             Assert.AreEqual("myvar",((LiteralExpression) variableDereferenceExpression.VariableExpression).Value);
         }
 
         [Test]
         public void NestedVariableDereference()
         {
-            var node = Parse<ExpressionStatement>("input $($(myvar)) ;");
-            var invocationExpression = (InvocationExpression)node.Expression;
-            Assert.AreEqual(1, invocationExpression.Arguments.Length);
-
-            var variableDereferenceExpression =
-                (VariableDereferenceExpression)
-                    ((ExpressionListExpression) invocationExpression.Arguments[0]).Expressions[0];
-
+            var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$($(myvar))");
             var nestedVariableDereferenceExpression = (VariableDereferenceExpression) variableDereferenceExpression.VariableExpression;
-
             Assert.AreEqual("myvar", ((LiteralExpression)nestedVariableDereferenceExpression.VariableExpression).Value);
         }
 
@@ -168,9 +153,7 @@ namespace jamconverter
         [Test]
         public void VariableExpansionModifiers()
         {
-            var node = ParseExpression<VariableDereferenceExpression>("$(harry:BS)");
-
-            var variableDereferenceExpression = (VariableDereferenceExpression)node;
+            var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(harry:BS)");
 
             Assert.AreEqual("harry", ((LiteralExpression) variableDereferenceExpression.VariableExpression).Value);
 
@@ -182,8 +165,7 @@ namespace jamconverter
         [Test]
         public void VariableExpansionModifiersWithValue()
         {
-            var node = ParseExpression<VariableDereferenceExpression>("$(harry:B=value:S)");
-            var variableDereferenceExpression = (VariableDereferenceExpression)node;
+            var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(harry:B=value:S)");
 
             Assert.AreEqual("harry", ((LiteralExpression)variableDereferenceExpression.VariableExpression).Value);
 
@@ -198,9 +180,7 @@ namespace jamconverter
         [Test]
         public void VariableExpansionModifiersWithEmptyValue()
         {
-            var node = ParseExpression<VariableDereferenceExpression>("$(harry:B=)");
-
-            var variableDereferenceExpression = (VariableDereferenceExpression)node;
+            var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(harry:B=)");
 
             Assert.AreEqual("harry", ((LiteralExpression)variableDereferenceExpression.VariableExpression).Value);
 
