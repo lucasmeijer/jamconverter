@@ -5,7 +5,7 @@ using System.Text;
 
 class JamList
 {
-    readonly string[] _elements;
+    string[] _elements;
 
     public JamList(params string[] values)
     {
@@ -59,6 +59,11 @@ class JamList
         var csharpIndex = jamIndex - 1;
 
         return elements[csharpIndex];
+    }
+
+    public void Append(JamList values)
+    {
+        _elements = _elements.Concat(values._elements).ToArray();
     }
 
     public static JamList Combine(params JamList[] values)

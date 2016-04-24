@@ -101,11 +101,21 @@ partial class Dummy
                 if (!variables.Contains(variableName))
                     variables.Add(variableName);
 
-                var values =
+                var valueArguments =
                     ((ExpressionListExpression) assignmentExpression.Right).Expressions.Select(
                         e => ((LiteralExpression) e).Value);
 
-                csharpbody.AppendLine($"{variableName} = new JamList({values.InQuotes().SeperateWithComma()});");
+                var value = $"new JamList({valueArguments.InQuotes().SeperateWithComma()})";
+
+                switch (assignmentExpression.Operator)
+                {
+                    case Operator.Assignment:
+                        csharpbody.AppendLine($"{variableName} = {value};");
+                        break;
+                    case Operator.Append:
+                        csharpbody.AppendLine($"{variableName}.Append({value});");
+                        break;
+                }
             }
         }
 

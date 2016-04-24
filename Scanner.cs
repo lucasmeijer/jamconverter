@@ -103,6 +103,9 @@ namespace jamconverter
             if (literal == "return")
                 return TokenType.Return;
 
+            if (literal == "+=")
+                return TokenType.AppendOperator;
+
             return TokenType.Literal;
         }
 
@@ -216,6 +219,7 @@ namespace jamconverter
         If,
         Rule,
         VariableExpansionModifier,
-        Return
+        Return,
+        AppendOperator
     }
 }

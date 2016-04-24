@@ -71,7 +71,8 @@
 
     public enum Operator
     {
-        Assignment
+        Assignment,
+        Append
     }
 
     public class RuleDeclaration : Node

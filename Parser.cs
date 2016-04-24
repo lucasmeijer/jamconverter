@@ -164,7 +164,7 @@ namespace jamconverter
                 if (parseMode == ParseMode.Statement)
                 {
                     var sr2 = _scanner.ScanSkippingWhiteSpace();
-                    if (sr2.tokenType == TokenType.Assignment)
+                    if (sr2.tokenType == TokenType.Assignment || sr2.tokenType == TokenType.AppendOperator)
                     {
                         var right = (Expression) Parse(ParseMode.ExpressionList);
                         var terminator = _scanner.ScanSkippingWhiteSpace();
@@ -175,7 +175,7 @@ namespace jamconverter
                         {
                             Left = new LiteralExpression { Value =  sr.literal},
                             Right = right,
-                            Operator = Operator.Assignment
+                            Operator = OperatorFor(sr2.tokenType)
                         }};
                     }
                     _scanner.UnScan(sr2);
@@ -212,6 +212,11 @@ namespace jamconverter
             }
 
             throw new ParsingException("expected Value, got: " + sr.tokenType);
+        }
+
+        private static Operator OperatorFor(TokenType tokenType)
+        {
+            return tokenType == TokenType.AppendOperator ?  Operator.Append : Operator.Assignment;
         }
 
         void ScanTerminator()

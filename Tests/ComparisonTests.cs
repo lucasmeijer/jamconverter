@@ -126,6 +126,18 @@ Echo $(myvar[$(myindices)]:S=.mysuffix) ;
 ");
         }
 
+        [Test]
+        public void AppendOperator()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = a ;
+myvar += b c ;
+Echo $(myvar) ;
+");
+        }
+
+
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
             var csharp = new JamToCSharpConverter().Convert(simpleProgram);
