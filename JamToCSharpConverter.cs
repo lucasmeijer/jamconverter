@@ -77,7 +77,13 @@ partial class Dummy
             if (ruleDeclaration != null)
             {
                 var ruleMethodCsharp = new StringBuilder();
-                ruleMethodCsharp.AppendLine($"public static JamList {MethodNameFor(ruleDeclaration)}({ruleDeclaration.Arguments.Select(a => $"JamList {ArgumentNameFor(a)}").SeperateWithComma()}) {{");
+
+                //because the parser always interpets an invocation without any arguments as one with a single argument: an empty expressionlist,  let's make sure we always are ready to take a single argument
+                var arguments = ruleDeclaration.Arguments.Length == 0
+                    ? new[] {"dummyArgument"}
+                    : ruleDeclaration.Arguments;
+
+                ruleMethodCsharp.AppendLine($"public static JamList {MethodNameFor(ruleDeclaration)}({arguments.Select(a => $"JamList {ArgumentNameFor(a)}").SeperateWithComma()}) {{");
                 foreach (var statement in ruleDeclaration.Body.Statements)
                     ProcessNode(statement, ruleMethodCsharp, variables);
 
@@ -111,7 +117,7 @@ partial class Dummy
                     variables.Add(variableName);
 
                 var valueArguments =
-                    ((ExpressionListExpression) assignmentExpression.Right).Expressions.Select(
+                    assignmentExpression.Right.Expressions.Select(
                         e => ((LiteralExpression)e).Value);
 
                 var value = $"new JamList({valueArguments.InQuotes().SeperateWithComma()})";
@@ -153,6 +159,11 @@ partial class Dummy
             return input.Replace(".", "_");
         }
 
+        string CSharpFor(ExpressionList expressionList)
+        {
+            return $"new JamList({expressionList.Expressions.Select(CSharpFor).SeperateWithComma()})";
+        }
+
         string CSharpFor(Expression e)
         {
             var literalExpression = e as LiteralExpression;
@@ -183,10 +194,6 @@ partial class Dummy
             var combineExpression = e as CombineExpression;
             if (combineExpression != null)
                 return $"JamList.Combine({combineExpression.Elements.Select(CSharpFor).SeperateWithComma()})";
-
-            var expressionListExpression = e as ExpressionListExpression;
-            if (expressionListExpression != null)
-                return $"new JamList({expressionListExpression.Expressions.Select(CSharpFor).SeperateWithComma()})";
 
             var invocationExpression = e as InvocationExpression;
             if (invocationExpression != null)

@@ -15,6 +15,19 @@ namespace jamconverter
             _scanner = new Scanner(input);
         }
 
+        public ExpressionList ParseExpressionList()
+        {
+            var expressions = new List<Expression>();
+            while (true)
+            {
+                var expression = (Expression)Parse(ParseMode.SingleExpression);
+                if (expression == null)
+                    break;
+                expressions.Add(expression);
+            }
+            return new ExpressionList() {Expressions = expressions.ToArray()};
+        }
+
         public Node Parse(ParseMode parseMode = ParseMode.Statement)
         {
             var sr = _scanner.ScanSkippingWhiteSpace();
@@ -43,7 +56,7 @@ namespace jamconverter
                         ifStatement.Condition = new BinaryOperatorExpression
                         {
                             Left = expression,
-                            Right = (Expression)Parse(ParseMode.SingleExpression)
+                            Right = ParseExpressionList()
                         };
                         break;
                     case TokenType.AccoladeOpen:
@@ -121,14 +134,9 @@ namespace jamconverter
                 if (parseMode == ParseMode.SingleExpression)
                     return resultExpression;
 
-                var additional = Parse(ParseMode.ExpressionList);
-                if (additional == null)
-                    return new ExpressionListExpression() {Expressions = new[] { resultExpression } };
-                var tailExpressionList = additional as ExpressionListExpression;
-                if (tailExpressionList != null)
-                    return new ExpressionListExpression() { Expressions = tailExpressionList.Expressions.Prepend(resultExpression).ToArray() };
-
-                throw new ParsingException();
+                var tailExpressionList = ParseExpressionList();
+   
+                return new ExpressionList() { Expressions = tailExpressionList.Expressions.Prepend(resultExpression).ToArray() };
             }
 
             if (sr.tokenType == TokenType.AccoladeOpen)
@@ -157,7 +165,7 @@ namespace jamconverter
                 var body = Parse(ParseMode.Statement);
 
                 var ruleNameStr = ((LiteralExpression) ruleName).Value;
-                return new RuleDeclaration {Name = ruleNameStr, Arguments = arguments.OfType<ExpressionListExpression>().SelectMany(ele=>ele.Expressions.OfType<LiteralExpression>()).Select(le=>le.Value).ToArray(), Body = (BlockStatement) body};
+                return new RuleDeclaration {Name = ruleNameStr, Arguments = arguments.OfType<ExpressionList>().SelectMany(ele=>ele.Expressions.OfType<LiteralExpression>()).Select(le=>le.Value).ToArray(), Body = (BlockStatement) body};
             }
 
             if (sr.tokenType == TokenType.BracketOpen)
@@ -172,7 +180,7 @@ namespace jamconverter
 
             if (sr.tokenType == TokenType.Return)
             {
-                var returnExpression = (Expression)Parse(ParseMode.ExpressionList);
+                var returnExpression = ParseExpressionList();
                 var terminator = _scanner.ScanSkippingWhiteSpace();
                 if (terminator.tokenType != TokenType.Terminator)
                     throw new ParsingException();
@@ -185,9 +193,9 @@ namespace jamconverter
                 if (parseMode == ParseMode.Statement)
                 {
                     var sr2 = _scanner.ScanSkippingWhiteSpace();
-                    if (sr2.tokenType == TokenType.Assignment || sr2.tokenType == TokenType.AppendOperator)
+                    if (sr2 != null && (sr2.tokenType == TokenType.Assignment || sr2.tokenType == TokenType.AppendOperator))
                     {
-                        var right = (Expression) Parse(ParseMode.ExpressionList);
+                        var right = ParseExpressionList();
                         var terminator = _scanner.ScanSkippingWhiteSpace();
                         if (terminator.tokenType != TokenType.Terminator)
                             throw new ParsingException();
@@ -217,19 +225,13 @@ namespace jamconverter
 
                 if (parseMode == ParseMode.SingleExpression)
                     return resultExpression;
-                
-                var additional = Parse(ParseMode.ExpressionList);
-                if (additional == null)
-                    return new ExpressionListExpression { Expressions = new[] { resultExpression } };
 
-                var tailExpressionList = additional as ExpressionListExpression;
-                if (tailExpressionList != null)
+                var tailExpressionList = ParseExpressionList();
+                
+                return new ExpressionList()
                 {
-                    return new ExpressionListExpression()
-                    {
-                        Expressions = tailExpressionList.Expressions.Prepend(resultExpression).ToArray()
-                    };
-                }
+                    Expressions = tailExpressionList.Expressions.Prepend(resultExpression).ToArray()
+                };
             }
 
             throw new ParsingException("expected Value, got: " + sr.tokenType);
@@ -267,25 +269,22 @@ namespace jamconverter
             };
         }
 
-        private IEnumerable<Expression> ParseArgumentList()
+        private ExpressionList[] ParseArgumentList()
         {
+            var expressionLists = new List<ExpressionList>();
             while (true)
             {
-                var node = Parse(ParseMode.ExpressionList);
-                if (node == null)
-                    yield break;
-
-                var expression = node as Expression;
-                if (expression == null)
-                    throw new ArgumentException("Expected expression, got: " + node);
-                yield return expression;
+                expressionLists.Add(ParseExpressionList());
 
                 var nextToken = _scanner.ScanSkippingWhiteSpace();
                 if (nextToken.tokenType == TokenType.Colon)
                     continue;
                 _scanner.UnScan(nextToken);
-                yield break;
+
+                break;
             }
+
+            return expressionLists.ToArray();
         }
     }
 

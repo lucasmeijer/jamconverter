@@ -3,7 +3,6 @@
     public enum ParseMode
     {
         SingleExpression,
-        ExpressionList,
         Statement,
         Condition
     }

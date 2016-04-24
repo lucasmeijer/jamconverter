@@ -26,7 +26,7 @@
 
     public class ReturnStatement : Statement
     {
-        public Expression ReturnExpression { get; set; }
+        public ExpressionList ReturnExpression { get; set; }
     }
 
     public class ExpressionStatement : Statement
@@ -57,7 +57,7 @@
         public Expression Value { get; set; }
     }
 
-    public class ExpressionListExpression : Expression
+    public class ExpressionList : Node
     {
         public Expression[] Expressions { get; set; }
     }
@@ -65,7 +65,7 @@
     public class BinaryOperatorExpression : Expression
     {
         public Expression Left { get; set; }
-        public Expression Right { get; set; }
+        public ExpressionList Right { get; set; }
         public Operator Operator { get; set; }
     }
     
@@ -86,6 +86,6 @@
     public class InvocationExpression : Expression
     {
         public Node RuleExpression { get; set; }
-        public Expression[] Arguments { get; set; }
+        public ExpressionList[] Arguments { get; set; }
     }
 }
