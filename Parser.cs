@@ -23,7 +23,10 @@ namespace jamconverter
 
             if (sr == null)
                 return null;
-            
+
+            if (sr.tokenType == TokenType.Comment)
+                return Parse(parseMode);
+
             if (sr.tokenType == TokenType.Colon || sr.tokenType == TokenType.Terminator || sr.tokenType == TokenType.ParenthesisClose || sr.tokenType == TokenType.BracketClose)
             {
                 _scanner.UnScan(sr);

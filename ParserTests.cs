@@ -248,6 +248,17 @@ namespace jamconverter
             Assert.IsTrue(assignmentExpression.Operator == Operator.Append);
         }
 
+        [Test]
+        public void Comment()
+        {
+            var expressionStatement = Parse<ExpressionStatement>(
+@"#mycomment
+a = 3 ;
+");
+            var assignmentExpression = (AssignmentExpression)expressionStatement.Expression;
+            Assert.IsTrue(assignmentExpression.Operator == Operator.Assignment);
+        }
+
         static TExpected Parse<TExpected>(string jamcode, ParseMode parseMode = ParseMode.Statement) where TExpected : Node
         {
             var parser = new Parser(jamcode);

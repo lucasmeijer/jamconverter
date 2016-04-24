@@ -46,6 +46,9 @@ namespace jamconverter
             if (char.IsWhiteSpace(c))
                 return new ScanResult() { tokenType = TokenType.WhiteSpace, literal = ReadWhiteSpace() };
             
+            if (c == '#')
+                return new ScanResult {tokenType = TokenType.Comment, literal = ReadUntilEndOfLine()};
+
             var literal = ReadLiteral();
 
             if (literal==":")
@@ -61,7 +64,7 @@ namespace jamconverter
                 return _unscanBuffer.Peek().literal[0];
             return _input[nextChar];
         }
-        
+
         private TokenType TokenTypeFor(string literal)
         {
             if (literal == ";")
@@ -159,6 +162,8 @@ namespace jamconverter
                 return false;
             if (c == ']')
                 return false;
+            if (c == '#')
+                return false;
 
             return !char.IsWhiteSpace(c);
         }
@@ -172,6 +177,29 @@ namespace jamconverter
                     var result = _input.Substring(nextChar, i - nextChar);
                     nextChar = i;
                     return result;
+                }
+            }
+            var result2 = _input.Substring(nextChar);
+            nextChar = _input.Length;
+            return result2;
+        }
+
+        private string ReadUntilEndOfLine()
+        {
+            bool inNewLineSequence = false;
+            for (int i = nextChar; i != _input.Length; i++)
+            {
+                var c = _input[i];
+                if (c == '\n' || c == 0x0d || c == 0x0a)
+                    inNewLineSequence = true;
+                else
+                {
+                    if (inNewLineSequence)
+                    {
+                        var result = _input.Substring(nextChar, i - nextChar);
+                        nextChar = i;
+                        return result;
+                    }
                 }
             }
             var result2 = _input.Substring(nextChar);
@@ -220,6 +248,7 @@ namespace jamconverter
         Rule,
         VariableExpansionModifier,
         Return,
-        AppendOperator
+        AppendOperator,
+        Comment
     }
 }
