@@ -53,6 +53,15 @@ namespace jamconverter
                 
                 var next = _scanner.Scan();
                 var modifiers = new List<VariableDereferenceModifier>();
+
+                if (next.tokenType == TokenType.BracketOpen)
+                {
+                    variableDereferenceExpression.IndexerExpression = (Expression) Parse(ParseMode.SingleExpression);
+                    var peek = _scanner.Scan();
+                    if (peek.tokenType != TokenType.BracketClose)
+                        throw new ParsingException("Expected bracket close while parsing variable dereference expressions' indexer");
+                    next = _scanner.Scan();
+                }
                 if (next.tokenType == TokenType.Colon)
                 {
                     while (true)

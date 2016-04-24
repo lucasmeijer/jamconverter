@@ -48,6 +48,7 @@
     {
         public Expression VariableExpression { get; set; }
         public VariableDereferenceModifier[] Modifiers { get; set; }
+        public Expression IndexerExpression { get; set; }
     }
 
     public class VariableDereferenceModifier : Node

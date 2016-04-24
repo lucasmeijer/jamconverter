@@ -44,6 +44,23 @@ class JamList
         return System.IO.Path.ChangeExtension(value, suffix);
     }
 
+    public JamList IndexedBy(JamList indices)
+    {
+        return new JamList(indices._elements.Select(i => DoIndex(_elements,i)).ToArray());
+    }
+
+    private string DoIndex(string[] elements, string indexString)
+    {
+        int jamIndex = 0;
+        if (!int.TryParse(indexString, out jamIndex))
+            throw new NotSupportedException("Cannot index by non-integer: " + indexString);
+
+        //jam list indexing starts counting at 1.
+        var csharpIndex = jamIndex - 1;
+
+        return elements[csharpIndex];
+    }
+
     public static JamList Combine(params JamList[] values)
     {
         IEnumerable<IEnumerable<string>> a = values.Select(v => v._elements);

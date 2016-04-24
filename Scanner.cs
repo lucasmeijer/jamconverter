@@ -152,6 +152,11 @@ namespace jamconverter
                 return false;
             if (c == ':')
                 return false;
+            if (c == '[')
+                return false;
+            if (c == ']')
+                return false;
+
             return !char.IsWhiteSpace(c);
         }
 

@@ -107,7 +107,25 @@ Echo [ GimmeFive ] ;
         {
             AssertConvertedProgramHasIdenticalOutput("Echo [ MD5 harry ] ;");
         }
-        
+
+        [Test]
+        public void VariableDereferencingWithIndexer()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = a b c d e ; 
+Echo $(myvar[2]) ;
+
+myindex = 3 ;
+Echo $(myvar[$(myindex)]) ;
+
+myindices = 3 4 1 ;
+Echo $(myvar[$(myindices)]) ;
+
+Echo $(myvar[$(myindices)]:S=.mysuffix) ;
+");
+        }
+
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
             var csharp = new JamToCSharpConverter().Convert(simpleProgram);

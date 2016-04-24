@@ -85,6 +85,14 @@ namespace jamconverter
         }
 
         [Test]
+        public void VariableDereferenceWithIndexer()
+        {
+            var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(myvar[123])");
+            Assert.AreEqual("myvar", ((LiteralExpression)variableDereferenceExpression.VariableExpression).Value);
+            Assert.AreEqual("123", ((LiteralExpression) variableDereferenceExpression.IndexerExpression).Value);
+        }
+
+        [Test]
         public void Assignment()
         {
             var assignmentExpression = (AssignmentExpression)Parse<ExpressionStatement>("a = b ;").Expression;

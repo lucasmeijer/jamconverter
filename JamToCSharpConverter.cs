@@ -118,6 +118,10 @@ partial class Dummy
             if (dereferenceExpression != null)
             {
                 var sb = new StringBuilder(((LiteralExpression) dereferenceExpression.VariableExpression).Value);
+
+                if (dereferenceExpression.IndexerExpression != null)
+                    sb.Append($".IndexedBy({CSharpFor(dereferenceExpression.IndexerExpression)})");
+
                 foreach (var modifier in dereferenceExpression.Modifiers)
                 {
                     switch (modifier.Command)
