@@ -112,7 +112,7 @@ partial class Dummy
 
                 var valueArguments =
                     ((ExpressionListExpression) assignmentExpression.Right).Expressions.Select(
-                        e => VariableNameFor((LiteralExpression) e));
+                        e => ((LiteralExpression)e).Value);
 
                 var value = $"new JamList({valueArguments.InQuotes().SeperateWithComma()})";
 
