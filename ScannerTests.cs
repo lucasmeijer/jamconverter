@@ -131,8 +131,6 @@ on_new_line");
             var result = a.ScanAll().ToArray();
 
             CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.WhiteSpace, TokenType.Comment, TokenType.Literal}, result.Select(r => r.tokenType));
-
-            Assert.AreEqual("v", result[7].literal);
         }
     }
 }

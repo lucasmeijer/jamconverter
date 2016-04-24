@@ -123,6 +123,15 @@ myindices = 3 4 1 ;
 Echo $(myvar[$(myindices)]) ;
 
 Echo $(myvar[$(myindices)]:S=.mysuffix) ;
+
+#index out of range:
+myvar = a b c ;
+Echo $(myvar[4]) ;
+
+myvar = a b c ;
+myindices = 1 5 3 ;  #note 5 is out of range
+Echo $(myvar[$(myindices)]) ;
+
 ");
         }
 

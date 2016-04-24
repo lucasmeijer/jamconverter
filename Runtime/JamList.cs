@@ -46,7 +46,7 @@ class JamList
 
     public JamList IndexedBy(JamList indices)
     {
-        return new JamList(indices._elements.Select(i => DoIndex(_elements,i)).ToArray());
+        return new JamList(indices._elements.Select(i => DoIndex(_elements,i)).Where(e => e != null).ToArray());
     }
 
     private string DoIndex(string[] elements, string indexString)
@@ -55,9 +55,13 @@ class JamList
         if (!int.TryParse(indexString, out jamIndex))
             throw new NotSupportedException("Cannot index by non-integer: " + indexString);
 
+
+        if (jamIndex < 1 || jamIndex > elements.Length)
+            return null;
+
         //jam list indexing starts counting at 1.
         var csharpIndex = jamIndex - 1;
-
+        
         return elements[csharpIndex];
     }
 
