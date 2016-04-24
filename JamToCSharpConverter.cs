@@ -182,8 +182,11 @@ partial class Dummy
                             var valueStr = modifier.Value == null ? "new JamList(\"\")" : CSharpFor(modifier.Value);
                             sb.Append($".WithSuffix({valueStr})");
                             break;
+                        case 'E':
+                            sb.Append($".IfEmptyUse({CSharpFor(modifier.Value)})");
+                            break;
                         default:
-                            throw new NotSupportedException();
+                            throw new NotSupportedException("Unkown variable expansion command: "+modifier.Command);
                     }
                 }
                 return sb.ToString();

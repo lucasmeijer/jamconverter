@@ -30,7 +30,6 @@ namespace jamconverter
             Assert.AreEqual("a", expressionList.Expressions[0].As<LiteralExpression>().Value);
         }
 
-
         [Test]
         public void SimpleInvocationWithTwoLiteralArguments()
         {

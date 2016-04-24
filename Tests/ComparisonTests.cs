@@ -102,6 +102,20 @@ Echo $(myvar:S=:S=.exe) ;
         }
 
         [Test]
+        public void EmptyVariableExpansion()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = ; 
+Echo $(myvar:E=alternative) ;
+
+myvar = realvalue ;
+Echo $(myvar:E=alternative) ;
+
+");
+        }
+
+        [Test]
         public void RuleReturningValue()
         {
             AssertConvertedProgramHasIdenticalOutput(
@@ -174,6 +188,7 @@ myvar += b c ;
 Echo $(myvar) ;
 ");
         }
+        
 
 
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)

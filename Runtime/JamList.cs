@@ -80,6 +80,11 @@ class JamList
         _elements = _elements.Concat(values._elements).ToArray();
     }
 
+    public JamList IfEmptyUse(JamList value)
+    {
+        return _elements.Length > 0 ? this : value;
+    }
+
     public static JamList Combine(params JamList[] values)
     {
         IEnumerable<IEnumerable<string>> a = values.Select(v => v._elements);
