@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using jamconverter.AST;
 using NUnit.Framework;
@@ -10,9 +11,9 @@ namespace jamconverter
         [Test]
         public void SimpleInvocationExpression()
         {
-            var node = Parse("somerule ;");
+            var node = Parse<ExpressionStatement>("somerule ;");
 
-            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
+            var invocationExpression = (InvocationExpression)node.Expression;
 
             Assert.IsTrue(invocationExpression.RuleExpression is LiteralExpression);
             var literalExpression = invocationExpression.RuleExpression as LiteralExpression;
@@ -22,9 +23,9 @@ namespace jamconverter
         [Test]
         public void SimpleInvocationWithOneLiteralArguments()
         {
-            var node = Parse("input a ;");
+            var node = Parse<ExpressionStatement>("input a ;");
 
-            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
+            var invocationExpression = (InvocationExpression)node.Expression;
 
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
@@ -39,9 +40,9 @@ namespace jamconverter
         [Test]
         public void SimpleInvocationWithTwoLiteralArguments()
         {
-              var node = Parse("input a : b ;");
+              var node = Parse<ExpressionStatement>("input a : b ;");
          
-            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
+            var invocationExpression = (InvocationExpression)node.Expression;
 
             Assert.AreEqual(2, invocationExpression.Arguments.Length);
 
@@ -55,9 +56,9 @@ namespace jamconverter
         [Test]
         public void SimpleInvocationWithMultiValueArgument()
         {
-            var node = Parse("input a b c ;");
+            var node = Parse<ExpressionStatement>("input a b c ;");
 
-            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
+            var invocationExpression = (InvocationExpression)node.Expression;
 
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
@@ -71,9 +72,9 @@ namespace jamconverter
         [Test]
         public void VariableDereference()
         {
-            var node = Parse("input $(myvar) ;");
+            var node = Parse<ExpressionStatement>("input $(myvar) ;");
 
-            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
+            var invocationExpression = (InvocationExpression)node.Expression;
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
             var variableDereferenceExpression =
@@ -85,9 +86,8 @@ namespace jamconverter
         [Test]
         public void NestedVariableDereference()
         {
-            var node = Parse("input $($(myvar)) ;");
-
-            var invocationExpression = (InvocationExpression)((ExpressionStatement)node).Expression;
+            var node = Parse<ExpressionStatement>("input $($(myvar)) ;");
+            var invocationExpression = (InvocationExpression)node.Expression;
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
             var variableDereferenceExpression =
@@ -102,9 +102,7 @@ namespace jamconverter
         [Test]
         public void Assignment()
         {
-            var node = Parse("a = b ;");
-
-            var assignmentExpression = (AssignmentExpression)((ExpressionStatement)node).Expression;
+            var assignmentExpression = (AssignmentExpression)Parse<ExpressionStatement>("a = b ;").Expression;
 
             var left = (LiteralExpression) assignmentExpression.Left;
             Assert.AreEqual("a", left.Value);
@@ -118,9 +116,7 @@ namespace jamconverter
         [Test]
         public void BlockStatement()
         {
-            var node = Parse("{ Echo ; }");
-
-            var blockStatement = (BlockStatement) node;
+            var blockStatement = Parse<BlockStatement>("{ Echo ; }");
 
             Assert.AreEqual(1, blockStatement.Statements.Length);
 
@@ -132,18 +128,14 @@ namespace jamconverter
         [Test]
         public void EmptyBlockStatement()
         {
-            var node = Parse("{ }");
-
-            var blockStatement = (BlockStatement)node;
-
-            Assert.AreEqual(0, blockStatement.Statements.Length);
+            Assert.AreEqual(0, Parse<BlockStatement>("{ }").Statements.Length);
         }
 
 
         [Test]
         public void IfStatement()
         {
-            var ifStatement = (IfStatement)Parse("if $(somevar) {}");
+            var ifStatement = Parse<IfStatement>("if $(somevar) {}");
             Assert.IsTrue(ifStatement.Condition is VariableDereferenceExpression);
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
         }
@@ -151,12 +143,8 @@ namespace jamconverter
         [Test]
         public void CombineExpression()
         {
-            var node = Parse("a = $(b)c$(d) ;");
-            
-            var right = ((AssignmentExpression) ((ExpressionStatement) node).Expression).Right;
+            var combineExpression = ParseExpression<CombineExpression>("$(b)c$(d)");
 
-            var combineExpression = (CombineExpression) ((ExpressionListExpression) right).Expressions[0];
-            
             Assert.AreEqual(3, combineExpression.Elements.Length);
             Assert.IsTrue(combineExpression.Elements[0] is VariableDereferenceExpression);
             Assert.IsTrue(combineExpression.Elements[1] is LiteralExpression);
@@ -167,10 +155,7 @@ namespace jamconverter
         [Test]
         public void RuleDeclaration()
         {
-            var node = Parse("rule myrule arg1 : arg2 { Echo hello ; }");
-
-            Assert.IsTrue(node is RuleDeclaration);
-            var ruleDeclaration = (RuleDeclaration)node;
+            var ruleDeclaration = Parse<RuleDeclaration>("rule myrule arg1 : arg2 { Echo hello ; }");
 
             Assert.AreEqual("myrule", ruleDeclaration.Name);
 
@@ -183,7 +168,7 @@ namespace jamconverter
         [Test]
         public void VariableExpansionModifiers()
         {
-            var node = ParseExpression("$(harry:BS)");
+            var node = ParseExpression<VariableDereferenceExpression>("$(harry:BS)");
 
             var variableDereferenceExpression = (VariableDereferenceExpression)node;
 
@@ -197,7 +182,7 @@ namespace jamconverter
         [Test]
         public void VariableExpansionModifiersWithValue()
         {
-            var node = ParseExpression("$(harry:B=value:S)");
+            var node = ParseExpression<VariableDereferenceExpression>("$(harry:B=value:S)");
             var variableDereferenceExpression = (VariableDereferenceExpression)node;
 
             Assert.AreEqual("harry", ((LiteralExpression)variableDereferenceExpression.VariableExpression).Value);
@@ -213,7 +198,7 @@ namespace jamconverter
         [Test]
         public void VariableExpansionModifiersWithEmptyValue()
         {
-            var node = ParseExpression("$(harry:B=)");
+            var node = ParseExpression<VariableDereferenceExpression>("$(harry:B=)");
 
             var variableDereferenceExpression = (VariableDereferenceExpression)node;
 
@@ -227,25 +212,21 @@ namespace jamconverter
         [Test]
         public void VariableExpansionModifiersWithNonLiteralValue()
         {
-            var node = ParseExpression("$(harry:B=$(pietje))");
-          
-            var variableDereferenceExpression = (VariableDereferenceExpression)node;
+            var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(harry:B=$(pietje))");
 
             Assert.AreEqual("harry", ((LiteralExpression)variableDereferenceExpression.VariableExpression).Value);
 
             Assert.AreEqual(1, variableDereferenceExpression.Modifiers.Length);
             Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
 
-            var value = ((VariableDereferenceExpression) variableDereferenceExpression.Modifiers[0].Value);
+            var value = (VariableDereferenceExpression) variableDereferenceExpression.Modifiers[0].Value;
             Assert.AreEqual("pietje", ((LiteralExpression) value.VariableExpression).Value);
         }
 
         [Test]
         public void InvocationExpressionWithBrackets()
         {
-            var node = ParseExpression("[ MyRule myarg ]");
-
-            var invocationExpression = (InvocationExpression)node;
+            var invocationExpression = ParseExpression<InvocationExpression>("[ MyRule myarg ]");
 
             Assert.AreEqual("MyRule", ((LiteralExpression)invocationExpression.RuleExpression).Value);
 
@@ -256,34 +237,36 @@ namespace jamconverter
         [Test]
         public void ReturnStatement()
         {
-            var node = Parse("return 123 ;");
+            var node = Parse<ReturnStatement>("return 123 ;");
 
-            Assert.AreEqual("123", ((LiteralExpression)((ExpressionListExpression)((ReturnStatement)node).ReturnExpression).Expressions[0]).Value);
+            Assert.AreEqual("123", ((LiteralExpression)((ExpressionListExpression)node.ReturnExpression).Expressions[0]).Value);
         }
 
         [Test]
         public void ReturnStatementWithMultipleValues()
         {
-            var node = Parse("return 123 harry ;");
-        
-            var returnStatement = (ReturnStatement)node;
+            var returnStatement = Parse<ReturnStatement>("return 123 harry ;");
 
             var expressions = ((ExpressionListExpression) returnStatement.ReturnExpression).Expressions.OfType<LiteralExpression>().ToArray();
             Assert.AreEqual("123", expressions[0].Value);
             Assert.AreEqual("harry", expressions[1].Value);
         }
 
-        static Node Parse(string jamcode, ParseMode parseMode = ParseMode.Statement)
+        static TExpected Parse<TExpected>(string jamcode, ParseMode parseMode = ParseMode.Statement) where TExpected : Node
         {
             var parser = new Parser(jamcode);
             var node = parser.Parse(parseMode);
             Assert.IsNull(parser.Parse());
-            return node;
+
+            var returnValue = node as TExpected;
+            if (returnValue == null)
+                throw new ArgumentException($"Expected parser to return type: {typeof(TExpected).Name} but got {node.GetType().Name}");
+            return returnValue;
         }
 
-        static Expression ParseExpression(string jamCode)
+        static TExpected ParseExpression<TExpected>(string jamCode) where TExpected : Expression
         {
-            return (Expression)Parse(jamCode, ParseMode.SingleExpression);
+            return Parse<TExpected>(jamCode, ParseMode.SingleExpression);
         }
     }
 }
