@@ -1,4 +1,6 @@
-﻿namespace jamconverter.AST
+﻿using System;
+
+namespace jamconverter.AST
 {
 
     public class Node
@@ -85,7 +87,24 @@
 
     public class InvocationExpression : Expression
     {
-        public Node RuleExpression { get; set; }
+        public Expression RuleExpression { get; set; }
         public ExpressionList[] Arguments { get; set; }
+    }
+
+    public static class ASTExtensions
+    {
+        public static T As<T>(this Expression expression) where T : Expression
+        {
+            if (!(expression is T))
+                throw new ArgumentException($"Expected expression type {typeof(T).Name} but got: {expression.GetType().Name}");
+            return (T) expression;
+        }
+
+        public static T As<T>(this Statement statement) where T : Statement
+        {
+            if (!(statement is T))
+                throw new ArgumentException($"Expected statement type {typeof(T).Name} but got: {statement.GetType().Name}");
+            return (T)statement;
+        }
     }
 }

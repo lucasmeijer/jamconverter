@@ -86,12 +86,12 @@ namespace jamconverter
                 var arguments = ParseArgumentList().ToArray();
                 var body = ParseStatement();
 
-                var ruleNameStr = ((LiteralExpression) ruleName).Value;
+                var ruleNameStr = ruleName.As<LiteralExpression>().Value;
                 return new RuleDeclarationStatement
                 {
                     Name = ruleNameStr,
                     Arguments =
-                        arguments.SelectMany(ele => ele.Expressions.OfType<LiteralExpression>())
+                        arguments.SelectMany(ele => ele.Expressions.Cast<LiteralExpression>())
                             .Select(le => le.Value)
                             .ToArray(),
                     Body = (BlockStatement) body
