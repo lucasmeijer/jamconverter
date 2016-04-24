@@ -62,13 +62,13 @@
         public Expression[] Expressions { get; set; }
     }
 
-    public class AssignmentExpression : Expression
+    public class BinaryOperatorExpression : Expression
     {
         public Expression Left { get; set; }
         public Expression Right { get; set; }
         public Operator Operator { get; set; }
     }
-
+    
     public enum Operator
     {
         Assignment,

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Linq;
 using System.Runtime.InteropServices;
 using NiceIO;
@@ -43,6 +44,17 @@ namespace jamconverter.Tests
         public void IfStatement()
         {
             AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; if $(myvar) { Echo Yes ; } ");
+        }
+
+        [Test]
+        public void EqualsConditional()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = 123 ; 
+if $(myvar) = 123 { Echo Yes1 ; } 
+if $(myvar) = 321 { Echo Yes2 ; } 
+");
         }
 
         [Test]
@@ -170,6 +182,14 @@ Echo $(myvar) ;
 
             var jamResult = new JamRunner().Run(simpleProgram).Select(s => s.TrimEnd());
             var csharpResult = new CSharpRunner().Run(csharp, new [] { new NPath("c:/jamconverter/Runtime/JamList.cs"), new NPath("c:/jamconverter/Runtime/BuiltinFunctions.cs") }).Select(s => s.TrimEnd());
+
+            Console.WriteLine("C#:");
+            foreach (var l in csharpResult)
+                Console.WriteLine(l);
+            Console.WriteLine();
+            Console.WriteLine("Jam:");
+            foreach (var l in jamResult)
+                Console.WriteLine(l);
 
             CollectionAssert.AreEqual(jamResult, csharpResult);
         }

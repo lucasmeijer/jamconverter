@@ -95,7 +95,7 @@ namespace jamconverter
         [Test]
         public void Assignment()
         {
-            var assignmentExpression = (AssignmentExpression)Parse<ExpressionStatement>("a = b ;").Expression;
+            var assignmentExpression = (BinaryOperatorExpression)Parse<ExpressionStatement>("a = b ;").Expression;
 
             var left = (LiteralExpression) assignmentExpression.Left;
             Assert.AreEqual("a", left.Value);
@@ -130,6 +130,19 @@ namespace jamconverter
         {
             var ifStatement = Parse<IfStatement>("if $(somevar) {}");
             Assert.IsTrue(ifStatement.Condition is VariableDereferenceExpression);
+            Assert.AreEqual(0, ifStatement.Body.Statements.Length);
+        }
+
+        [Test]
+        public void IfStatementWithBinaryOperatorCondition()
+        {
+            var ifStatement = Parse<IfStatement>("if $(somevar) = 3 {}");
+            Assert.IsTrue(ifStatement.Condition is BinaryOperatorExpression);
+            var boe = (BinaryOperatorExpression) ifStatement.Condition;
+
+            Assert.AreEqual(Operator.Assignment, boe.Operator);
+            Assert.AreEqual("3", ((LiteralExpression)  boe.Right).Value);
+
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
         }
 
@@ -244,7 +257,7 @@ namespace jamconverter
         public void AppendOperator()
         {
             var expressionStatement = Parse<ExpressionStatement>("a += 3 ;");
-            var assignmentExpression = (AssignmentExpression) expressionStatement.Expression;
+            var assignmentExpression = (BinaryOperatorExpression) expressionStatement.Expression;
             Assert.IsTrue(assignmentExpression.Operator == Operator.Append);
         }
 
@@ -255,7 +268,7 @@ namespace jamconverter
 @"#mycomment
 a = 3 ;
 ");
-            var assignmentExpression = (AssignmentExpression)expressionStatement.Expression;
+            var assignmentExpression = (BinaryOperatorExpression)expressionStatement.Expression;
             Assert.IsTrue(assignmentExpression.Operator == Operator.Assignment);
         }
 

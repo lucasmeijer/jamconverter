@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using jamconverter.AST;
@@ -16,9 +17,6 @@ namespace jamconverter
 
         public Node Parse(ParseMode parseMode = ParseMode.Statement)
         {
-            if (parseMode == ParseMode.Condition)
-                return Parse(ParseMode.SingleExpression);
-
             var sr = _scanner.ScanSkippingWhiteSpace();
 
             if (sr == null)
@@ -35,15 +33,35 @@ namespace jamconverter
 
             if (sr.tokenType == TokenType.If)
             {
-                var condition = Parse(ParseMode.Condition);
+                var expression = (Expression)Parse(ParseMode.SingleExpression);
+                var peek = _scanner.ScanSkippingWhiteSpace();
+                var ifStatement = new IfStatement();
+
+                switch (peek.tokenType)
+                {
+                    case TokenType.Assignment:
+                        ifStatement.Condition = new BinaryOperatorExpression
+                        {
+                            Left = expression,
+                            Right = (Expression)Parse(ParseMode.SingleExpression)
+                        };
+                        break;
+                    case TokenType.AccoladeOpen:
+                        ifStatement.Condition = expression;
+                        _scanner.UnScan(peek);
+                        break;
+                    default:
+                        throw new ParsingException();
+                }
+
                 var body = Parse(ParseMode.Statement);
 
-                if (!(condition is Expression))
-                    throw new ParsingException("if keyword always needs to be followed by an expression");
-                if (!(body is BlockStatement))
+                var blockStatement = body as BlockStatement;
+                if (blockStatement == null)
                     throw new ParsingException("if statements always need to be followed by a blockstatment: {}");
 
-                return new IfStatement { Condition = (Expression)condition, Body = (BlockStatement) body};
+                ifStatement.Body = blockStatement;
+                return ifStatement;
             }
 
             if (sr.tokenType == TokenType.VariableDereferencer)
@@ -174,7 +192,7 @@ namespace jamconverter
                         if (terminator.tokenType != TokenType.Terminator)
                             throw new ParsingException();
 
-                        return new ExpressionStatement {Expression = new AssignmentExpression
+                        return new ExpressionStatement {Expression = new BinaryOperatorExpression
                         {
                             Left = new LiteralExpression { Value =  sr.literal},
                             Right = right,

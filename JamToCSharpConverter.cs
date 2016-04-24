@@ -52,11 +52,20 @@ partial class Dummy
             var ifStatement = node as IfStatement;
             if (ifStatement != null)
             {
-                var vde = (VariableDereferenceExpression) ifStatement.Condition;
-                var variableName = VariableNameFor((LiteralExpression) vde.VariableExpression);
+                var condition = ifStatement.Condition;
+                
+                var vde = condition as VariableDereferenceExpression;
 
-                csharpbody.AppendLine($"if ({variableName} != null) {{");
+                if (vde != null)
+                {
+                    var variableName = VariableNameFor((LiteralExpression) vde.VariableExpression);
+                    csharpbody.AppendLine($"if ({variableName} != null) {{");
+                }
 
+                var boe = condition as BinaryOperatorExpression;
+                if (boe != null)
+                    csharpbody.AppendLine($"if ({CSharpFor(boe.Left)}.JamEquals({CSharpFor(boe.Right)})) {{");
+                
                 foreach (var statement in ifStatement.Body.Statements)
                     ProcessNode(statement, csharpbody, variables);
 
@@ -94,7 +103,7 @@ partial class Dummy
                 csharpbody.AppendLine($"{CSharpFor(invocationExpression)};");
             }
 
-            var assignmentExpression = expressionStatement.Expression as AssignmentExpression;
+            var assignmentExpression = expressionStatement.Expression as BinaryOperatorExpression;
             if (assignmentExpression != null)
             {
                 var variableName = VariableNameFor((LiteralExpression) assignmentExpression.Left);

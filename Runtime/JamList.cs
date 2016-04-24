@@ -65,6 +65,11 @@ class JamList
         return elements[csharpIndex];
     }
 
+    public bool JamEquals(JamList other)
+    {
+        return Enumerable.SequenceEqual(_elements, other._elements);
+    }
+
     public void Append(JamList values)
     {
         _elements = _elements.Concat(values._elements).ToArray();
