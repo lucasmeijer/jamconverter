@@ -100,6 +100,9 @@ namespace jamconverter
             if (literal == "rule")
                 return TokenType.Rule;
 
+            if (literal == "return")
+                return TokenType.Return;
+
             return TokenType.Literal;
         }
 
@@ -207,6 +210,7 @@ namespace jamconverter
         AccoladeClose,
         If,
         Rule,
-        VariableExpansionModifier
+        VariableExpansionModifier,
+        Return
     }
 }

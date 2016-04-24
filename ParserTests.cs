@@ -1,3 +1,4 @@
+using System.Linq;
 using jamconverter.AST;
 using NUnit.Framework;
 
@@ -135,6 +136,7 @@ namespace jamconverter
 
             var invocationExpression =(InvocationExpression) ((ExpressionStatement) blockStatement.Statements[0]).Expression;
             Assert.AreEqual("Echo", ((LiteralExpression)invocationExpression.RuleExpression).Value);
+            Assert.IsNull(parser.Parse());
         }
 
 
@@ -147,6 +149,7 @@ namespace jamconverter
             var blockStatement = (BlockStatement)node;
 
             Assert.AreEqual(0, blockStatement.Statements.Length);
+            Assert.IsNull(parser.Parse());
         }
 
 
@@ -157,6 +160,7 @@ namespace jamconverter
             var ifStatement = (IfStatement) parser.Parse();
             Assert.IsTrue(ifStatement.Condition is VariableDereferenceExpression);
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
+            Assert.IsNull(parser.Parse());
         }
 
         [Test]
@@ -180,6 +184,8 @@ namespace jamconverter
             Assert.IsTrue(combineExpression.Elements[0] is VariableDereferenceExpression);
             Assert.IsTrue(combineExpression.Elements[1] is LiteralExpression);
             Assert.IsTrue(combineExpression.Elements[2] is VariableDereferenceExpression);
+
+            Assert.IsNull(parser.Parse());
         }
 
 
@@ -198,6 +204,8 @@ namespace jamconverter
 
             Assert.AreEqual(1, ruleDeclaration.Body.Statements.Length);
             Assert.IsTrue(ruleDeclaration.Body.Statements[0] is ExpressionStatement);
+
+            Assert.IsNull(parser.Parse());
         }
 
         [Test]
@@ -213,6 +221,8 @@ namespace jamconverter
             Assert.AreEqual(2, variableDereferenceExpression.Modifiers.Length);
             Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
             Assert.AreEqual('S', variableDereferenceExpression.Modifiers[1].Command);
+
+            Assert.IsNull(parser.Parse());
         }
 
         [Test]
@@ -231,6 +241,8 @@ namespace jamconverter
 
             Assert.AreEqual('S', variableDereferenceExpression.Modifiers[1].Command);
             Assert.IsNull(variableDereferenceExpression.Modifiers[1].Value);
+
+            Assert.IsNull(parser.Parse());
         }
 
         [Test]
@@ -246,6 +258,8 @@ namespace jamconverter
             Assert.AreEqual(1, variableDereferenceExpression.Modifiers.Length);
             Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
             Assert.AreEqual(null, variableDereferenceExpression.Modifiers[0].Value);
+
+            Assert.IsNull(parser.Parse());
         }
 
         [Test]
@@ -263,6 +277,52 @@ namespace jamconverter
 
             var value = ((VariableDereferenceExpression) variableDereferenceExpression.Modifiers[0].Value);
             Assert.AreEqual("pietje", ((LiteralExpression) value.VariableExpression).Value);
+
+            Assert.IsNull(parser.Parse());
+        }
+
+        [Test]
+        public void InvocationExpressionWithBrackets()
+        {
+            var parser = new Parser("[ MyRule myarg ]");
+            var node = parser.Parse(ParseMode.SingleExpression);
+
+            var invocationExpression = (InvocationExpression)node;
+
+            Assert.AreEqual("MyRule", ((LiteralExpression)invocationExpression.RuleExpression).Value);
+
+            Assert.AreEqual(1, invocationExpression.Arguments.Length);
+            Assert.AreEqual("myarg", ((LiteralExpression)((ExpressionListExpression)invocationExpression.Arguments[0]).Expressions[0]).Value);
+
+            Assert.IsNull(parser.Parse());
+        }
+
+        [Test]
+        public void ReturnStatement()
+        {
+            var parser = new Parser("return 123 ;");
+            var node = parser.Parse(ParseMode.Statement);
+
+            var returnStatement = (ReturnStatement)node;
+            
+            Assert.AreEqual("123", ((LiteralExpression)((ExpressionListExpression)returnStatement.ReturnExpression).Expressions[0]).Value);
+
+            Assert.IsNull(parser.Parse());
+        }
+
+        [Test]
+        public void ReturnStatementWithMultipleValues()
+        {
+            var parser = new Parser("return 123 harry ;");
+            var node = parser.Parse(ParseMode.Statement);
+
+            var returnStatement = (ReturnStatement)node;
+
+            var expressions = ((ExpressionListExpression) returnStatement.ReturnExpression).Expressions.OfType<LiteralExpression>().ToArray();
+            Assert.AreEqual("123", expressions[0].Value);
+            Assert.AreEqual("harry", expressions[1].Value);
+            
+            Assert.IsNull(parser.Parse());
         }
     }
 }

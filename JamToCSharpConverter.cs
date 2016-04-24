@@ -81,9 +81,18 @@ class Dummy
                 ruleMethodCsharp.AppendLine($"public static JamList {ruleDeclaration.Name}({ruleDeclaration.Arguments.Select(a => $"JamList {a}").SeperateWithComma()}) {{");
                 foreach (var statement in ruleDeclaration.Body.Statements)
                     ProcessNode(statement, ruleMethodCsharp, variables);
-                ruleMethodCsharp.AppendLine("return null;");
+
+                if (!(ruleDeclaration.Body.Statements.Last() is ReturnStatement))
+                    ruleMethodCsharp.AppendLine("return null;");
                 ruleMethodCsharp.AppendLine("}");
                 ruleMethods.Append(ruleMethodCsharp);
+                return;
+            }
+
+            var returnStatement = node as ReturnStatement;
+            if (returnStatement != null)
+            {
+                csharpbody.AppendLine($"return {CSharpFor(returnStatement.ReturnExpression)};");
                 return;
             }
 
@@ -92,20 +101,7 @@ class Dummy
 
             if (invocationExpression != null)
             {
-                var literalRule = (LiteralExpression)invocationExpression.RuleExpression;
-
-                csharpbody.AppendLine($"{literalRule.Value}({invocationExpression.Arguments.Select(CSharpFor).SeperateWithComma()});");
-
-                /*
-                if (literalRule.Value == "Echo")
-                {
-                    var expressionListExpression = invocationExpression.Arguments[0] as ExpressionListExpression;
-                    if (expressionListExpression != null)
-                    {
-                        csharpbody.AppendLine($"System.Console.Write({CSharpFor(expressionListExpression)});");
-                        csharpbody.AppendLine("System.Console.WriteLine();");
-                    }
-                }*/
+                csharpbody.AppendLine($"{CSharpFor(invocationExpression)};");
             }
 
             var assignmentExpression = expressionStatement.Expression as AssignmentExpression;
@@ -153,6 +149,13 @@ class Dummy
             var expressionListExpression = e as ExpressionListExpression;
             if (expressionListExpression != null)
                 return $"new JamList({expressionListExpression.Expressions.Select(CSharpFor).SeperateWithComma()})";
+
+            var invocationExpression = e as InvocationExpression;
+            if (invocationExpression != null)
+            {
+                var literalRule = (LiteralExpression)invocationExpression.RuleExpression;
+                return $"{literalRule.Value}({invocationExpression.Arguments.Select(CSharpFor).SeperateWithComma()})";
+            }
 
             if (e == null)
                 return "new JamList(new string[0])";

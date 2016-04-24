@@ -24,6 +24,11 @@
         public Statement[] Statements { get; set; }
     }
 
+    public class ReturnStatement : Statement
+    {
+        public Expression ReturnExpression { get; set; }
+    }
+
     public class ExpressionStatement : Statement
     {
         public Expression Expression { get; set; }

@@ -24,7 +24,7 @@ namespace jamconverter
             if (sr == null)
                 return null;
             
-            if (sr.tokenType == TokenType.Colon || sr.tokenType == TokenType.Terminator || sr.tokenType == TokenType.ParenthesisClose)
+            if (sr.tokenType == TokenType.Colon || sr.tokenType == TokenType.Terminator || sr.tokenType == TokenType.ParenthesisClose || sr.tokenType == TokenType.BracketClose)
             {
                 _scanner.UnScan(sr);
                 return null;
@@ -128,6 +128,26 @@ namespace jamconverter
 
                 var ruleNameStr = ((LiteralExpression) ruleName).Value;
                 return new RuleDeclaration {Name = ruleNameStr, Arguments = arguments.OfType<ExpressionListExpression>().SelectMany(ele=>ele.Expressions.OfType<LiteralExpression>()).Select(le=>le.Value).ToArray(), Body = (BlockStatement) body};
+            }
+
+            if (sr.tokenType == TokenType.BracketOpen)
+            {
+                var ruleExpression = Parse(ParseMode.SingleExpression);
+                var arguments = ParseArgumentList().ToArray();
+                var closeBracket = _scanner.ScanSkippingWhiteSpace();
+                if (closeBracket.tokenType != TokenType.BracketClose)
+                    throw new ParsingException();
+                return new InvocationExpression {RuleExpression = ruleExpression, Arguments = arguments};
+            }
+
+            if (sr.tokenType == TokenType.Return)
+            {
+                var returnExpression = (Expression)Parse(ParseMode.ExpressionList);
+                var terminator = _scanner.ScanSkippingWhiteSpace();
+                if (terminator.tokenType != TokenType.Terminator)
+                    throw new ParsingException();
+
+                return new ReturnStatement() {ReturnExpression = returnExpression};
             }
 
             if (sr.tokenType == TokenType.Literal)

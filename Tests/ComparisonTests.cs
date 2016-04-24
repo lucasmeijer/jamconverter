@@ -89,6 +89,20 @@ Echo $(myvar:S=:S=.exe) ;
 ");
         }
 
+        [Test]
+        public void RuleReturningValue()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+rule GimmeFive
+{
+  return five ;
+}
+Echo [ GimmeFive ] ;
+");
+        }
+
+
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
             var csharp = new JamToCSharpConverter().Convert(simpleProgram);
