@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Text;
 
-partial class Dummy
+public static class BuiltinFunctions
 {
-    static void Echo(params JamList[] values)
+    public static void Echo(params JamList[] values)
     {
         foreach (var value in values)
         {
@@ -14,7 +14,7 @@ partial class Dummy
         Console.WriteLine();
     }
 
-    static JamList MD5(JamList input)
+    public static JamList MD5(JamList input)
     {
         return new JamList(input.Elements.Select(CalculateMD5Hash).ToArray());
     }

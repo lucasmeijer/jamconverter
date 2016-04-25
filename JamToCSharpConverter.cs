@@ -31,8 +31,9 @@ namespace jamconverter
             return 
        $@"
 using System;
+using static BuiltinFunctions;
 
-partial class Dummy
+class Dummy
 {{
     {ruleMethods}
 
@@ -184,6 +185,9 @@ partial class Dummy
                             break;
                         case 'E':
                             sb.Append($".IfEmptyUse({CSharpFor(modifier.Value)})");
+                            break;
+                        case 'G':
+                            sb.Append($".GristWith({CSharpFor(modifier.Value)})");
                             break;
                         default:
                             throw new NotSupportedException("Unkown variable expansion command: "+modifier.Command);

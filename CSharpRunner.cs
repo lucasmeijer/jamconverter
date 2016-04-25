@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using NiceIO;
 using NUnit.Framework;
 using Unity.IL2CPP;
@@ -7,7 +8,7 @@ namespace jamconverter
 {
     class CSharpRunner
     {
-        public string[] Run(string program, NPath[] additionalFiles = null)
+        public string[] Run(string program, NPath[] additionalLibs = null)
         {
             var tmpDir = NPath.CreateTempDirectory("Csharp");
 
@@ -16,8 +17,11 @@ namespace jamconverter
             var csc = new NPath("C:/il2cpp-dependencies/Roslyn/Binaries/csc.exe");
 
             var executable = tmpDir.Combine("program.exe");
-            if (additionalFiles == null) additionalFiles = new NPath[0];
-            Shell.Execute(csc, file + " "+additionalFiles.InQuotes().SeperateWithSpace()+ " -out:" + executable);
+            if (additionalLibs == null) additionalLibs = new NPath[0];
+            Shell.Execute(csc, file + " "+additionalLibs.InQuotes().Select(l=>"-r:"+l).SeperateWithSpace()+ " -out:" + executable);
+
+            foreach (var lib in additionalLibs)
+                lib.Copy(tmpDir);
 
             return Shell.Execute(executable, "").Split(new[] {Environment.NewLine}, StringSplitOptions.None);
         }

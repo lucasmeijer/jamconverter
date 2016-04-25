@@ -116,6 +116,19 @@ Echo $(myvar:E=alternative) ;
         }
 
         [Test]
+        public void GristVariableExpansion()
+        {
+            AssertConvertedProgramHasIdenticalOutput(@"
+myvar = harry ; 
+Echo $(myvar:G=mygrist) ;
+
+myvar = <pregisted>realvalue ;
+Echo $(myvar:G=mygrist) ;
+
+");
+        }
+
+        [Test]
         public void RuleReturningValue()
         {
             AssertConvertedProgramHasIdenticalOutput(
@@ -196,7 +209,7 @@ Echo $(myvar) ;
             var csharp = new JamToCSharpConverter().Convert(simpleProgram);
 
             var jamResult = new JamRunner().Run(simpleProgram).Select(s => s.TrimEnd());
-            var csharpResult = new CSharpRunner().Run(csharp, new [] { new NPath("c:/jamconverter/Runtime/JamList.cs"), new NPath("c:/jamconverter/Runtime/BuiltinFunctions.cs") }).Select(s => s.TrimEnd());
+            var csharpResult = new CSharpRunner().Run(csharp, new [] { new NPath("c:/jamconverter/bin/runtimelib.dll") }).Select(s => s.TrimEnd());
 
             Console.WriteLine("C#:");
             foreach (var l in csharpResult)

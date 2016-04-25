@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-class JamList
+public class JamList
 {
     string[] _elements;
 
@@ -72,7 +72,7 @@ class JamList
 
     public bool JamEquals(JamList other)
     {
-        return Enumerable.SequenceEqual(_elements, other._elements);
+        return _elements.SequenceEqual(other._elements);
     }
 
     public void Append(JamList values)
@@ -83,6 +83,20 @@ class JamList
     public JamList IfEmptyUse(JamList value)
     {
         return _elements.Length > 0 ? this : value;
+    }
+
+    public JamList GristWith(JamList value)
+    {
+        if (value._elements.Length>0)
+            return new JamList(Elements.Select(e => $"<{value._elements[0]}>{UnGrist(e)}").ToArray());
+        return new JamList(_elements.Select(UnGrist).ToArray());
+    }
+
+    private string UnGrist(string s)
+    {
+        if (!s.StartsWith("<"))
+            return s;
+        return s.Substring(s.IndexOf('>')+1);
     }
 
     public static JamList Combine(params JamList[] values)
@@ -100,9 +114,10 @@ class JamList
     }
 }
 
-static internal class Helper
+//stolen from eric lippert
+internal static class Helper
 {
-    static internal IEnumerable<IEnumerable<string>> CartesianProduct(this IEnumerable<IEnumerable<string>> sequences)
+    internal static IEnumerable<IEnumerable<string>> CartesianProduct(this IEnumerable<IEnumerable<string>> sequences)
     {
         IEnumerable<IEnumerable<string>> emptyProduct = new[] { Enumerable.Empty<string>() };
         return sequences.Aggregate(
