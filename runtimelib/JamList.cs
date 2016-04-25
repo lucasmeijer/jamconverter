@@ -88,7 +88,7 @@ public class JamList
     public JamList GristWith(JamList value)
     {
         if (value._elements.Length>0)
-            return new JamList(Elements.Select(e => $"<{value._elements[0]}>{UnGrist(e)}").ToArray());
+            return new JamList(Elements.Select(e => $"<{value._elements[0].Trim('<','>')}>{UnGrist(e)}").ToArray());
         return new JamList(_elements.Select(UnGrist).ToArray());
     }
 

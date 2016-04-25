@@ -128,6 +128,8 @@ Echo $(myvar:G=mygrist) ;
 myvar = <pregisted>realvalue ;
 Echo $(myvar:G=mygrist) ;
 
+Echo $(myvar:G=<gristwithanglebrackets>) ;
+
 ");
         }
 

@@ -23,6 +23,13 @@ namespace runtimelib.tests
             Assert.AreEqual("Harry", new JamList("<oldapp>Harry").GristWith(new JamList()).ToString());
         }
 
+        [Test]
+        public void GristWithAngleBrackets()
+        {
+            Assert.AreEqual("<myapp>Harry", new JamList("<oldapp>Harry").GristWith(new JamList("<myapp>")).ToString());
+        }
+
+
     }
 
 }
