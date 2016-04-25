@@ -98,6 +98,24 @@ namespace jamconverter
                 };
             }
 
+            if (sr.tokenType == TokenType.Actions)
+            {
+                var expressionList = ParseExpressionList();
+
+                var accoladeOpen = _scanner.Scan();
+                if (accoladeOpen.tokenType != TokenType.AccoladeOpen)
+                    throw new ParsingException();
+                _scanner.ScanStringUntilEndOfLine();
+                var actions = new List<string>();
+                while (true)
+                {
+                    var action = _scanner.ScanStringUntilEndOfLine();
+                    if (action.Trim() == "}")
+                        break;
+                    actions.Add(action);
+                }
+                return new ActionsDeclarationStatement() {Name = expressionList.Expressions.Last().As<LiteralExpression>().Value, Modifiers = new ExpressionList() { Expressions = expressionList.Expressions.Take(expressionList.Expressions.Length-1).ToArray()}, Actions = actions.ToArray()};
+            }
 
             if (sr.tokenType == TokenType.Return)
             {

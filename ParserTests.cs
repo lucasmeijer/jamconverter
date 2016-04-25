@@ -269,6 +269,25 @@ a = 3 ;
             Assert.IsTrue(expressionList.Expressions[1] is LiteralExpression);
         }
 
+
+        [Test]
+        public void ActionsDeclarationStatement()
+        {
+            ActionsDeclarationStatement actionsDeclarationStatement = ParseStatement<ActionsDeclarationStatement>(@"
+actions response myactionname
+{
+    echo something
+    echo somethingelse
+}");
+            Assert.AreEqual("myactionname", actionsDeclarationStatement.Name);
+            CollectionAssert.AreEqual(new[] { "response"}, actionsDeclarationStatement.Modifiers.Expressions.Cast<LiteralExpression>().Select(le => le.Value));
+
+            Assert.AreEqual(2, actionsDeclarationStatement.Actions.Length);
+            Assert.AreEqual("echo something", actionsDeclarationStatement.Actions[0].TrimStart());
+            Assert.AreEqual("echo somethingelse", actionsDeclarationStatement.Actions[1].TrimStart());
+        }
+
+
         static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);

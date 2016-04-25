@@ -84,7 +84,13 @@ namespace jamconverter.AST
         public string[] Arguments { get; set; }
     }
 
-
+    public class ActionsDeclarationStatement : Statement
+    {
+        public string Name { get; set; }
+        public ExpressionList Modifiers { get; set; }
+        public string[] Actions { get; set; }
+    }
+    
     public class InvocationExpression : Expression
     {
         public Expression RuleExpression { get; set; }

@@ -133,5 +133,17 @@ on_new_line");
             //we do not expect the comment to be reported by the scanner
             CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.WhiteSpace, TokenType.Literal}, result.Select(r => r.tokenType));
         }
+
+        [Test]
+        public void ReadStringUntilEOL()
+        {
+            var scanner = new Scanner(@"hello this is a thing
+on_a_new_line
+");
+            Assert.AreEqual(TokenType.Literal, scanner.Scan().tokenType);
+            Assert.AreEqual(" this is a thing",scanner.ScanStringUntilEndOfLine());
+            Assert.AreEqual(TokenType.Literal, scanner.Scan().tokenType);
+
+        }
     }
 }

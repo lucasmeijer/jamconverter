@@ -108,6 +108,9 @@ namespace jamconverter
 
             if (literal == "return")
                 return TokenType.Return;
+            
+            if (literal == "actions")
+                return TokenType.Actions;
 
             if (literal == "+=")
                 return TokenType.AppendOperator;
@@ -193,7 +196,7 @@ namespace jamconverter
             for (int i = nextChar; i != _input.Length; i++)
             {
                 var c = _input[i];
-                if (c == '\n' || c == 0x0d || c == 0x0a)
+                if (IsNewLineCharacter(c))
                     inNewLineSequence = true;
                 else
                 {
@@ -210,6 +213,13 @@ namespace jamconverter
             return result2;
         }
 
+        private static readonly char[] s_NewLineCharacters = {'\n', (char)0x0d, (char)0x0a};
+
+        private static bool IsNewLineCharacter(char c)
+        {
+            return c == '\n' || c == 0x0d || c == 0x0a;
+        }
+
         public ScanResult ScanSkippingWhiteSpace()
         {
             while (true)
@@ -224,6 +234,11 @@ namespace jamconverter
         public void UnScan(ScanResult sr)
         {
             _unscanBuffer.Enqueue(sr);
+        }
+
+        public string ScanStringUntilEndOfLine()
+        {
+            return ReadUntilEndOfLine().TrimEnd(s_NewLineCharacters);
         }
     }
 
@@ -252,6 +267,7 @@ namespace jamconverter
         VariableExpansionModifier,
         Return,
         AppendOperator,
-        Comment
+        Comment,
+        Actions
     }
 }
