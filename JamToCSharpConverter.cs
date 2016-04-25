@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using jamconverter.AST;
@@ -157,9 +158,45 @@ class Dummy
             return input.Replace(".", "_");
         }
 
-        string CSharpFor(ExpressionList expressionList)
+        public string CSharpFor(ExpressionList expressionList)
         {
-            return $"new JamList({expressionList.Expressions.Select(CSharpFor).SeperateWithComma()})";
+            if (expressionList.Expressions.Length == 0)
+                return "new JamList()";
+
+            var queue = new Queue<Expression>(expressionList.Expressions);
+            var sb = new StringBuilder();
+            bool first = true;
+            while (queue.Any())
+            {
+                if (queue.Peek() is LiteralExpression)
+                {
+                    var literalExpressions = PopAllLiteralExpressionsFromQueue(queue);
+                    var formatString = first ? "new JamList({0})" : ".With({0})";
+                    sb.AppendFormat(formatString, literalExpressions.Select(le => le.Value).InQuotes().SeperateWithComma());
+                }
+                else
+                {
+                    var expression = queue.Dequeue();
+                    if (first)
+                        sb.Append(CSharpFor(expression));
+                    else
+                        sb.Append($".With({CSharpFor(expression)})");
+                }
+                first = false;
+            }
+
+            return sb.ToString();
+        }
+
+        private IEnumerable<LiteralExpression> PopAllLiteralExpressionsFromQueue(Queue<Expression> queue)
+        {
+            while(queue.Any())
+            {
+                if (queue.Peek() is LiteralExpression)
+                    yield return (LiteralExpression) queue.Dequeue();
+                else
+                    yield break;
+            }
         }
 
         string CSharpFor(Expression e)

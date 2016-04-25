@@ -49,7 +49,7 @@ namespace jamconverter.AST
     public class VariableDereferenceExpression : Expression
     {
         public Expression VariableExpression { get; set; }
-        public VariableDereferenceModifier[] Modifiers { get; set; }
+        public VariableDereferenceModifier[] Modifiers { get; set; } = {};
         public Expression IndexerExpression { get; set; }
     }
 
@@ -94,7 +94,7 @@ namespace jamconverter.AST
     public class InvocationExpression : Expression
     {
         public Expression RuleExpression { get; set; }
-        public ExpressionList[] Arguments { get; set; }
+        public ExpressionList[] Arguments { get; set; } = {};
     }
 
     public static class ASTExtensions

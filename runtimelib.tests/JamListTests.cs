@@ -42,6 +42,12 @@ namespace runtimelib.tests
             Assert.AreEqual("this_is_nice", new JamList("this", "is","nice").JoinWithValue(new JamList("_")).ToString());
         }
 
+        [Test]
+        public void With()
+        {
+            var jamlist = new JamList().With("one").With(new JamList("two", "three")).With("four");
+            Assert.AreEqual("one two three four", jamlist.ToString());
+        }
     }
 
 }

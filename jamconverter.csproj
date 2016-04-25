@@ -64,6 +64,7 @@
     <Compile Include="Shell.cs" />
     <Compile Include="Tests\ComparisonTests.cs" />
     <Compile Include="JamRunner.cs" />
+    <Compile Include="Tests\JamToCSharpConverterTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

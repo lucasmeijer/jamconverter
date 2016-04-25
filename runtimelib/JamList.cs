@@ -132,6 +132,16 @@ public class JamList
 
         return new JamList(string.Join(joinValue._elements[0], _elements));
     }
+
+    public JamList With(string extra)
+    {
+        return new JamList {_elements = _elements.Concat(new [] {extra}).ToArray()};
+    }
+
+    public JamList With(JamList extra)
+    {
+        return new JamList { _elements = _elements.Concat(extra._elements).ToArray() };
+    }
 }
 
 //stolen from eric lippert
