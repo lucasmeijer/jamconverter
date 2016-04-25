@@ -204,6 +204,7 @@ class Dummy
             var literalExpression = e as LiteralExpression;
             if (literalExpression != null)
                 return $"new JamList({literalExpression.Value.InQuotes()})";
+            
             var dereferenceExpression = e as VariableDereferenceExpression;
             if (dereferenceExpression != null)
             {
@@ -234,7 +235,7 @@ class Dummy
             }
 
             if (e == null)
-                return "new JamList(new string[0])";
+                return "new JamList()";
             throw new ParsingException("CSharpFor cannot deal with " + e);
         }
 

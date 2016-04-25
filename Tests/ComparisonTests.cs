@@ -66,7 +66,17 @@ if $(myvar) = 321 { Echo Yes2 ; }
         [Test]
         public void CombineExpression()
         {
-            AssertConvertedProgramHasIdenticalOutput("myvar = john doe ; Echo $(myvar)postfix ; ");
+            AssertConvertedProgramHasIdenticalOutput(
+@"myvar = john doe ; 
+Echo $(myvar)postfix ; 
+
+myemptyvar = ;
+Echo $(myvar)$(myemptyvar)hello ;
+
+Echo one$(myvar)two ;
+Echo one$(myvar)$(myvar)two ;
+
+");
         }
 
         [Test]
