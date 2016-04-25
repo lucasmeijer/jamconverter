@@ -30,7 +30,7 @@ namespace jamconverter
             return values.Select(v => $"\"{v}\"");
         }
 
-        private static string SeperateWith(IEnumerable<string> values, string seperator)
+        public static string SeperateWith(IEnumerable<string> values, string seperator)
         {
             var result = new StringBuilder();
 

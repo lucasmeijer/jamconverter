@@ -41,11 +41,23 @@ public class JamList
 
     public JamList WithSuffix(JamList value)
     {
-        return new JamList(_elements.Select(s => WithSuffix(s,value._elements[0])).ToArray());
+        return new JamList(_elements.Select(s =>
+        {
+            var suffix = value._elements.Length > 0 ? value._elements[0] : "";
+            return WithSuffix(s, suffix);
+        }).ToArray());
     }
 
     private string WithSuffix(string value, string suffix)
     {
+        if (suffix.Length == 0)
+        {
+            var lastIndexOf = value.LastIndexOf(".");
+            if (lastIndexOf<0)
+                return value;
+            return value.Substring(0, lastIndexOf);
+        }
+
         return System.IO.Path.ChangeExtension(value, suffix);
     }
 
@@ -111,6 +123,14 @@ public class JamList
         foreach (var s in inputs)
             sb.Append(s);
         return sb.ToString();
+    }
+
+    public JamList JoinWithValue(JamList joinValue)
+    {
+        if (joinValue._elements.Length != 1)
+            throw new NotSupportedException();
+
+        return new JamList(string.Join(joinValue._elements[0], _elements));
     }
 }
 

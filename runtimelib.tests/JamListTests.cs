@@ -29,6 +29,18 @@ namespace runtimelib.tests
             Assert.AreEqual("<myapp>Harry", new JamList("<oldapp>Harry").GristWith(new JamList("<myapp>")).ToString());
         }
 
+        [Test]
+        public void WithEmptySuffix()
+        {
+            Assert.AreEqual("myfile", new JamList("myfile").WithSuffix(new JamList()).ToString());
+        }
+
+
+        [Test]
+        public void JoinWithValue()
+        {
+            Assert.AreEqual("this_is_nice", new JamList("this", "is","nice").JoinWithValue(new JamList("_")).ToString());
+        }
 
     }
 

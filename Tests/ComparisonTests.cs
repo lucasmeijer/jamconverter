@@ -90,14 +90,14 @@ if $(myvar) = 321 { Echo Yes2 ; }
         {
             AssertConvertedProgramHasIdenticalOutput(
 @"
-myvar = main.cs ; 
-Echo $(myvar:S=.cpp) ;
+#myvar = main.cs ; 
+#Echo $(myvar:S=.cpp) ;
+
+#myvar = main.cs.pieter ; 
+#Echo $(myvar:S=.cpp:S=.exe) ;
 
 myvar = main.cs.pieter ; 
-Echo $(myvar:S=.cpp:S=.exe) ;
-
-myvar = main.cs.pieter ; 
-Echo $(myvar:S=:S=.exe) ;
+Echo $(myvar:S=) ;
 ");
         }
 
@@ -119,6 +119,17 @@ Echo $(myvar:E=*) ;
         }
 
         [Test]
+        public void JoinValueExpansion()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = im on a boat ; 
+Echo $(myvar:J=_) ;
+");
+        }
+        
+
+      [Test]
         public void GristVariableExpansion()
         {
             AssertConvertedProgramHasIdenticalOutput(@"
@@ -206,8 +217,16 @@ myvar += b c ;
 Echo $(myvar) ;
 ");
         }
-        
 
+      //  [Test]
+        public void ExpandToBound()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = a ;
+Echo $(myvar:T) ;
+");
+        }
 
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {

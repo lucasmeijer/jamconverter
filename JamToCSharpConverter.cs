@@ -177,21 +177,10 @@ class Dummy
 
                 foreach (var modifier in dereferenceExpression.Modifiers)
                 {
-                    switch (modifier.Command)
-                    {
-                        case 'S':
-                            var valueStr = modifier.Value == null ? "new JamList(\"\")" : CSharpFor(modifier.Value);
-                            sb.Append($".WithSuffix({valueStr})");
-                            break;
-                        case 'E':
-                            sb.Append($".IfEmptyUse({CSharpFor(modifier.Value)})");
-                            break;
-                        case 'G':
-                            sb.Append($".GristWith({CSharpFor(modifier.Value)})");
-                            break;
-                        default:
-                            throw new NotSupportedException("Unkown variable expansion command: "+modifier.Command);
-                    }
+                    var csharpMethod = CSharpMethodForModifier(modifier, sb);
+
+                    sb.Append($".{csharpMethod}({CSharpFor(modifier.Value)})");
+
                 }
                 return sb.ToString();
             }
@@ -210,6 +199,23 @@ class Dummy
             if (e == null)
                 return "new JamList(new string[0])";
             throw new ParsingException("CSharpFor cannot deal with " + e);
+        }
+
+        private string CSharpMethodForModifier(VariableDereferenceModifier modifier, StringBuilder sb)
+        {
+            switch (modifier.Command)
+            {
+                case 'S':
+                    return "WithSuffix";
+                case 'E':
+                    return "IfEmptyUse";
+                case 'G':
+                    return "GristWith";
+                case 'J':
+                    return "JoinWithValue";
+                default:
+                    throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);
+            }
         }
     }
 }
