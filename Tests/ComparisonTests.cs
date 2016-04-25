@@ -112,6 +112,9 @@ Echo $(myvar:E=alternative) ;
 myvar = realvalue ;
 Echo $(myvar:E=alternative) ;
 
+myvar = ;
+Echo $(myvar:E=*) ;
+
 ");
         }
 
