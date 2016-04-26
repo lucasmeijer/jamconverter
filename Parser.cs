@@ -57,17 +57,17 @@ namespace jamconverter
 
         private Statement ParseExpressionStatement(ScanResult sr)
         {
-            var sr2 = _scanner.ScanSkippingWhiteSpace();
-            if (sr2 != null && (sr2.tokenType == TokenType.Assignment || sr2.tokenType == TokenType.AppendOperator))
+            var scanResult = _scanner.ScanSkippingWhiteSpace();
+            if (scanResult != null && (scanResult.tokenType == TokenType.Assignment || scanResult.tokenType == TokenType.AppendOperator))
             {
                 var right = ParseExpressionList();
                 var terminator = _scanner.ScanSkippingWhiteSpace();
                 if (terminator.tokenType != TokenType.Terminator)
                     throw new ParsingException();
 
-                return new ExpressionStatement {Expression = new BinaryOperatorExpression {Left = new LiteralExpression {Value = sr.literal}, Right = right, Operator = OperatorFor(sr2.tokenType)}};
+                return new ExpressionStatement {Expression = new BinaryOperatorExpression {Left = new LiteralExpression {Value = sr.literal}, Right = right, Operator = OperatorFor(scanResult.tokenType)}};
             }
-            _scanner.UnScan(sr2);
+            _scanner.UnScan(scanResult);
 
             var arguments = ParseArgumentList().ToArray();
             var invocationExpression = new InvocationExpression {RuleExpression = new LiteralExpression {Value = sr.literal}, Arguments = arguments};
@@ -219,7 +219,6 @@ namespace jamconverter
             var variableDereferenceExpression = new VariableDereferenceExpression {VariableExpression = ParseExpression()};
 
             var next = _scanner.Scan();
-            var modifiers = new List<VariableDereferenceModifier>();
 
             if (next.tokenType == TokenType.BracketOpen)
             {
@@ -229,6 +228,8 @@ namespace jamconverter
                     throw new ParsingException("Expected bracket close while parsing variable dereference expressions' indexer");
                 next = _scanner.Scan();
             }
+
+            var modifiers = new List<VariableDereferenceModifier>();
 
             if (next.tokenType == TokenType.Colon)
             {
