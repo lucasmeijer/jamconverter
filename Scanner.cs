@@ -128,9 +128,15 @@ namespace jamconverter
 
             if (literal == "else")
                 return TokenType.Else;
+            
+            if (literal == "while")
+                return TokenType.While;
 
             if (literal == "+=")
                 return TokenType.AppendOperator;
+
+            if (literal == "-=")
+                return TokenType.SubtractOperator;
 
             return TokenType.Literal;
         }
@@ -265,6 +271,8 @@ namespace jamconverter
         On,
         EOF,
         Not,
-        Else
+        Else,
+        While,
+        SubtractOperator
     }
 }

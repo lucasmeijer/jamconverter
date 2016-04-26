@@ -242,6 +242,19 @@ myvar += b c ;
 Echo $(myvar) ;
 ");
         }
+
+        [Test]
+        public void While()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = one two three four ;
+while $(myvar)
+{
+   Echo $(myvar) ;
+   myvar -= $(myvar[1]) ;
+}");
+        }
         
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {

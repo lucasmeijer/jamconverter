@@ -89,13 +89,28 @@ namespace jamconverter
         {
             var assignmentExpression = ParseStatement<ExpressionStatement>("a = b ;").Expression.As<BinaryOperatorExpression>();
 
+            AssertLeftIsA_and_RightIsB(assignmentExpression);
+            Assert.AreEqual(Operator.Assignment, assignmentExpression.Operator);
+        }
+
+        [Test]
+        public void Subtract()
+        {
+            var assignmentExpression = ParseStatement<ExpressionStatement>("a -= b ;").Expression.As<BinaryOperatorExpression>();
+
+            AssertLeftIsA_and_RightIsB(assignmentExpression);
+            Assert.AreEqual(Operator.Subtract, assignmentExpression.Operator);
+        }
+
+
+        private static void AssertLeftIsA_and_RightIsB(BinaryOperatorExpression assignmentExpression)
+        {
             var left = (LiteralExpression) assignmentExpression.Left;
             Assert.AreEqual("a", left.Value);
 
             var right = assignmentExpression.Right;
             Assert.AreEqual(1, right.Expressions.Length);
             Assert.AreEqual("b", right.Expressions[0].As<LiteralExpression>().Value);
-            Assert.AreEqual(Operator.Assignment, assignmentExpression.Operator);
         }
 
         [Test]
@@ -375,6 +390,14 @@ actions response myactionname
 
             CollectionAssert.AreEqual(new[] { "a", "b"}, literals);
             Assert.AreEqual(0, onStatement.Body.Statements.Length);
+        }
+
+        [Test]
+        public void WhileStatement()
+        {
+            var whileStatement = ParseStatement<WhileStatement>("while $(mylist) {} ");
+            Assert.IsTrue(whileStatement.Condition.Left is VariableDereferenceExpression);
+            Assert.AreEqual(0, whileStatement.Body.Statements.Length);            
         }
 
 

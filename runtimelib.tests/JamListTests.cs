@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Linq;
+using NUnit.Framework;
 
 namespace runtimelib.tests
 {
@@ -59,6 +60,20 @@ namespace runtimelib.tests
         public void AsBoolReturnsFase()
         {
             Assert.IsFalse(new JamList().AsBool());
+        }
+
+        [Test]
+        public void Subtract()
+        {
+            var jamlist = new JamList("one", "two", "two", "three", "four");
+            jamlist.Subtract(new JamList("four", "two"));
+            CollectionAssert.AreEqual(new[] { "one","three"}, jamlist.Elements.ToArray());
+        }
+
+
+        [Test]
+        public void PlayGround()
+        {
         }
     }
 

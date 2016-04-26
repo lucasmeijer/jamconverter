@@ -56,6 +56,9 @@ namespace jamconverter
             if (scanToken.tokenType == TokenType.On)
                 return ParseOnStatement();
 
+            if (scanToken.tokenType == TokenType.While)
+                return ParseWhileStatement();
+
             throw new ParsingException();
         }
 
@@ -63,6 +66,12 @@ namespace jamconverter
         {
             _scanResult.Next().Is(TokenType.On);
             return new OnStatement() {Targets = ParseExpressionList(), Body = ParseBlockStatement()};
+        }
+
+        private WhileStatement ParseWhileStatement()
+        {
+            _scanResult.Next().Is(TokenType.While);
+            return new WhileStatement() { Condition = ParseCondition(), Body = ParseBlockStatement() };
         }
 
         private Statement ParseExpressionStatement()
@@ -100,7 +109,7 @@ namespace jamconverter
                 return new VariableOnTargetExpression() { Variable = variable, Targets = targets };
             }
 
-            if (nextScanToken.tokenType == TokenType.Assignment || nextScanToken.tokenType == TokenType.AppendOperator)
+            if (nextScanToken.tokenType == TokenType.Assignment || nextScanToken.tokenType == TokenType.AppendOperator || nextScanToken.tokenType == TokenType.SubtractOperator)
             {
                 return ParseExpression();
             }
@@ -119,6 +128,7 @@ namespace jamconverter
             {
                 case TokenType.Assignment:
                 case TokenType.AppendOperator:
+                case TokenType.SubtractOperator:
                 case TokenType.On:
 
                     return true;
@@ -217,7 +227,7 @@ namespace jamconverter
                 return null;
 
             if (scanToken.tokenType == TokenType.Colon || scanToken.tokenType == TokenType.Terminator ||
-                scanToken.tokenType == TokenType.ParenthesisClose || scanToken.tokenType == TokenType.BracketClose || scanToken.tokenType == TokenType.Assignment || scanToken.tokenType == TokenType.AppendOperator)
+                scanToken.tokenType == TokenType.ParenthesisClose || scanToken.tokenType == TokenType.BracketClose || scanToken.tokenType == TokenType.Assignment || scanToken.tokenType == TokenType.AppendOperator || scanToken.tokenType == TokenType.SubtractOperator)
             {
                 return null;
             }
@@ -311,7 +321,17 @@ namespace jamconverter
 
         private static Operator OperatorFor(TokenType tokenType)
         {
-            return tokenType == TokenType.AppendOperator ? Operator.Append : Operator.Assignment;
+            switch (tokenType)
+            {
+                case TokenType.AppendOperator:
+                    return Operator.Append;
+                case TokenType.Assignment:
+                    return Operator.Assignment;
+                case TokenType.SubtractOperator:
+                    return Operator.Subtract;
+                default:
+                    throw new NotSupportedException("Unknown operator tokentype: " + tokenType);
+            }
         }
 
         Expression ScanForCombineExpression(Expression firstExpression)

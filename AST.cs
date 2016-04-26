@@ -76,7 +76,8 @@ namespace jamconverter.AST
     {
         Assignment,
         Append,
-s    }
+        Subtract
+    }
 
     public class RuleDeclarationStatement : Statement
     {
@@ -95,6 +96,12 @@ s    }
     public class OnStatement : Statement
     {
         public ExpressionList Targets { get; set; }
+        public BlockStatement Body { get; set; }
+    }
+
+    public class WhileStatement : Statement
+    {
+        public Condition Condition { get; set; }
         public BlockStatement Body { get; set; }
     }
 

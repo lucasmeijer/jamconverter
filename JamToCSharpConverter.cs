@@ -54,6 +54,12 @@ class Dummy
                 return;
             }
 
+            if (statement is WhileStatement)
+            {
+                ProcessWhileStatement(csharpbody, variables, (WhileStatement)statement);
+                return;
+            }
+
             if (statement is RuleDeclarationStatement)
             {
                 ProcessRuleDeclarationStatement(variables, (RuleDeclarationStatement) statement);
@@ -78,15 +84,16 @@ class Dummy
                 ProcessAssignmentExpressionStatement(csharpbody, variables, (BinaryOperatorExpression) expressionStatement.Expression);
         }
 
-        private static void ProcessAssignmentExpressionStatement(StringBuilder csharpbody, List<string> variables, BinaryOperatorExpression assignmentExpression)
+        private void ProcessAssignmentExpressionStatement(StringBuilder csharpbody, List<string> variables, BinaryOperatorExpression assignmentExpression)
         {
             var variableName = VariableNameFor((LiteralExpression) assignmentExpression.Left);
             if (!variables.Contains(variableName))
                 variables.Add(variableName);
 
-            var valueArguments = assignmentExpression.Right.Expressions.Cast<LiteralExpression>().Select(e=>e.Value);
+//            var valueArguments = assignmentExpression.Right.Expressions.Cast<LiteralExpression>().Select(e=>e.Value);
 
-            var value = $"new JamList({valueArguments.InQuotes().SeperateWithComma()})";
+  //          var value = $"new JamList({valueArguments.InQuotes().SeperateWithComma()})";
+            var value = CSharpFor(assignmentExpression.Right);
 
             switch (assignmentExpression.Operator)
             {
@@ -96,6 +103,11 @@ class Dummy
                 case Operator.Append:
                     csharpbody.AppendLine($"{variableName}.Append({value});");
                     break;
+                case Operator.Subtract:
+                    csharpbody.AppendLine($"{variableName}.Subtract({value});");
+                    break;
+                default:
+                    throw new NotSupportedException("Unsupported operator in assignment: " + assignmentExpression.Operator);
             }
         }
 
@@ -133,6 +145,17 @@ class Dummy
             csharpbody.AppendLine("} else {");
             foreach (var subStatement in ifStatement.Else.Statements)
                 ProcessStatement(subStatement, csharpbody, variables);
+            csharpbody.AppendLine("}");
+        }
+
+        private void ProcessWhileStatement(StringBuilder csharpbody, List<string> variables, WhileStatement whileStatement)
+        {
+            var conditionCSharp = CSharpFor(whileStatement.Condition);
+            csharpbody.AppendLine($"while ({conditionCSharp}) {{");
+
+            foreach (var subStatement in whileStatement.Body.Statements)
+                ProcessStatement(subStatement, csharpbody, variables);
+
             csharpbody.AppendLine("}");
         }
 

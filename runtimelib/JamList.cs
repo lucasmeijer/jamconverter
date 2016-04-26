@@ -147,6 +147,11 @@ public class JamList
     {
         return _elements.Length > 0;
     }
+
+    public void Subtract(JamList values)
+    {
+        _elements = _elements.Where(e => !values.Elements.Contains(e)).ToArray();
+    }
 }
 
 //stolen from eric lippert
