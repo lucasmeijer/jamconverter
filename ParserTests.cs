@@ -287,7 +287,14 @@ actions response myactionname
             Assert.AreEqual("echo somethingelse", actionsDeclarationStatement.Actions[1].TrimStart());
         }
 
-
+        
+        [Test]
+        public void ExpressionListWithOnLiteral()
+        {
+            //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
+            CollectionAssert.AreEqual(new[] { "I","am","on","a","boat"}, ParseExpressionList("I am on a boat").Expressions.Cast<LiteralExpression>().Select(le => le.Value));
+        }
+        
         static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);
