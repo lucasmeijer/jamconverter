@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using jamconverter.AST;
 
 namespace jamconverter
@@ -195,31 +196,8 @@ namespace jamconverter
         private Statement ParseIfStatement()
         {
             _scanResult.Next().Is(TokenType.If);
-            var expression = ParseExpression();
-            var peek = _scanResult.Peek();
-            var ifStatement = new IfStatement();
 
-            switch (peek.tokenType)
-            {
-                case TokenType.Assignment:
-                    _scanResult.Next();
-                    ifStatement.Condition = new BinaryOperatorExpression {Left = expression, Right = ParseExpressionList()};
-                    break;
-                case TokenType.AccoladeOpen:
-                    ifStatement.Condition = expression;
-                    break;
-                default:
-                    throw new ParsingException();
-            }
-
-            var body = ParseStatement();
-
-            var blockStatement = body as BlockStatement;
-            if (blockStatement == null)
-                throw new ParsingException("if statements always need to be followed by a blockstatment: {}");
-
-            ifStatement.Body = blockStatement;
-            return ifStatement;
+            return new IfStatement {Condition = ParseCondition(), Body = ParseBlockStatement()};
         }
 
         public Expression ParseExpression()
@@ -249,7 +227,7 @@ namespace jamconverter
 
             throw new ParsingException("expected Value, got: " + scanToken.tokenType);
         }
-
+        
         private Expression ParseInvocationExpression()
         {
             var bracketOpen = _scanResult.Next();
@@ -365,6 +343,31 @@ namespace jamconverter
             }
 
             return expressionLists.ToArray();
+        }
+
+        public Condition ParseCondition()
+        {
+            var condition = new Condition();
+
+            if (_scanResult.Peek().tokenType == TokenType.Not)
+            {
+                condition.Negated = true;
+                _scanResult.Next();
+            }
+
+            condition.Left = ParseExpression();
+            var peek = _scanResult.Peek();
+            if (peek.tokenType == TokenType.AccoladeOpen || peek.tokenType == TokenType.EOF)
+                return condition;
+
+            if (condition.Negated)
+                throw new ParsingException("We do not support conditions that use the ! negation, and also have an operator and a right side.  jam has very weird behaviour in that case");
+
+            _scanResult.Next();
+            condition.Operator = OperatorFor(peek.tokenType);
+            condition.Right = ParseExpressionList();
+
+            return condition;
         }
     }
 

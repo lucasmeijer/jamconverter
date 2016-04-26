@@ -142,6 +142,11 @@ public class JamList
     {
         return new JamList { _elements = _elements.Concat(extra._elements).ToArray() };
     }
+
+    public bool AsBool()
+    {
+        return _elements.Length > 0;
+    }
 }
 
 //stolen from eric lippert

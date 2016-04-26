@@ -17,7 +17,7 @@ namespace jamconverter.AST
 
     public class IfStatement : Statement
     {
-        public Expression Condition { get; set; }
+        public Condition Condition { get; set; }
         public BlockStatement Body { get; set; }
     }
 
@@ -70,12 +70,12 @@ namespace jamconverter.AST
         public ExpressionList Right { get; set; }
         public Operator Operator { get; set; }
     }
-    
+
     public enum Operator
     {
         Assignment,
-        Append
-    }
+        Append,
+s    }
 
     public class RuleDeclarationStatement : Statement
     {
@@ -107,6 +107,14 @@ namespace jamconverter.AST
     {
         public Expression Variable { get; set; }
         public ExpressionList Targets { get; set; }
+    }
+
+    public class Condition : Node
+    {
+        public bool Negated { get; set; }
+        public Expression Left { get; set; }
+        public Operator Operator { get; set; }
+        public ExpressionList Right { get; set; }
     }
 
     public static class ASTExtensions

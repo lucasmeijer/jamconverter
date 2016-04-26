@@ -119,7 +119,6 @@ namespace jamconverter
         public void IfStatement()
         {
             var ifStatement = ParseStatement<IfStatement>("if $(somevar) {}");
-            Assert.IsTrue(ifStatement.Condition is VariableDereferenceExpression);
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
         }
 
@@ -127,13 +126,32 @@ namespace jamconverter
         public void IfStatementWithBinaryOperatorCondition()
         {
             var ifStatement = ParseStatement<IfStatement>("if $(somevar) = 3 {}");
-            Assert.IsTrue(ifStatement.Condition is BinaryOperatorExpression);
-            var boe = ifStatement.Condition.As<BinaryOperatorExpression>();
-
-            Assert.AreEqual(Operator.Assignment, boe.Operator);
-            Assert.AreEqual("3", boe.Right.Expressions[0].As<LiteralExpression>().Value);
+            Assert.AreEqual(Operator.Assignment, ifStatement.Condition.Operator);
+            Assert.AreEqual("3", ifStatement.Condition.Right.Expressions[0].As<LiteralExpression>().Value);
 
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
+        }
+
+        [Test]
+        public void IfStatementWithNegatedCondition()
+        {
+            var ifStatement = ParseStatement<IfStatement>("if ! $(somevar) {}");
+            Assert.IsTrue(ifStatement.Condition.Left is VariableDereferenceExpression);
+            Assert.IsTrue(ifStatement.Condition.Negated);
+        }
+
+        [Test]
+        public void IfStatementWithNegationAndRightSide()
+        {
+            //jam is crazy.  if you do:
+            //
+            //myvar = 123 ;
+            //if ! $(myvar) = 321 {}
+            //
+            //that condition is not considered true. the ! does not apply to the equals expression somehow.  for now we're just going to make the parser throw on any case
+            //where ! is used with a non trivial condition, and hope our jam program doesn't actually use this construct.
+
+            Assert.Throws<ParsingException>(()=>ParseStatement<IfStatement>("if ! $(somevar) = 321 {}"));
         }
 
         [Test]
@@ -146,8 +164,7 @@ namespace jamconverter
             Assert.IsTrue(combineExpression.Elements[1] is LiteralExpression);
             Assert.IsTrue(combineExpression.Elements[2] is VariableDereferenceExpression);
         }
-
-
+        
         [Test]
         public void RuleDeclaration()
         {
@@ -250,6 +267,7 @@ namespace jamconverter
             Assert.IsTrue(expressionStatement.Expression.As<BinaryOperatorExpression>().Operator == Operator.Append);
         }
 
+
         [Test]
         public void Comment()
         {
@@ -286,7 +304,43 @@ actions response myactionname
             Assert.AreEqual("echo something", actionsDeclarationStatement.Actions[0].TrimStart());
             Assert.AreEqual("echo somethingelse", actionsDeclarationStatement.Actions[1].TrimStart());
         }
-        
+
+        [Test]
+        public void SingleExpressionCondition()
+        {
+            var condition = ParseCondition("myliteral");
+
+            Assert.AreEqual("myliteral", condition.Left.As<LiteralExpression>().Value);
+            Assert.IsFalse(condition.Negated);
+            Assert.IsNull(condition.Right);
+        }
+
+        [Test]
+        public void EqualsCondition()
+        {
+            var condition = ParseCondition("myliteral = $(harry)");
+
+            Assert.AreEqual("myliteral", condition.Left.As<LiteralExpression>().Value);
+            Assert.IsFalse(condition.Negated);
+            Assert.IsTrue(condition.Right.Expressions[0] is VariableDereferenceExpression);
+            Assert.AreEqual(Operator.Assignment, condition.Operator );
+        }
+
+        [Test]
+        public void NegatedCondition()
+        {
+            var condition = ParseCondition("! $(myvar)");
+
+            Assert.IsTrue(condition.Negated);
+            Assert.AreEqual("myvar", condition.Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+        }
+
+        private static Condition ParseCondition(string jamCode)
+        {
+            return new Parser(jamCode).ParseCondition();
+        }
+
+
         [Test]
         public void ExpressionListWithOnLiteral()
         {

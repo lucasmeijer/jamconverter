@@ -48,6 +48,18 @@ namespace runtimelib.tests
             var jamlist = new JamList().With("one").With(new JamList("two", "three")).With("four");
             Assert.AreEqual("one two three four", jamlist.ToString());
         }
+
+        [Test]
+        public void AsBoolReturnsTrue()
+        {
+            Assert.IsTrue(new JamList("a","c").AsBool());
+        }
+
+        [Test]
+        public void AsBoolReturnsFase()
+        {
+            Assert.IsFalse(new JamList().AsBool());
+        }
     }
 
 }

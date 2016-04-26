@@ -48,89 +48,83 @@ class Dummy
 
         private void ProcessStatement(Statement statement, StringBuilder csharpbody, List<string> variables)
         {
-            var ifStatement = statement as IfStatement;
-            if (ifStatement != null)
+            if (statement is IfStatement)
             {
-                var condition = ifStatement.Condition;
-                
-                var vde = condition as VariableDereferenceExpression;
-
-                if (vde != null)
-                {
-                    var variableName = VariableNameFor((LiteralExpression) vde.VariableExpression);
-                    csharpbody.AppendLine($"if ({variableName} != null) {{");
-                }
-
-                var boe = condition as BinaryOperatorExpression;
-                if (boe != null)
-                    csharpbody.AppendLine($"if ({CSharpFor(boe.Left)}.JamEquals({CSharpFor(boe.Right)})) {{");
-                
-                foreach (var subStatement in ifStatement.Body.Statements)
-                    ProcessStatement(subStatement, csharpbody, variables);
-
-                csharpbody.AppendLine("}");
+                ProcessIfStatement(csharpbody, variables, (IfStatement) statement);
                 return;
             }
 
-            var ruleDeclaration = statement as RuleDeclarationStatement;
-            if (ruleDeclaration != null)
+            if (statement is RuleDeclarationStatement)
             {
-                var ruleMethodCsharp = new StringBuilder();
-
-                //because the parser always interpets an invocation without any arguments as one with a single argument: an empty expressionlist,  let's make sure we always are ready to take a single argument
-                var arguments = ruleDeclaration.Arguments.Length == 0
-                    ? new[] {"dummyArgument"}
-                    : ruleDeclaration.Arguments;
-
-                ruleMethodCsharp.AppendLine($"public static JamList {MethodNameFor(ruleDeclaration)}({arguments.Select(a => $"JamList {ArgumentNameFor(a)}").SeperateWithComma()}) {{");
-                foreach (var subStatement in ruleDeclaration.Body.Statements)
-                    ProcessStatement(subStatement, ruleMethodCsharp, variables);
-
-                if (!(ruleDeclaration.Body.Statements.Last() is ReturnStatement))
-                    ruleMethodCsharp.AppendLine("return null;");
-                ruleMethodCsharp.AppendLine("}");
-                ruleMethods.Append(ruleMethodCsharp);
+                ProcessRuleDeclarationStatement(variables, (RuleDeclarationStatement) statement);
                 return;
             }
 
-            var returnStatement = statement as ReturnStatement;
-            if (returnStatement != null)
+            if (statement is ReturnStatement)
             {
-                csharpbody.AppendLine($"return {CSharpFor(returnStatement.ReturnExpression)};");
+                csharpbody.AppendLine($"return {CSharpFor(((ReturnStatement) statement).ReturnExpression)};");
                 return;
             }
 
-            var expressionStatement = (ExpressionStatement)statement;
-            var invocationExpression = expressionStatement.Expression as InvocationExpression;
+            ProcessExpressionStatement((ExpressionStatement) statement, csharpbody, variables);
+        }
 
-            if (invocationExpression != null)
+        private void ProcessExpressionStatement(ExpressionStatement expressionStatement, StringBuilder csharpbody, List<string> variables)
+        {
+            if (expressionStatement.Expression is InvocationExpression)
+                csharpbody.AppendLine($"{CSharpFor(expressionStatement.Expression)};");
+
+            if (expressionStatement.Expression is BinaryOperatorExpression)
+                ProcessAssignmentExpressionStatement(csharpbody, variables, (BinaryOperatorExpression) expressionStatement.Expression);
+        }
+
+        private static void ProcessAssignmentExpressionStatement(StringBuilder csharpbody, List<string> variables, BinaryOperatorExpression assignmentExpression)
+        {
+            var variableName = VariableNameFor((LiteralExpression) assignmentExpression.Left);
+            if (!variables.Contains(variableName))
+                variables.Add(variableName);
+
+            var valueArguments = assignmentExpression.Right.Expressions.Cast<LiteralExpression>().Select(e=>e.Value);
+
+            var value = $"new JamList({valueArguments.InQuotes().SeperateWithComma()})";
+
+            switch (assignmentExpression.Operator)
             {
-                csharpbody.AppendLine($"{CSharpFor(invocationExpression)};");
+                case Operator.Assignment:
+                    csharpbody.AppendLine($"{variableName} = {value};");
+                    break;
+                case Operator.Append:
+                    csharpbody.AppendLine($"{variableName}.Append({value});");
+                    break;
             }
+        }
 
-            var assignmentExpression = expressionStatement.Expression as BinaryOperatorExpression;
-            if (assignmentExpression != null)
-            {
-                var variableName = VariableNameFor((LiteralExpression) assignmentExpression.Left);
-                if (!variables.Contains(variableName))
-                    variables.Add(variableName);
+        private void ProcessRuleDeclarationStatement(List<string> variables, RuleDeclarationStatement ruleDeclaration)
+        {
+            var ruleMethodCsharp = new StringBuilder();
 
-                var valueArguments =
-                    assignmentExpression.Right.Expressions.Select(
-                        e => ((LiteralExpression)e).Value);
+            //because the parser always interpets an invocation without any arguments as one with a single argument: an empty expressionlist,  let's make sure we always are ready to take a single argument
+            var arguments = ruleDeclaration.Arguments.Length == 0 ? new[] {"dummyArgument"} : ruleDeclaration.Arguments;
 
-                var value = $"new JamList({valueArguments.InQuotes().SeperateWithComma()})";
+            ruleMethodCsharp.AppendLine($"public static JamList {MethodNameFor(ruleDeclaration)}({arguments.Select(a => $"JamList {ArgumentNameFor(a)}").SeperateWithComma()}) {{");
+            foreach (var subStatement in ruleDeclaration.Body.Statements)
+                ProcessStatement(subStatement, ruleMethodCsharp, variables);
 
-                switch (assignmentExpression.Operator)
-                {
-                    case Operator.Assignment:
-                        csharpbody.AppendLine($"{variableName} = {value};");
-                        break;
-                    case Operator.Append:
-                        csharpbody.AppendLine($"{variableName}.Append({value});");
-                        break;
-                }
-            }
+            if (!(ruleDeclaration.Body.Statements.Last() is ReturnStatement))
+                ruleMethodCsharp.AppendLine("return null;");
+            ruleMethodCsharp.AppendLine("}");
+            ruleMethods.Append(ruleMethodCsharp);
+        }
+
+        private void ProcessIfStatement(StringBuilder csharpbody, List<string> variables, IfStatement ifStatement)
+        {
+            var conditionCSharp = CSharpFor(ifStatement.Condition);
+            csharpbody.AppendLine($"if ({conditionCSharp}) {{");
+
+            foreach (var subStatement in ifStatement.Body.Statements)
+                ProcessStatement(subStatement, csharpbody, variables);
+
+            csharpbody.AppendLine("}");
         }
 
         private string ArgumentNameFor(string argumentName)
@@ -156,6 +150,29 @@ class Dummy
         static string CleanIllegalCharacters(string input)
         {
             return input.Replace(".", "_");
+        }
+
+
+        public string CSharpFor(Condition condition)
+        {
+            var negationString = condition.Negated ? "!" : "";
+
+            if (condition.Right == null)
+                return $"{negationString}{CSharpFor(condition.Left)}.AsBool()";
+
+            var csharpMethodForConditionOperator = CSharpMethodForConditionOperator(condition.Operator);
+            return $"{negationString}{CSharpFor(condition.Left)}.{csharpMethodForConditionOperator}({CSharpFor(condition.Right)})";
+        }
+
+        private string CSharpMethodForConditionOperator(Operator @operator)
+        {
+            switch (@operator)
+            {
+                case Operator.Assignment:
+                    return "JamEquals";
+                default:
+                    throw new NotSupportedException("Unknown conditional operator: "+@operator);
+            }
         }
 
         public string CSharpFor(ExpressionList expressionList)
