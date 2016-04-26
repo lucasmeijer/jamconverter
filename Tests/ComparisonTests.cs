@@ -43,7 +43,22 @@ namespace jamconverter.Tests
         [Test]
         public void IfStatement()
         {
-            AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; if $(myvar) { Echo Yes ; } ");
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = 123 ; 
+if $(myvar) { Echo msg1 ; }
+if ! $(myvar) { Echo msg2 ; }
+
+if $(myvar) = 123 { Echo msg3 ; } 
+
+if $(myvar) = 321 { Echo msg5 ; }
+
+myemptyvar = ;
+if $(myemptyvar) { Echo msgA ; }
+if ! $(myemptyvar) { Echo msgB ; }
+
+        Echo end ;
+");
         }
 
         [Test]
@@ -227,17 +242,7 @@ myvar += b c ;
 Echo $(myvar) ;
 ");
         }
-
-      //  [Test]
-        public void ExpandToBound()
-        {
-            AssertConvertedProgramHasIdenticalOutput(
-@"
-myvar = a ;
-Echo $(myvar:T) ;
-");
-        }
-
+        
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
             var csharp = new JamToCSharpConverter().Convert(simpleProgram);
