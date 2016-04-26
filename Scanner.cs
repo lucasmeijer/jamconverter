@@ -227,10 +227,11 @@ namespace jamconverter
         public TokenType tokenType;
         public string literal;
 
-        public void Is(TokenType tokenType)
+        public ScanToken Is(TokenType tokenType)
         {
             if (this.tokenType != tokenType)
-                throw new ParsingException(); 
+                throw new ParsingException();
+            return this;
         }
     }
 

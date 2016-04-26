@@ -97,6 +97,12 @@ namespace jamconverter.AST
         public ExpressionList[] Arguments { get; set; } = {};
     }
 
+    public class VariableOnTargetExpression : Expression
+    {
+        public Expression Variable { get; set; }
+        public ExpressionList Targets { get; set; }
+    }
+
     public static class ASTExtensions
     {
         public static T As<T>(this Expression expression) where T : Expression

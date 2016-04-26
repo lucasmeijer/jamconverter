@@ -57,33 +57,70 @@ namespace jamconverter
 
         private Statement ParseExpressionStatement()
         {
-            var scanToken = _scanResult.Next();
-            var nextScanToken = _scanResult.Peek();
-
-            if (nextScanToken.tokenType != TokenType.EOF && (nextScanToken.tokenType == TokenType.Assignment || nextScanToken.tokenType == TokenType.AppendOperator))
+            if (IsNextStatementAssignment())
             {
-                _scanResult.Next();
+                var leftSideOfAssignment = ParseLeftSideOfAssignment();
+
+                var assignmentToken = _scanResult.Next();
                 var right = ParseExpressionList();
-                var terminator = _scanResult.Next();
-                if (terminator.tokenType != TokenType.Terminator)
-                    throw new ParsingException();
+                _scanResult.Next().Is(TokenType.Terminator);
 
-                return new ExpressionStatement {Expression = new BinaryOperatorExpression {Left = new LiteralExpression {Value = scanToken.literal}, Right = right, Operator = OperatorFor(nextScanToken.tokenType)}};
+                return new ExpressionStatement { Expression = new BinaryOperatorExpression { Left = leftSideOfAssignment, Right = right, Operator = OperatorFor(assignmentToken.tokenType) } };
             }
+            
+            var invocationExpression = new InvocationExpression {RuleExpression = ParseExpression(), Arguments = ParseArgumentList().ToArray()};
 
-            var arguments = ParseArgumentList().ToArray();
-            var invocationExpression = new InvocationExpression {RuleExpression = new LiteralExpression {Value = scanToken.literal}, Arguments = arguments};
-
-            ScanTerminator();
+            _scanResult.Next().Is(TokenType.Terminator);
 
             return new ExpressionStatement {Expression = invocationExpression};
+        }
+
+        private Expression ParseLeftSideOfAssignment()
+        {
+            var cursor = _scanResult.GetCursor();
+            _scanResult.Next();
+            var nextScanToken = _scanResult.Next();
+            _scanResult.SetCursor(cursor);
+
+            if (nextScanToken.tokenType == TokenType.On)
+            {
+                var variable = ParseExpression();
+                _scanResult.Next().Is(TokenType.On);
+                var targets = ParseExpressionList();
+                return new VariableOnTargetExpression() { Variable = variable, Targets = targets };
+            }
+
+            if (nextScanToken.tokenType == TokenType.Assignment || nextScanToken.tokenType == TokenType.AppendOperator)
+            {
+                return ParseExpression();
+            }
+
+            throw new ParsingException();
+        }
+
+        private bool IsNextStatementAssignment()
+        {
+            var cursor = _scanResult.GetCursor();
+            _scanResult.Next();
+            var nextScanToken = _scanResult.Next();
+            _scanResult.SetCursor(cursor);
+
+            switch (nextScanToken.tokenType)
+            {
+                case TokenType.Assignment:
+                case TokenType.AppendOperator:
+                case TokenType.On:
+
+                    return true;
+            }
+            return false;
         }
 
         private Statement ParseReturnStatement()
         {
             _scanResult.Next().Is(TokenType.Return);
             var returnExpression = ParseExpressionList();
-            ScanTerminator();
+            _scanResult.Next().Is(TokenType.Terminator);
 
             return new ReturnStatement {ReturnExpression = returnExpression};
         }
@@ -184,7 +221,7 @@ namespace jamconverter
                 return null;
 
             if (scanToken.tokenType == TokenType.Colon || scanToken.tokenType == TokenType.Terminator ||
-                scanToken.tokenType == TokenType.ParenthesisClose || scanToken.tokenType == TokenType.BracketClose)
+                scanToken.tokenType == TokenType.ParenthesisClose || scanToken.tokenType == TokenType.BracketClose || scanToken.tokenType == TokenType.Assignment || scanToken.tokenType == TokenType.AppendOperator)
             {
                 return null;
             }
@@ -256,8 +293,7 @@ namespace jamconverter
                         break;
                     }
 
-                    if (modifier.tokenType != TokenType.VariableExpansionModifier)
-                        throw new ParsingException();
+                    modifier.Is(TokenType.VariableExpansionModifier);
 
                     var peek = _scanResult.Peek();
                     Expression modifierValue = null;
@@ -271,22 +307,15 @@ namespace jamconverter
                 }
             }
             variableDereferenceExpression.Modifiers = modifiers.ToArray();
-            if (next.tokenType != TokenType.ParenthesisClose)
-                throw new ParsingException("All $(something should be followed by ) but got: " + open.tokenType);
 
+            next.Is(TokenType.ParenthesisClose);
+            
             return ScanForCombineExpression(variableDereferenceExpression);
         }
 
         private static Operator OperatorFor(TokenType tokenType)
         {
             return tokenType == TokenType.AppendOperator ? Operator.Append : Operator.Assignment;
-        }
-
-        void ScanTerminator()
-        {
-            var sr = _scanResult.Next();
-            if (sr.tokenType != TokenType.Terminator)
-                throw new ParsingException();
         }
 
         Expression ScanForCombineExpression(Expression firstExpression)

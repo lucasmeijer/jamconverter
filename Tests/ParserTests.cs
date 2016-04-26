@@ -293,7 +293,17 @@ actions response myactionname
             //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
             CollectionAssert.AreEqual(new[] { "I","am","on","a","boat"}, ParseExpressionList("I am on a boat").Expressions.Cast<LiteralExpression>().Select(le => le.Value));
         }
-        
+
+        [Test]
+        public void VariableOnTargetAssignment()
+        {
+            //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
+            var variableOnTargetExpression = ParseStatement<ExpressionStatement>("myvar on mytarget = 3 ;").Expression.As<BinaryOperatorExpression>().Left.As<VariableOnTargetExpression>();
+
+            Assert.AreEqual("myvar", variableOnTargetExpression.Variable.As<LiteralExpression>().Value);
+            Assert.AreEqual("mytarget", variableOnTargetExpression.Targets.Expressions[0].As<LiteralExpression>().Value);
+        }
+
         static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);
