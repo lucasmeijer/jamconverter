@@ -286,7 +286,6 @@ actions response myactionname
             Assert.AreEqual("echo something", actionsDeclarationStatement.Actions[0].TrimStart());
             Assert.AreEqual("echo somethingelse", actionsDeclarationStatement.Actions[1].TrimStart());
         }
-
         
         [Test]
         public void ExpressionListWithOnLiteral()

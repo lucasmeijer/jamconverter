@@ -8,7 +8,6 @@ namespace jamconverter
     {
         private readonly string _input;
         private int nextChar = 0;
-        private readonly Queue<ScanResult> _unscanBuffer = new Queue<ScanResult>();
         private bool _insideVariableExpansionModifierSpan;
 
         public Scanner(string input)
@@ -18,54 +17,63 @@ namespace jamconverter
 
         public ScanResult Scan()
         {
-            if (_unscanBuffer.Any())
-                return _unscanBuffer.Dequeue();
+            return new ScanResult(ScanAllTokens().ToArray());
+        }
 
+        public IEnumerable<ScanToken> ScanAllTokens()
+        {
+            while (true)
+            {
+                var sr = ScanToken();
+                yield return sr;
+                if (sr.tokenType == TokenType.EOF)
+                    yield break;
+                
+            }
+        }
+
+        public ScanToken ScanToken()
+        {
             if (nextChar >= _input.Length)
-                return null;
-            
+                return new ScanToken() { literal="", tokenType = TokenType.EOF};
+
             var c = _input[nextChar];
 
             if (_insideVariableExpansionModifierSpan)
             {
                 if (c == '=')
                 {
-                    nextChar++;
                     _insideVariableExpansionModifierSpan = false;
-                    return new ScanResult() { tokenType = TokenType.Assignment, literal = c.ToString() };
+                    nextChar++;
+                    var scanToken = new ScanToken() { tokenType = TokenType.Assignment, literal = c.ToString() };
+                    return scanToken;
                 }
                 if (char.IsLetter(c))
                 {
                     nextChar++;
-                    return new ScanResult() { tokenType = TokenType.VariableExpansionModifier, literal = c.ToString()};
+                    var scanToken = new ScanToken() { tokenType = TokenType.VariableExpansionModifier, literal = c.ToString() };
+                    return scanToken;
                 }
                 if (c == ')')
                     _insideVariableExpansionModifierSpan = false;
             }
 
             if (char.IsWhiteSpace(c))
-                return new ScanResult() { tokenType = TokenType.WhiteSpace, literal = ReadWhiteSpace() };
+                return new ScanToken() { tokenType = TokenType.WhiteSpace, literal = ReadWhiteSpace() };
 
             if (c == '#')
             {
                 ReadUntilEndOfLine();
-                return Scan();
+                return ScanToken();
             }
             
             var literal = ReadLiteral();
 
             if (literal==":")
-                if (!char.IsWhiteSpace(NextChar()))
+                if (!char.IsWhiteSpace(_input[nextChar]))
                     _insideVariableExpansionModifierSpan = true;
 
-            return new ScanResult() {tokenType = TokenTypeFor(literal), literal = literal};
-        }
-
-        char NextChar()
-        {
-            if (_unscanBuffer.Any())
-                return _unscanBuffer.Peek().literal[0];
-            return _input[nextChar];
+            return new ScanToken() {tokenType = TokenTypeFor(literal), literal = literal};
         }
 
         private TokenType TokenTypeFor(string literal)
@@ -112,23 +120,15 @@ namespace jamconverter
             if (literal == "actions")
                 return TokenType.Actions;
 
+            if (literal == "on")
+                return TokenType.On;
+
             if (literal == "+=")
                 return TokenType.AppendOperator;
 
             return TokenType.Literal;
         }
-
-        public IEnumerable<ScanResult> ScanAll()
-        {
-            while (true)
-            {
-                var sr = Scan();
-                if (sr == null)
-                    yield break;
-                yield return sr;
-            }
-        }
-
+        
         private string ReadLiteral()
         {
             int i;
@@ -176,21 +176,25 @@ namespace jamconverter
 
         private string ReadWhiteSpace()
         {
+            bool? wasPreviousWhiteSpaceNewLine = null;
             for (int i = nextChar; i != _input.Length; i++)
             {
-                if (!char.IsWhiteSpace(_input[i]))
+                bool isNewLine = IsNewLineCharacter(_input[i]);
+
+                if (!char.IsWhiteSpace(_input[i]) || (wasPreviousWhiteSpaceNewLine.HasValue && isNewLine != wasPreviousWhiteSpaceNewLine.Value))
                 {
                     var result = _input.Substring(nextChar, i - nextChar);
                     nextChar = i;
                     return result;
                 }
+                wasPreviousWhiteSpaceNewLine = isNewLine;
             }
             var result2 = _input.Substring(nextChar);
             nextChar = _input.Length;
             return result2;
         }
 
-        private string ReadUntilEndOfLine()
+        private void ReadUntilEndOfLine()
         {
             bool inNewLineSequence = false;
             for (int i = nextChar; i != _input.Length; i++)
@@ -202,50 +206,32 @@ namespace jamconverter
                 {
                     if (inNewLineSequence)
                     {
-                        var result = _input.Substring(nextChar, i - nextChar);
                         nextChar = i;
-                        return result;
+                        return;
                     }
                 }
             }
-            var result2 = _input.Substring(nextChar);
             nextChar = _input.Length;
-            return result2;
         }
 
         private static readonly char[] s_NewLineCharacters = {'\n', (char)0x0d, (char)0x0a};
 
-        private static bool IsNewLineCharacter(char c)
+        public static bool IsNewLineCharacter(char c)
         {
-            return c == '\n' || c == 0x0d || c == 0x0a;
-        }
-
-        public ScanResult ScanSkippingWhiteSpace()
-        {
-            while (true)
-            {
-                var sr = Scan();
-                if (sr != null && sr.tokenType == TokenType.WhiteSpace)
-                    continue;
-                return sr;
-            }
-        }
-
-        public void UnScan(ScanResult sr)
-        {
-            _unscanBuffer.Enqueue(sr);
-        }
-
-        public string ScanStringUntilEndOfLine()
-        {
-            return ReadUntilEndOfLine().TrimEnd(s_NewLineCharacters);
+            return s_NewLineCharacters.Contains(c);
         }
     }
 
-    public class ScanResult
+    public class ScanToken
     {
         public TokenType tokenType;
         public string literal;
+
+        public void Is(TokenType tokenType)
+        {
+            if (this.tokenType != tokenType)
+                throw new ParsingException(); 
+        }
     }
 
     public enum TokenType
@@ -268,6 +254,8 @@ namespace jamconverter
         Return,
         AppendOperator,
         Comment,
-        Actions
+        Actions,
+        On,
+        EOF
     }
 }

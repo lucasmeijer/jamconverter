@@ -7,11 +7,11 @@ namespace jamconverter
 {
     public class Parser
     {
-        private readonly Scanner _scanner;
+        private readonly ScanResult _scanResult;
 
         public Parser(string input)
         {
-            _scanner = new Scanner(input);
+            _scanResult = new Scanner(input).Scan();
         }
 
         public ExpressionList ParseExpressionList()
@@ -29,48 +29,50 @@ namespace jamconverter
 
         public Statement ParseStatement()
         {
-            var sr = _scanner.ScanSkippingWhiteSpace();
+            var scanToken = _scanResult.Peek();
 
-            if (sr == null)
+            if (scanToken.tokenType == TokenType.EOF)
                 return null;
 
-            if (sr.tokenType == TokenType.If)
+            if (scanToken.tokenType == TokenType.If)
                 return ParseIfStatement();
 
-            if (sr.tokenType == TokenType.AccoladeOpen)
+            if (scanToken.tokenType == TokenType.AccoladeOpen)
                 return ParseBlockStatement();
 
-            if (sr.tokenType == TokenType.Rule)
+            if (scanToken.tokenType == TokenType.Rule)
                 return ParseRuleDeclarationStatement();
 
-            if (sr.tokenType == TokenType.Actions)
+            if (scanToken.tokenType == TokenType.Actions)
                 return ParseActionsDeclarationStatement();
 
-            if (sr.tokenType == TokenType.Return)
+            if (scanToken.tokenType == TokenType.Return)
                 return ParseReturnStatement();
 
-            if (sr.tokenType == TokenType.Literal)
-                return ParseExpressionStatement(sr);
+            if (scanToken.tokenType == TokenType.Literal)
+                return ParseExpressionStatement();
 
             throw new ParsingException();
         }
 
-        private Statement ParseExpressionStatement(ScanResult sr)
+        private Statement ParseExpressionStatement()
         {
-            var scanResult = _scanner.ScanSkippingWhiteSpace();
-            if (scanResult != null && (scanResult.tokenType == TokenType.Assignment || scanResult.tokenType == TokenType.AppendOperator))
+            var scanToken = _scanResult.Next();
+            var nextScanToken = _scanResult.Peek();
+
+            if (nextScanToken.tokenType != TokenType.EOF && (nextScanToken.tokenType == TokenType.Assignment || nextScanToken.tokenType == TokenType.AppendOperator))
             {
+                _scanResult.Next();
                 var right = ParseExpressionList();
-                var terminator = _scanner.ScanSkippingWhiteSpace();
+                var terminator = _scanResult.Next();
                 if (terminator.tokenType != TokenType.Terminator)
                     throw new ParsingException();
 
-                return new ExpressionStatement {Expression = new BinaryOperatorExpression {Left = new LiteralExpression {Value = sr.literal}, Right = right, Operator = OperatorFor(scanResult.tokenType)}};
+                return new ExpressionStatement {Expression = new BinaryOperatorExpression {Left = new LiteralExpression {Value = scanToken.literal}, Right = right, Operator = OperatorFor(nextScanToken.tokenType)}};
             }
-            _scanner.UnScan(scanResult);
 
             var arguments = ParseArgumentList().ToArray();
-            var invocationExpression = new InvocationExpression {RuleExpression = new LiteralExpression {Value = sr.literal}, Arguments = arguments};
+            var invocationExpression = new InvocationExpression {RuleExpression = new LiteralExpression {Value = scanToken.literal}, Arguments = arguments};
 
             ScanTerminator();
 
@@ -79,26 +81,26 @@ namespace jamconverter
 
         private Statement ParseReturnStatement()
         {
+            _scanResult.Next().Is(TokenType.Return);
             var returnExpression = ParseExpressionList();
-            var terminator = _scanner.ScanSkippingWhiteSpace();
-            if (terminator.tokenType != TokenType.Terminator)
-                throw new ParsingException();
+            ScanTerminator();
 
             return new ReturnStatement {ReturnExpression = returnExpression};
         }
 
         private Statement ParseActionsDeclarationStatement()
         {
+            _scanResult.Next().Is(TokenType.Actions);
             var expressionList = ParseExpressionList();
 
-            var accoladeOpen = _scanner.Scan();
+            var accoladeOpen = _scanResult.Next();
             if (accoladeOpen.tokenType != TokenType.AccoladeOpen)
                 throw new ParsingException();
-            _scanner.ScanStringUntilEndOfLine();
+            _scanResult.ProduceStringUntilEndOfLine();
             var actions = new List<string>();
             while (true)
             {
-                var action = _scanner.ScanStringUntilEndOfLine();
+                var action = _scanResult.ProduceStringUntilEndOfLine();
                 if (action.Trim() == "}")
                     break;
                 actions.Add(action);
@@ -113,6 +115,7 @@ namespace jamconverter
 
         private Statement ParseRuleDeclarationStatement()
         {
+            _scanResult.Next().Is(TokenType.Rule);
             var ruleName = ParseExpression();
             var arguments = ParseArgumentList().ToArray();
             var body = ParseStatement();
@@ -128,31 +131,36 @@ namespace jamconverter
 
         private Statement ParseBlockStatement()
         {
+            _scanResult.Next().Is(TokenType.AccoladeOpen);
             var statements = new List<Statement>();
             while (true)
             {
-                var peek = _scanner.ScanSkippingWhiteSpace();
+                var peek = _scanResult.Peek();
                 if (peek.tokenType == TokenType.AccoladeClose)
+                {
+                    _scanResult.Next();
                     return new BlockStatement {Statements = statements.ToArray()};
-                _scanner.UnScan(peek);
+                }
+                
                 statements.Add(ParseStatement());
             }
         }
 
         private Statement ParseIfStatement()
         {
+            _scanResult.Next().Is(TokenType.If);
             var expression = ParseExpression();
-            var peek = _scanner.ScanSkippingWhiteSpace();
+            var peek = _scanResult.Peek();
             var ifStatement = new IfStatement();
 
             switch (peek.tokenType)
             {
                 case TokenType.Assignment:
+                    _scanResult.Next();
                     ifStatement.Condition = new BinaryOperatorExpression {Left = expression, Right = ParseExpressionList()};
                     break;
                 case TokenType.AccoladeOpen:
                     ifStatement.Condition = expression;
-                    _scanner.UnScan(peek);
                     break;
                 default:
                     throw new ParsingException();
@@ -170,41 +178,41 @@ namespace jamconverter
 
         public Expression ParseExpression()
         {
-            var sr = _scanner.ScanSkippingWhiteSpace();
+            var scanToken = _scanResult.Peek();
 
-            if (sr == null)
+            if (scanToken.tokenType == TokenType.EOF)
                 return null;
 
-            if (sr.tokenType == TokenType.Colon || sr.tokenType == TokenType.Terminator ||
-                sr.tokenType == TokenType.ParenthesisClose || sr.tokenType == TokenType.BracketClose)
+            if (scanToken.tokenType == TokenType.Colon || scanToken.tokenType == TokenType.Terminator ||
+                scanToken.tokenType == TokenType.ParenthesisClose || scanToken.tokenType == TokenType.BracketClose)
             {
-                _scanner.UnScan(sr);
                 return null;
             }
 
-            if (sr.tokenType == TokenType.VariableDereferencer)
+            if (scanToken.tokenType == TokenType.VariableDereferencer)
                 return ParseVariableDereferenceExpression();
 
-            if (sr.tokenType == TokenType.AccoladeOpen)
-            {
-                _scanner.UnScan(sr);
+            if (scanToken.tokenType == TokenType.AccoladeOpen)
                 return null;
-            }
 
-            if (sr.tokenType == TokenType.BracketOpen)
+            if (scanToken.tokenType == TokenType.BracketOpen)
                 return ParseInvocationExpression();
 
-            if (sr.tokenType == TokenType.Literal)
-                return ScanForCombineExpression(new LiteralExpression {Value = sr.literal});
+            if (scanToken.tokenType == TokenType.Literal || /* on is the strangest keyword in that it is sometimes a keyword and sometimes a literal*/ scanToken.tokenType == TokenType.On)
+                return ScanForCombineExpression(new LiteralExpression {Value = _scanResult.Next().literal});
 
-            throw new ParsingException("expected Value, got: " + sr.tokenType);
+            throw new ParsingException("expected Value, got: " + scanToken.tokenType);
         }
 
         private Expression ParseInvocationExpression()
         {
+            var bracketOpen = _scanResult.Next();
+            if (bracketOpen.tokenType != TokenType.BracketOpen)
+                throw new ParsingException();
+
             var ruleExpression = ParseExpression();
             var arguments = ParseArgumentList().ToArray();
-            var closeBracket = _scanner.ScanSkippingWhiteSpace();
+            var closeBracket = _scanResult.Next();
             if (closeBracket.tokenType != TokenType.BracketClose)
                 throw new ParsingException();
             return new InvocationExpression {RuleExpression = ruleExpression, Arguments = arguments};
@@ -212,21 +220,24 @@ namespace jamconverter
 
         private Expression ParseVariableDereferenceExpression()
         {
-            var open = _scanner.Scan();
+            var dollar = _scanResult.Next();
+            if (dollar.tokenType != TokenType.VariableDereferencer)
+                throw new ParsingException();
+
+            var open = _scanResult.Next();
             if (open.tokenType != TokenType.ParenthesisOpen)
                 throw new ParsingException("All $ should be followed by ( but got: " + open.tokenType);
 
             var variableDereferenceExpression = new VariableDereferenceExpression {VariableExpression = ParseExpression()};
 
-            var next = _scanner.Scan();
+            var next = _scanResult.Next();
 
             if (next.tokenType == TokenType.BracketOpen)
             {
                 variableDereferenceExpression.IndexerExpression = ParseExpression();
-                var peek = _scanner.Scan();
-                if (peek.tokenType != TokenType.BracketClose)
+                if (_scanResult.Next().tokenType != TokenType.BracketClose)
                     throw new ParsingException("Expected bracket close while parsing variable dereference expressions' indexer");
-                next = _scanner.Scan();
+                next = _scanResult.Next();
             }
 
             var modifiers = new List<VariableDereferenceModifier>();
@@ -235,7 +246,7 @@ namespace jamconverter
             {
                 while (true)
                 {
-                    var modifier = _scanner.Scan();
+                    var modifier = _scanResult.Next();
                     if (modifier.tokenType == TokenType.Colon)
                         continue;
 
@@ -248,14 +259,13 @@ namespace jamconverter
                     if (modifier.tokenType != TokenType.VariableExpansionModifier)
                         throw new ParsingException();
 
-                    var peek = _scanner.Scan();
+                    var peek = _scanResult.Peek();
                     Expression modifierValue = null;
                     if (peek.tokenType == TokenType.Assignment)
                     {
+                        _scanResult.Next();
                         modifierValue = ParseExpression();
                     }
-                    else
-                        _scanner.UnScan(peek);
 
                     modifiers.Add(new VariableDereferenceModifier {Command = modifier.literal[0], Value = modifierValue});
                 }
@@ -274,17 +284,16 @@ namespace jamconverter
 
         void ScanTerminator()
         {
-            var sr = _scanner.ScanSkippingWhiteSpace();
+            var sr = _scanResult.Next();
             if (sr.tokenType != TokenType.Terminator)
                 throw new ParsingException();
         }
 
         Expression ScanForCombineExpression(Expression firstExpression)
         {
-            var peek = _scanner.Scan();
-            _scanner.UnScan(peek);
-            if (peek == null ||
-                (peek.tokenType != TokenType.Literal && peek.tokenType != TokenType.VariableDereferencer))
+            var peek = _scanResult.Peek(false);
+            
+            if (peek.tokenType == TokenType.EOF || (peek.tokenType != TokenType.Literal && peek.tokenType != TokenType.VariableDereferencer))
                 return firstExpression;
 
             var tail = ParseExpression();
@@ -307,10 +316,12 @@ namespace jamconverter
             {
                 expressionLists.Add(ParseExpressionList());
 
-                var nextToken = _scanner.ScanSkippingWhiteSpace();
+                var nextToken = _scanResult.Peek();
                 if (nextToken.tokenType == TokenType.Colon)
+                {
+                    _scanResult.Next();
                     continue;
-                _scanner.UnScan(nextToken);
+                }
 
                 break;
             }
@@ -318,7 +329,6 @@ namespace jamconverter
             return expressionLists.ToArray();
         }
     }
-
 
     public class ParsingException : Exception
     {
