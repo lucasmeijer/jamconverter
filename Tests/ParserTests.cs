@@ -304,6 +304,19 @@ actions response myactionname
             Assert.AreEqual("mytarget", variableOnTargetExpression.Targets.Expressions[0].As<LiteralExpression>().Value);
         }
 
+        [Test]
+        public void OnStatement()
+        {
+            //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
+            var onStatement = ParseStatement<OnStatement>("on a b {} ");
+
+            var literals = onStatement.Targets.Expressions.Cast<LiteralExpression>().Select(le => le.Value).ToArray();
+
+            CollectionAssert.AreEqual(new[] { "a", "b"}, literals);
+            Assert.AreEqual(0, onStatement.Body.Statements.Length);
+        }
+
+
         static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);

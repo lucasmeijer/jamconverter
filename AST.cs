@@ -90,7 +90,13 @@ namespace jamconverter.AST
         public ExpressionList Modifiers { get; set; }
         public string[] Actions { get; set; }
     }
-    
+
+    public class OnStatement : Statement
+    {
+        public ExpressionList Targets { get; set; }
+        public BlockStatement Body { get; set; }
+    }
+
     public class InvocationExpression : Expression
     {
         public Expression RuleExpression { get; set; }

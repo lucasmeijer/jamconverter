@@ -52,7 +52,16 @@ namespace jamconverter
             if (scanToken.tokenType == TokenType.Literal)
                 return ParseExpressionStatement();
 
+            if (scanToken.tokenType == TokenType.On)
+                return ParseOnStatement();
+
             throw new ParsingException();
+        }
+
+        private OnStatement ParseOnStatement()
+        {
+            _scanResult.Next().Is(TokenType.On);
+            return new OnStatement() {Targets = ParseExpressionList(), Body = ParseBlockStatement()};
         }
 
         private Statement ParseExpressionStatement()
@@ -166,7 +175,7 @@ namespace jamconverter
             };
         }
 
-        private Statement ParseBlockStatement()
+        private BlockStatement ParseBlockStatement()
         {
             _scanResult.Next().Is(TokenType.AccoladeOpen);
             var statements = new List<Statement>();
