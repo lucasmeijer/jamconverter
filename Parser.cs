@@ -197,7 +197,16 @@ namespace jamconverter
         {
             _scanResult.Next().Is(TokenType.If);
 
-            return new IfStatement {Condition = ParseCondition(), Body = ParseBlockStatement()};
+            var ifStatement = new IfStatement {Condition = ParseCondition(), Body = ParseBlockStatement()};
+
+            var peek = _scanResult.Peek();
+            if (peek.tokenType == TokenType.Else)
+            {
+                _scanResult.Next();
+                ifStatement.Else = ParseBlockStatement();
+            }
+
+            return ifStatement;
         }
 
         public Expression ParseExpression()
@@ -222,7 +231,7 @@ namespace jamconverter
             if (scanToken.tokenType == TokenType.BracketOpen)
                 return ParseInvocationExpression();
 
-            if (scanToken.tokenType == TokenType.Literal || /* on is the strangest keyword in that it is sometimes a keyword and sometimes a literal*/ scanToken.tokenType == TokenType.On)
+            if (scanToken.tokenType == TokenType.Literal || /* on is the strangest keyword in that it is sometimes a keyword and sometimes a literal*/ scanToken.tokenType == TokenType.On || scanToken.tokenType == TokenType.Else)
                 return ScanForCombineExpression(new LiteralExpression {Value = _scanResult.Next().literal});
 
             throw new ParsingException("expected Value, got: " + scanToken.tokenType);

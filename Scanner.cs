@@ -126,6 +126,9 @@ namespace jamconverter
             if (literal == "!")
                 return TokenType.Not;
 
+            if (literal == "else")
+                return TokenType.Else;
+
             if (literal == "+=")
                 return TokenType.AppendOperator;
 
@@ -261,6 +264,7 @@ namespace jamconverter
         Actions,
         On,
         EOF,
-        Not
+        Not,
+        Else
     }
 }

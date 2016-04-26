@@ -46,16 +46,16 @@ namespace jamconverter.Tests
             AssertConvertedProgramHasIdenticalOutput(
 @"
 myvar = 123 ; 
-if $(myvar) { Echo msg1 ; }
-if ! $(myvar) { Echo msg2 ; }
+if $(myvar) { Echo msg1 ; } else { Echo msg1a ; }
+if ! $(myvar) { Echo msg2 ; } else { Echo msg2a ; }
 
-if $(myvar) = 123 { Echo msg3 ; } 
+if $(myvar) = 123 { Echo msg3 ; }  else { Echo msg3a ; }
 
-if $(myvar) = 321 { Echo msg5 ; }
+if $(myvar) = 321 { Echo msg5 ; } else { Echo msg5a ; }
 
 myemptyvar = ;
-if $(myemptyvar) { Echo msgA ; }
-if ! $(myemptyvar) { Echo msgB ; }
+if $(myemptyvar) { Echo msgA ; } else { Echo msg6a ; }
+if ! $(myemptyvar) { Echo msgB ; } else { Echo msg7a ; }
 
         Echo end ;
 ");

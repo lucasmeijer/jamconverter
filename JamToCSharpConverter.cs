@@ -124,6 +124,15 @@ class Dummy
             foreach (var subStatement in ifStatement.Body.Statements)
                 ProcessStatement(subStatement, csharpbody, variables);
 
+            if (ifStatement.Else == null)
+            {
+                csharpbody.AppendLine("}");
+                return;
+            }
+
+            csharpbody.AppendLine("} else {");
+            foreach (var subStatement in ifStatement.Else.Statements)
+                ProcessStatement(subStatement, csharpbody, variables);
             csharpbody.AppendLine("}");
         }
 

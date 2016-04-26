@@ -155,6 +155,13 @@ namespace jamconverter
         }
 
         [Test]
+        public void IfWithElseStatement()
+        {
+            var ifStatement = ParseStatement<IfStatement>("if $(somevar) {} else { Echo ; }");
+            Assert.AreEqual("Echo", ifStatement.Else.Statements[0].As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
+        }
+
+        [Test]
         public void CombineExpression()
         {
             var combineExpression = ParseExpression<CombineExpression>("$(b)c$(d)");
@@ -345,7 +352,7 @@ actions response myactionname
         public void ExpressionListWithOnLiteral()
         {
             //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
-            CollectionAssert.AreEqual(new[] { "I","am","on","a","boat"}, ParseExpressionList("I am on a boat").Expressions.Cast<LiteralExpression>().Select(le => le.Value));
+            CollectionAssert.AreEqual(new[] { "I","am","on","else","boat"}, ParseExpressionList("I am on else boat").Expressions.Cast<LiteralExpression>().Select(le => le.Value));
         }
 
         [Test]
