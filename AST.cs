@@ -113,6 +113,15 @@ namespace jamconverter.AST
         public BlockStatement Body { get; set; }
     }
 
+
+    public class BreakStatement : Statement
+    {
+    }
+
+    public class ContinueStatement : Statement
+    {
+    }
+    
     public class InvocationExpression : Expression
     {
         public Expression RuleExpression { get; set; }

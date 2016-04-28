@@ -78,73 +78,59 @@ namespace jamconverter
 
         private TokenType TokenTypeFor(string literal)
         {
-            if (literal == ";")
-                return TokenType.Terminator;
-
-            if (literal == "[")
-                return TokenType.BracketOpen;
-
-            if (literal == "]")
-                return TokenType.BracketClose;
-
-            if (literal == ":")
-                return TokenType.Colon;
-
-            if (literal == "$")
-                return TokenType.VariableDereferencer;
-
-            if (literal == "(")
-                return TokenType.ParenthesisOpen;
-
-            if (literal == ")")
-                return TokenType.ParenthesisClose;
-
-            if (literal == "{")
-                return TokenType.AccoladeOpen;
-
-            if (literal == "}")
-                return TokenType.AccoladeClose;
-
-            if (literal == "=")
-                return TokenType.Assignment;
-
-            if (literal == "if")
-                return TokenType.If;
-
-            if (literal == "rule")
-                return TokenType.Rule;
-
-            if (literal == "return")
-                return TokenType.Return;
-            
-            if (literal == "actions")
-                return TokenType.Actions;
-
-            if (literal == "on")
-                return TokenType.On;
-
-            if (literal == "!")
-                return TokenType.Not;
-
-            if (literal == "else")
-                return TokenType.Else;
-            
-            if (literal == "while")
-                return TokenType.While;
-
-            if (literal == "+=")
-                return TokenType.AppendOperator;
-
-            if (literal == "-=")
-                return TokenType.SubtractOperator;
-
-            if (literal == "for")
-                return TokenType.For;
-
-            if (literal == "in")
-                return TokenType.In;
-
-            return TokenType.Literal;
+            switch (literal)
+            {
+                case ";":
+                    return TokenType.Terminator;
+                case "[":
+                    return TokenType.BracketOpen;
+                case "]":
+                    return TokenType.BracketClose;
+                case ":":
+                    return TokenType.Colon;
+                case "$":
+                    return TokenType.VariableDereferencer;
+                case "(":
+                    return TokenType.ParenthesisOpen;
+                case ")":
+                    return TokenType.ParenthesisClose;
+                case "{":
+                    return TokenType.AccoladeOpen;
+                case "}":
+                    return TokenType.AccoladeClose;
+                case "=":
+                    return TokenType.Assignment;
+                case "if":
+                    return TokenType.If;
+                case "rule":
+                    return TokenType.Rule;
+                case "return":
+                    return TokenType.Return;
+                case "actions":
+                    return TokenType.Actions;
+                case "on":
+                    return TokenType.On;
+                case "!":
+                    return TokenType.Not;
+                case "else":
+                    return TokenType.Else;
+                case "while":
+                    return TokenType.While;
+                case "+=":
+                    return TokenType.AppendOperator;
+                case "-=":
+                    return TokenType.SubtractOperator;
+                case "for":
+                    return TokenType.For;
+                case "in":
+                    return TokenType.In;
+                case "continue":
+                    return TokenType.Continue;
+                case "break":
+                    return TokenType.Break;
+                default:
+                    return TokenType.Literal;
+            }
         }
         
         private string ReadLiteral()
@@ -281,6 +267,8 @@ namespace jamconverter
         While,
         SubtractOperator,
         For,
-        In
+        In,
+        Continue,
+        Break
     }
 }

@@ -32,37 +32,39 @@ namespace jamconverter
         {
             var scanToken = _scanResult.Peek();
 
-            if (scanToken.tokenType == TokenType.EOF)
-                return null;
-
-            if (scanToken.tokenType == TokenType.If)
-                return ParseIfStatement();
-
-            if (scanToken.tokenType == TokenType.AccoladeOpen)
-                return ParseBlockStatement();
-
-            if (scanToken.tokenType == TokenType.Rule)
-                return ParseRuleDeclarationStatement();
-
-            if (scanToken.tokenType == TokenType.Actions)
-                return ParseActionsDeclarationStatement();
-
-            if (scanToken.tokenType == TokenType.Return)
-                return ParseReturnStatement();
-
-            if (scanToken.tokenType == TokenType.Literal)
-                return ParseExpressionStatement();
-
-            if (scanToken.tokenType == TokenType.On)
-                return ParseOnStatement();
-
-            if (scanToken.tokenType == TokenType.While)
-                return ParseWhileStatement();
-
-            if (scanToken.tokenType == TokenType.For)
-                return ParseForStatement();
-
-            throw new ParsingException();
+            switch (scanToken.tokenType)
+            {
+                case TokenType.EOF:
+                    return null;
+                case TokenType.If:
+                    return ParseIfStatement();
+                case TokenType.AccoladeOpen:
+                    return ParseBlockStatement();
+                case TokenType.Rule:
+                    return ParseRuleDeclarationStatement();
+                case TokenType.Actions:
+                    return ParseActionsDeclarationStatement();
+                case TokenType.Return:
+                    return ParseReturnStatement();
+                case TokenType.Literal:
+                    return ParseExpressionStatement();
+                case TokenType.On:
+                    return ParseOnStatement();
+                case TokenType.While:
+                    return ParseWhileStatement();
+                case TokenType.For:
+                    return ParseForStatement();
+                case TokenType.Break:
+                    _scanResult.Next();
+                    _scanResult.Next().Is(TokenType.Terminator);
+                    return new BreakStatement();
+                case TokenType.Continue:
+                    _scanResult.Next();
+                    _scanResult.Next().Is(TokenType.Terminator);
+                    return new ContinueStatement();
+                default:
+                    throw new ParsingException();
+            }
         }
 
         private Statement ParseForStatement()

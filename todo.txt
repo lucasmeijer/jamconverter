@@ -4,7 +4,7 @@
 * && || in conditions
 * !=
 * quote \\ character in lexer
-
+* somehow deal with else if which is not a blockstatement
 
 * rules that specify no arguments, but use $(<) and $(>) for arguments one and two.
 * remaining variable expansion modifiers

@@ -309,6 +309,10 @@ Echo $(myglobal) ;
 mylist = a b c d e ;
 for myvar in $(mylist) f g
 {
+  if $(myvar) = c { Echo continueing ; continue ; }
+
+  if $(myvar) = f { break ; }
+
   Echo $(myvar) ;
 }
 

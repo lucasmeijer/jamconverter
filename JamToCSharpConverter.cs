@@ -78,6 +78,18 @@ class Dummy
                 return;
             }
 
+            if (statement is BreakStatement)
+            {
+                csharpbody.AppendLine("break;");
+                return;
+            }
+
+            if (statement is ContinueStatement)
+            {
+                csharpbody.AppendLine("continue;");
+                return;
+            }
+
             ProcessExpressionStatement((ExpressionStatement) statement, csharpbody, variables);
         }
 

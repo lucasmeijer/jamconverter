@@ -420,7 +420,19 @@ actions response myactionname
             Assert.IsTrue(forStatement.List.Expressions[0] is VariableDereferenceExpression);
             Assert.AreEqual(0, forStatement.Body.Statements.Length);
         }
-        
+
+        [Test]
+        public void BreakStatement()
+        {
+            ParseStatement<BreakStatement>("break ;");
+        }
+
+        [Test]
+        public void ContinueStatement()
+        {
+            ParseStatement<ContinueStatement>("continue ;");
+        }
+
         static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);
