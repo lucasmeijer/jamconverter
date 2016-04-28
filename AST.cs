@@ -109,8 +109,8 @@ namespace jamconverter.AST
 
     public class OnStatement : Statement
     {
-        public ExpressionList Targets { get; set; }
-        public BlockStatement Body { get; set; }
+        public Expression Target { get; set; }
+        public Statement Body { get; set; }
     }
 
     public class WhileStatement : Statement

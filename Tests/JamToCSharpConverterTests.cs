@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using jamconverter.AST;
+﻿using jamconverter.AST;
 using NUnit.Framework;
 
 namespace jamconverter.Tests

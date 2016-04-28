@@ -439,12 +439,21 @@ actions response myactionname
         public void OnStatement()
         {
             //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
-            var onStatement = ParseStatement<OnStatement>("on a b {} ");
+            var onStatement = ParseStatement<OnStatement>("on a {} ");
+            
+            Assert.AreEqual("a", onStatement.Target.As<LiteralExpression>().Value);
+            
+            Assert.AreEqual(0, onStatement.Body.As<BlockStatement>().Statements.Length);
+        }
 
-            var literals = onStatement.Targets.Expressions.Cast<LiteralExpression>().Select(le => le.Value).ToArray();
+        [Test]
+        public void OnStatementWithoutBlockStatement()
+        {
+            //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
+            var onStatement = ParseStatement<OnStatement>("on $(TARGET) linkFlags += -shared - fPIC ; ");
 
-            CollectionAssert.AreEqual(new[] { "a", "b"}, literals);
-            Assert.AreEqual(0, onStatement.Body.Statements.Length);
+            Assert.AreEqual("TARGET", onStatement.Target.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+            onStatement.Body.As<ExpressionStatement>().Expression.As<BinaryOperatorExpression>();
         }
 
         [Test]

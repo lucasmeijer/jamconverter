@@ -6,7 +6,11 @@
 * quote \\ character in lexer
 * rules that specify no arguments, but use $(<) and $(>) for arguments one and two.
 * remaining variable expansion modifiers
+* implement W32_GETREG
+* implement GroupByVar
 
+lotsofwork stuff:
+- replace all string output with NRefactory AST output
 
 hard stuff:
 

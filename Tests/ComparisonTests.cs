@@ -237,6 +237,23 @@ Echo  $(dots.in.variable) ;
         }
 
         [Test]
+        public void BlockStatement()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+                @"
+{
+  Echo a ; 
+  {
+      Echo b ;
+  }
+  Echo c ;
+}
+
+Echo d ;
+");
+        }
+
+        [Test]
         public void BuiltinMD5()
         {
             AssertConvertedProgramHasIdenticalOutput("Echo [ MD5 harry ] ;");

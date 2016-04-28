@@ -119,7 +119,7 @@ namespace jamconverter
         private OnStatement ParseOnStatement()
         {
             _scanResult.Next().Is(TokenType.On);
-            return new OnStatement() {Targets = ParseExpressionList(), Body = ParseBlockStatement()};
+            return new OnStatement() {Target = ParseExpression(), Body = ParseStatement()};
         }
 
         private WhileStatement ParseWhileStatement()
