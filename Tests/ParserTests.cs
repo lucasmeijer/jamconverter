@@ -377,6 +377,41 @@ actions response myactionname
         }
 
 
+        [Test]
+        public void SwitchStatement()
+        {
+            var switchStatement = ParseStatement<SwitchStatement>(
+@"switch $(myvar) {
+  case a :
+     hello ;
+  case b :
+     there ;
+     sailor ;
+}" 
+);
+            Assert.AreEqual("myvar", switchStatement.Variable.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+
+            Assert.AreEqual(2, switchStatement.Cases.Length);
+
+            var case0 = switchStatement.Cases[0];
+            Assert.AreEqual("a", case0.CaseExpression.Value);
+            Assert.AreEqual(1, case0.Statements.Length);
+            AssertIsRuleInvocationWithName(case0.Statements[0], "hello");
+
+            var case1 = switchStatement.Cases[1];
+            Assert.AreEqual("b", case1.CaseExpression.Value);
+            Assert.AreEqual(2, case1.Statements.Length);
+
+            AssertIsRuleInvocationWithName(case1.Statements[0], "there");
+            AssertIsRuleInvocationWithName(case1.Statements[1], "sailor");            
+        }
+
+        private static void AssertIsRuleInvocationWithName(Statement statement, string ruleName)
+        {
+            Assert.AreEqual(ruleName, statement.As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
+        }
+
+
         private static Condition ParseCondition(string jamCode)
         {
             return new Parser(jamCode).ParseCondition();

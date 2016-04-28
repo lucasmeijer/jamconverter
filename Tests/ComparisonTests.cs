@@ -324,6 +324,33 @@ for myvar in $(mylist) f g
         }
 
 
+        [Test]
+        public void SwitchStatement()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+
+rule MySwitch myvar
+{
+   switch $(myvar)
+   {
+       case a :
+         Echo I was a ;
+       case b :
+         Echo I was b ;
+   }
+   Echo after case ;
+}
+
+MySwitch a ;
+MySwitch b ;
+MySwitch c ;
+
+");
+        }
+
+
+
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
             var jamResult = new JamRunner().Run(simpleProgram).Select(s => s.TrimEnd());

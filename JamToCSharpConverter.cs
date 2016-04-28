@@ -33,6 +33,7 @@ namespace jamconverter
        $@"
 using System;
 using static BuiltinFunctions;
+using System.Linq;
 
 class Dummy
 {{
@@ -96,7 +97,26 @@ class Dummy
                 return;
             }
 
+            if (statement is SwitchStatement)
+            {
+                ProcessSwitchStatement((SwitchStatement) statement, csharpbody, variables);
+                return;
+            }
+
             ProcessExpressionStatement((ExpressionStatement) statement, csharpbody, variables);
+        }
+
+        private void ProcessSwitchStatement(SwitchStatement switchStatement, StringBuilder csharpbody, List<string> variables)
+        {
+            csharpbody.AppendLine($"switch ({CSharpFor(switchStatement.Variable)}.Elements.First()) {{");
+            foreach(var switchCase in switchStatement.Cases)
+            {
+                csharpbody.AppendLine($"case \"{switchCase.CaseExpression.Value}\":");
+                foreach (var statement in switchCase.Statements)
+                    ProcessStatement(statement, csharpbody, variables);
+                csharpbody.AppendLine("break;");
+            }
+            csharpbody.AppendLine("}");
         }
 
         private void ProcessForStatement(StringBuilder csharpbody, List<string> variables, ForStatement statement)

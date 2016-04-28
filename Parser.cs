@@ -35,6 +35,8 @@ namespace jamconverter
             switch (scanToken.tokenType)
             {
                 case TokenType.EOF:
+                case TokenType.Case:
+                case TokenType.AccoladeClose:
                     return null;
                 case TokenType.If:
                     return ParseIfStatement();
@@ -62,9 +64,47 @@ namespace jamconverter
                     _scanResult.Next();
                     _scanResult.Next().Is(TokenType.Terminator);
                     return new ContinueStatement();
+                case TokenType.Switch:
+                    return ParseSwitchStatement();
                 default:
-                    throw new ParsingException();
+                    throw new ParsingException("Unexpected token: "+scanToken.tokenType);
             }
+        }
+
+        private SwitchStatement ParseSwitchStatement()
+        {
+            _scanResult.Next().Is(TokenType.Switch);
+
+            var result = new SwitchStatement() {Variable = ParseExpression()};
+
+            _scanResult.Next().Is(TokenType.AccoladeOpen);
+
+            var switchCases = new List<SwitchCase>();
+            while (true)
+            {
+                var next = _scanResult.Next();
+                if (next.tokenType == TokenType.AccoladeClose)
+                    break;
+                if (next.tokenType != TokenType.Case)
+                    throw new ParsingException();
+
+                var switchCase = new SwitchCase() {CaseExpression = ParseExpression().As<LiteralExpression>()};
+                _scanResult.Next().Is(TokenType.Colon);
+
+                var statements = new List<Statement>();
+                while (true)
+                {
+                    var statement = ParseStatement();
+                    if (statement == null)
+                        break;
+                    statements.Add(statement);
+                }
+                switchCase.Statements = statements.ToArray();
+                switchCases.Add(switchCase);
+            }
+
+            result.Cases = switchCases.ToArray();
+            return result;
         }
 
         private Statement ParseForStatement()

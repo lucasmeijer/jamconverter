@@ -128,6 +128,11 @@ namespace jamconverter
                     return TokenType.Continue;
                 case "break":
                     return TokenType.Break;
+                case "case":
+                    return TokenType.Case;
+                case "switch":
+                    return TokenType.Switch;
+                    
                 default:
                     return TokenType.Literal;
             }
@@ -269,6 +274,8 @@ namespace jamconverter
         For,
         In,
         Continue,
-        Break
+        Break,
+        Switch,
+        Case
     }
 }

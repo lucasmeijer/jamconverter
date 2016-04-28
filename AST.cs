@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq.Expressions;
 
 namespace jamconverter.AST
 {
@@ -35,6 +36,18 @@ namespace jamconverter.AST
     public class ExpressionStatement : Statement
     {
         public Expression Expression { get; set; }
+    }
+
+    public class SwitchStatement : Statement
+    {
+        public Expression Variable { get; set; }
+        public SwitchCase[] Cases { get; set; }
+    }
+
+    public class SwitchCase
+    {
+        public LiteralExpression CaseExpression { get; set; }
+        public Statement[] Statements { get; set; }
     }
 
     public class LiteralExpression : Expression
