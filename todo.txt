@@ -1,8 +1,14 @@
 ﻿* switch statement
 * ?=
 * () in conditions
-* && in conditions
+* && || in conditions
 * !=
+* quote \\ character in lexer
+
+
+* rules that specify no arguments, but use $(<) and $(>) for arguments one and two.
+* remaining variable expansion modifiers
+
 
 variable scoping:
 * on {} support in converter
