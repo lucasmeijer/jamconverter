@@ -400,7 +400,15 @@ actions response myactionname
             Assert.AreEqual(0, whileStatement.Body.Statements.Length);            
         }
 
-
+        [Test]
+        public void ForLoop()
+        {
+            var forStatement = ParseStatement<ForStatement>("for myvar in $(mylist) {} ");
+            Assert.AreEqual("myvar",forStatement.LoopVariable.As<LiteralExpression>().Value);
+            Assert.IsTrue(forStatement.List.Expressions[0] is VariableDereferenceExpression);
+            Assert.AreEqual(0, forStatement.Body.Statements.Length);
+        }
+        
         static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);

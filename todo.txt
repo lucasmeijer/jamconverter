@@ -1,0 +1,9 @@
+﻿* in operator
+* switch statement
+* on {} support in converter
+* local
+* ?=
+* () in conditions
+* && in conditions
+* !=
+* for bla in bla

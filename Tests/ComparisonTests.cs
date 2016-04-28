@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using NiceIO;
@@ -255,23 +256,62 @@ while $(myvar)
    myvar -= $(myvar[1]) ;
 }");
         }
-        
+
+        //[Test]
+        public void OnVariables()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = one ;
+Echo a $(myvar) ;
+on $(mytarget) { Echo b $(myvar) ; myglobal = wham ; }
+Echo $(myglobal) ;
+
+
+
+");
+        }
+
+        [Test]
+        public void ForLoop()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+mylist = a b c d e ;
+for myvar in $(mylist) f g
+{
+  Echo $(myvar) ;
+}
+
+");
+        }
+
+
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
-            var csharp = new JamToCSharpConverter().Convert(simpleProgram);
-
             var jamResult = new JamRunner().Run(simpleProgram).Select(s => s.TrimEnd());
-            var csharpResult = new CSharpRunner().Run(csharp, new [] { new NPath("c:/jamconverter/bin/runtimelib.dll") }).Select(s => s.TrimEnd());
-
-            Console.WriteLine("C#:");
-            foreach (var l in csharpResult)
-                Console.WriteLine(l);
-            Console.WriteLine();
             Console.WriteLine("Jam:");
             foreach (var l in jamResult)
                 Console.WriteLine(l);
 
+            IEnumerable<string> csharpResult = null;
+
+            try
+            {
+                var csharp = new JamToCSharpConverter().Convert(simpleProgram);
+                csharpResult = new CSharpRunner().Run(csharp, new[] {new NPath("c:/jamconverter/bin/runtimelib.dll")}).Select(s => s.TrimEnd());
+
+                Console.WriteLine("C#:");
+                foreach (var l in csharpResult)
+                    Console.WriteLine(l);
+                Console.WriteLine();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed converting/running to c#: "+e);
+            }
             CollectionAssert.AreEqual(jamResult, csharpResult);
+
         }
     }
 }

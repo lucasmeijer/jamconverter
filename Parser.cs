@@ -59,7 +59,19 @@ namespace jamconverter
             if (scanToken.tokenType == TokenType.While)
                 return ParseWhileStatement();
 
+            if (scanToken.tokenType == TokenType.For)
+                return ParseForStatement();
+
             throw new ParsingException();
+        }
+
+        private Statement ParseForStatement()
+        {
+            _scanResult.Next().Is(TokenType.For);
+            var loopVariable = ParseExpression();
+            _scanResult.Next().Is(TokenType.In);
+
+            return new ForStatement() {LoopVariable = loopVariable.As<LiteralExpression>(), List = ParseExpressionList(), Body = ParseBlockStatement()};
         }
 
         private OnStatement ParseOnStatement()

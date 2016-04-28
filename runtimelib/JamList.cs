@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-public class JamList
+public class JamList : IEnumerable<JamList>
 {
     string[] _elements;
 
@@ -37,6 +38,11 @@ public class JamList
         }
 
         return sb.ToString();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 
     public JamList WithSuffix(JamList value)
@@ -133,9 +139,9 @@ public class JamList
         return new JamList(string.Join(joinValue._elements[0], _elements));
     }
 
-    public JamList With(string extra)
+    public JamList With(params string[] extra)
     {
-        return new JamList {_elements = _elements.Concat(new [] {extra}).ToArray()};
+        return new JamList {_elements = _elements.Concat(extra).ToArray()};
     }
 
     public JamList With(JamList extra)
@@ -151,6 +157,41 @@ public class JamList
     public void Subtract(JamList values)
     {
         _elements = _elements.Where(e => !values.Elements.Contains(e)).ToArray();
+    }
+
+    public IEnumerator<JamList> GetEnumerator()
+    {
+        return new JamListEnumerator(this);
+    }
+
+    public class JamListEnumerator : IEnumerator<JamList>
+    {
+        private readonly JamList _jamList;
+        private int _index = -1;
+
+        public JamListEnumerator(JamList jamList)
+        {
+            _jamList = jamList;
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public bool MoveNext()
+        {
+            _index++;
+            return _index < _jamList._elements.Length;
+        }
+
+        public void Reset()
+        {
+            throw new NotImplementedException();
+        }
+
+        public JamList Current { get { return new JamList(_jamList._elements[_index]);} }
+
+        object IEnumerator.Current => Current;
     }
 }
 

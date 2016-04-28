@@ -72,7 +72,19 @@ class Dummy
                 return;
             }
 
+            if (statement is ForStatement)
+            {
+                ProcessForStatement(csharpbody, variables, (ForStatement) statement);
+                return;
+            }
+
             ProcessExpressionStatement((ExpressionStatement) statement, csharpbody, variables);
+        }
+
+        private void ProcessForStatement(StringBuilder csharpbody, List<string> variables, ForStatement statement)
+        {
+            csharpbody.Append($"foreach (var {statement.LoopVariable.Value} in {CSharpFor(statement.List)}) ");
+            EmitBlockStatement(csharpbody,variables, statement.Body);
         }
 
         private void ProcessExpressionStatement(ExpressionStatement expressionStatement, StringBuilder csharpbody, List<string> variables)
@@ -89,10 +101,7 @@ class Dummy
             var variableName = VariableNameFor((LiteralExpression) assignmentExpression.Left);
             if (!variables.Contains(variableName))
                 variables.Add(variableName);
-
-//            var valueArguments = assignmentExpression.Right.Expressions.Cast<LiteralExpression>().Select(e=>e.Value);
-
-  //          var value = $"new JamList({valueArguments.InQuotes().SeperateWithComma()})";
+            
             var value = CSharpFor(assignmentExpression.Right);
 
             switch (assignmentExpression.Operator)
@@ -131,19 +140,23 @@ class Dummy
         private void ProcessIfStatement(StringBuilder csharpbody, List<string> variables, IfStatement ifStatement)
         {
             var conditionCSharp = CSharpFor(ifStatement.Condition);
-            csharpbody.AppendLine($"if ({conditionCSharp}) {{");
+            csharpbody.Append($"if ({conditionCSharp}) ");
 
-            foreach (var subStatement in ifStatement.Body.Statements)
-                ProcessStatement(subStatement, csharpbody, variables);
+            EmitBlockStatement(csharpbody, variables, ifStatement.Body);
 
             if (ifStatement.Else == null)
-            {
-                csharpbody.AppendLine("}");
                 return;
-            }
 
-            csharpbody.AppendLine("} else {");
-            foreach (var subStatement in ifStatement.Else.Statements)
+            csharpbody.AppendLine("else ");
+
+            EmitBlockStatement(csharpbody, variables, ifStatement.Else);
+        }
+
+        private void EmitBlockStatement(StringBuilder csharpbody, List<string> variables, BlockStatement blockStatement)
+        {
+            csharpbody.AppendLine("{");
+
+            foreach (var subStatement in blockStatement.Statements)
                 ProcessStatement(subStatement, csharpbody, variables);
             csharpbody.AppendLine("}");
         }
@@ -151,12 +164,8 @@ class Dummy
         private void ProcessWhileStatement(StringBuilder csharpbody, List<string> variables, WhileStatement whileStatement)
         {
             var conditionCSharp = CSharpFor(whileStatement.Condition);
-            csharpbody.AppendLine($"while ({conditionCSharp}) {{");
-
-            foreach (var subStatement in whileStatement.Body.Statements)
-                ProcessStatement(subStatement, csharpbody, variables);
-
-            csharpbody.AppendLine("}");
+            csharpbody.AppendLine($"while ({conditionCSharp})");
+            EmitBlockStatement(csharpbody,variables, whileStatement.Body);
         }
 
         private string ArgumentNameFor(string argumentName)

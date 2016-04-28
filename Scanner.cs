@@ -138,6 +138,12 @@ namespace jamconverter
             if (literal == "-=")
                 return TokenType.SubtractOperator;
 
+            if (literal == "for")
+                return TokenType.For;
+
+            if (literal == "in")
+                return TokenType.In;
+
             return TokenType.Literal;
         }
         
@@ -273,6 +279,8 @@ namespace jamconverter
         Not,
         Else,
         While,
-        SubtractOperator
+        SubtractOperator,
+        For,
+        In
     }
 }

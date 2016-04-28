@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 
 namespace runtimelib.tests
@@ -68,6 +69,21 @@ namespace runtimelib.tests
             var jamlist = new JamList("one", "two", "two", "three", "four");
             jamlist.Subtract(new JamList("four", "two"));
             CollectionAssert.AreEqual(new[] { "one","three"}, jamlist.Elements.ToArray());
+        }
+
+        [Test]
+        public void ForEach()
+        {
+            var jamlist = new JamList("one", "two", "three");
+
+            var result = new List<string>();
+            foreach (JamList v in jamlist)
+            {
+                Assert.AreEqual(1, v.Elements.Count());
+                result.Add(v.Elements.First());
+            }
+
+            CollectionAssert.AreEqual(new[] {"one","two","three"}, result);
         }
 
 

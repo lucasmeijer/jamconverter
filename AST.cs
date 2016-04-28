@@ -105,6 +105,13 @@ namespace jamconverter.AST
         public BlockStatement Body { get; set; }
     }
 
+    public class ForStatement : Statement
+    {
+        public LiteralExpression LoopVariable { get; set; }
+        public ExpressionList List { get; set; }
+        public BlockStatement Body { get; set; }
+    }
+
     public class InvocationExpression : Expression
     {
         public Expression RuleExpression { get; set; }
