@@ -227,7 +227,7 @@ namespace jamconverter
             if (peek.tokenType == TokenType.Else)
             {
                 _scanResult.Next();
-                ifStatement.Else = ParseBlockStatement();
+                ifStatement.Else = ParseStatement();
             }
 
             return ifStatement;

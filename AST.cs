@@ -19,7 +19,7 @@ namespace jamconverter.AST
     {
         public Condition Condition { get; set; }
         public BlockStatement Body { get; set; }
-        public BlockStatement Else { get; set; }
+        public Statement Else { get; set; }
     }
 
     public class BlockStatement : Statement

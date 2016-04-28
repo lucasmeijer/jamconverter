@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using jamconverter.AST;
 using NUnit.Framework;
@@ -173,7 +174,14 @@ namespace jamconverter
         public void IfWithElseStatement()
         {
             var ifStatement = ParseStatement<IfStatement>("if $(somevar) {} else { Echo ; }");
-            Assert.AreEqual("Echo", ifStatement.Else.Statements[0].As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
+            Assert.AreEqual("Echo", ifStatement.Else.As<BlockStatement>().Statements[0].As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
+        }
+
+        [Test]
+        public void IfWithElseStatementThatsNotBlockStatement()
+        {
+            var ifStatement = ParseStatement<IfStatement>("if $(somevar) {} else Echo ;");
+            Assert.AreEqual("Echo", ifStatement.Else.As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
         }
 
         [Test]

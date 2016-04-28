@@ -58,6 +58,10 @@ myemptyvar = ;
 if $(myemptyvar) { Echo msgA ; } else { Echo msg6a ; }
 if ! $(myemptyvar) { Echo msgB ; } else { Echo msg7a ; }
 
+if $(myvar) = 3212 { Echo yes ; } else if $(myvar) = 123 { Echo no ; } else Echo Boink ;
+myvar = neither ;
+if $(myvar) = 3212 { Echo yes ; } else if $(myvar) = 123 { Echo no ; } else Echo Boink ;
+
         Echo end ;
 ");
         }

@@ -90,13 +90,19 @@ class Dummy
                 return;
             }
 
+            if (statement is BlockStatement)
+            {
+                ProcessBlockStatement((BlockStatement)statement, csharpbody, variables);
+                return;
+            }
+
             ProcessExpressionStatement((ExpressionStatement) statement, csharpbody, variables);
         }
 
         private void ProcessForStatement(StringBuilder csharpbody, List<string> variables, ForStatement statement)
         {
             csharpbody.Append($"foreach (var {statement.LoopVariable.Value} in {CSharpFor(statement.List)}) ");
-            EmitBlockStatement(csharpbody,variables, statement.Body);
+            ProcessBlockStatement(statement.Body, csharpbody, variables);
         }
 
         private void ProcessExpressionStatement(ExpressionStatement expressionStatement, StringBuilder csharpbody, List<string> variables)
@@ -154,17 +160,17 @@ class Dummy
             var conditionCSharp = CSharpFor(ifStatement.Condition);
             csharpbody.Append($"if ({conditionCSharp}) ");
 
-            EmitBlockStatement(csharpbody, variables, ifStatement.Body);
+            ProcessStatement(ifStatement.Body, csharpbody, variables);
 
             if (ifStatement.Else == null)
                 return;
 
             csharpbody.AppendLine("else ");
 
-            EmitBlockStatement(csharpbody, variables, ifStatement.Else);
+            ProcessStatement(ifStatement.Else, csharpbody, variables);
         }
 
-        private void EmitBlockStatement(StringBuilder csharpbody, List<string> variables, BlockStatement blockStatement)
+        private void ProcessBlockStatement(BlockStatement blockStatement, StringBuilder csharpbody, List<string> variables)
         {
             csharpbody.AppendLine("{");
 
@@ -177,7 +183,7 @@ class Dummy
         {
             var conditionCSharp = CSharpFor(whileStatement.Condition);
             csharpbody.AppendLine($"while ({conditionCSharp})");
-            EmitBlockStatement(csharpbody,variables, whileStatement.Body);
+            ProcessBlockStatement(whileStatement.Body, csharpbody, variables);
         }
 
         private string ArgumentNameFor(string argumentName)
