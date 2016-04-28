@@ -76,7 +76,8 @@ namespace jamconverter.AST
     {
         Assignment,
         Append,
-        Subtract
+        Subtract,
+        In
     }
 
     public class RuleDeclarationStatement : Statement

@@ -46,7 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\runtimelib\runtimelib.csproj">
-      <Project>{685880A9-1C8D-46E1-86D0-BFE90BE988C8}</Project>
+      <Project>{685880a9-1c8d-46e1-86d0-bfe90be988c8}</Project>
       <Name>runtimelib</Name>
     </ProjectReference>
   </ItemGroup>

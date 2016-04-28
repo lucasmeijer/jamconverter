@@ -1,9 +1,9 @@
-﻿* in operator
-* switch statement
-* on {} support in converter
-* local
+﻿* switch statement
 * ?=
 * () in conditions
 * && in conditions
 * !=
-* for bla in bla
+
+variable scoping:
+* on {} support in converter
+* local

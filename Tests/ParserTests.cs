@@ -357,6 +357,18 @@ actions response myactionname
             Assert.AreEqual("myvar", condition.Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
         }
 
+        [Test]
+        public void InCondition()
+        {
+            var condition = ParseCondition("$(myvar) in MAC PC WINDOWS");
+
+            Assert.IsFalse(condition.Negated);
+            Assert.AreEqual("myvar", condition.Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+            Assert.AreEqual(Operator.In, condition.Operator);
+            Assert.AreEqual(3, condition.Right.Expressions.Length);
+        }
+
+
         private static Condition ParseCondition(string jamCode)
         {
             return new Parser(jamCode).ParseCondition();

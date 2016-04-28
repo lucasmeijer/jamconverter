@@ -86,6 +86,15 @@ namespace runtimelib.tests
             CollectionAssert.AreEqual(new[] {"one","two","three"}, result);
         }
 
+        [Test]
+        public void IsIn()
+        {
+            var jamlist = new JamList("one", "two", "three", "four");
+
+            Assert.IsTrue(new JamList("one").IsIn(jamlist));
+            Assert.IsTrue(new JamList("one","two").IsIn(jamlist));
+            Assert.IsFalse(new JamList("one", "five").IsIn(jamlist));
+        }
 
         [Test]
         public void PlayGround()

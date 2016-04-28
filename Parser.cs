@@ -233,30 +233,26 @@ namespace jamconverter
 
         public Expression ParseExpression()
         {
-            var scanToken = _scanResult.Peek();
-
-            if (scanToken.tokenType == TokenType.EOF)
-                return null;
-
-            if (scanToken.tokenType == TokenType.Colon || scanToken.tokenType == TokenType.Terminator ||
-                scanToken.tokenType == TokenType.ParenthesisClose || scanToken.tokenType == TokenType.BracketClose || scanToken.tokenType == TokenType.Assignment || scanToken.tokenType == TokenType.AppendOperator || scanToken.tokenType == TokenType.SubtractOperator)
+            switch (_scanResult.Peek().tokenType)
             {
-                return null;
+                case TokenType.EOF:
+                case TokenType.Colon:
+                case TokenType.Terminator:
+                case TokenType.ParenthesisClose:
+                case TokenType.BracketClose:
+                case TokenType.Assignment:
+                case TokenType.AppendOperator:
+                case TokenType.SubtractOperator:
+                    return null;
+                case TokenType.VariableDereferencer:
+                    return ParseVariableDereferenceExpression();
+                case TokenType.AccoladeOpen:
+                    return null;
+                case TokenType.BracketOpen:
+                    return ParseInvocationExpression();
+                default:
+                    return ScanForCombineExpression(new LiteralExpression { Value = _scanResult.Next().literal });
             }
-
-            if (scanToken.tokenType == TokenType.VariableDereferencer)
-                return ParseVariableDereferenceExpression();
-
-            if (scanToken.tokenType == TokenType.AccoladeOpen)
-                return null;
-
-            if (scanToken.tokenType == TokenType.BracketOpen)
-                return ParseInvocationExpression();
-
-            if (scanToken.tokenType == TokenType.Literal || /* on is the strangest keyword in that it is sometimes a keyword and sometimes a literal*/ scanToken.tokenType == TokenType.On || scanToken.tokenType == TokenType.Else)
-                return ScanForCombineExpression(new LiteralExpression {Value = _scanResult.Next().literal});
-
-            throw new ParsingException("expected Value, got: " + scanToken.tokenType);
         }
         
         private Expression ParseInvocationExpression()
@@ -341,6 +337,8 @@ namespace jamconverter
                     return Operator.Assignment;
                 case TokenType.SubtractOperator:
                     return Operator.Subtract;
+                case TokenType.In:
+                    return Operator.In;
                 default:
                     throw new NotSupportedException("Unknown operator tokentype: " + tokenType);
             }

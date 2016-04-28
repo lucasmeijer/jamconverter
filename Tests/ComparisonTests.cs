@@ -74,6 +74,28 @@ if $(myvar) = 321 { Echo Yes2 ; }
         }
 
         [Test]
+        public void InOperator()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = 123 ; 
+if $(myvar) in 123 { Echo Yes ; } else { Echo No ; } 
+if $(myvar) in a b 123 { Echo Yes ; } else { Echo No ; } 
+if $(myvar) in a b 125 { Echo Yes ; } else { Echo No ; } 
+
+myvar = a b ;
+if $(myvar) in a b { Echo Yes ; } else { Echo No ; }
+if $(myvar) in a x b { Echo Yes ; } else { Echo No ; }
+if $(myvar) in a c { Echo Yes ; } else { Echo No ; }
+if $(myvar) in b c { Echo Yes ; } else { Echo No ; }
+if $(myvar) in d e { Echo Yes ; } else { Echo No ; }
+
+
+");
+        }
+
+
+        [Test]
         public void ExpressionListAssignment()
         {
             AssertConvertedProgramHasIdenticalOutput("myvar = a b ; Echo $(myvar) ; ");
@@ -153,9 +175,19 @@ myvar = im on a boat ;
 Echo $(myvar:J=_) ;
 ");
         }
-        
 
-      [Test]
+        [Test]
+        public void KeywordsInExpressionList()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = i am on in for while if a boat ; 
+Echo $(myvar) ;
+");
+        }
+
+
+        [Test]
         public void GristVariableExpansion()
         {
             AssertConvertedProgramHasIdenticalOutput(@"
@@ -266,9 +298,6 @@ myvar = one ;
 Echo a $(myvar) ;
 on $(mytarget) { Echo b $(myvar) ; myglobal = wham ; }
 Echo $(myglobal) ;
-
-
-
 ");
         }
 

@@ -211,6 +211,8 @@ class Dummy
             {
                 case Operator.Assignment:
                     return "JamEquals";
+                case Operator.In:
+                    return "IsIn";
                 default:
                     throw new NotSupportedException("Unknown conditional operator: "+@operator);
             }

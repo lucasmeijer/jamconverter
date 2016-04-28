@@ -193,6 +193,8 @@ public class JamList : IEnumerable<JamList>
 
         object IEnumerator.Current => Current;
     }
+
+    public bool IsIn(JamList list) => Elements.All(e => list._elements.Contains(e));
 }
 
 //stolen from eric lippert
