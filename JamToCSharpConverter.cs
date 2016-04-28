@@ -1,209 +1,200 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using jamconverter.AST;
+using NRefactory = ICSharpCode.NRefactory.CSharp;
 
 namespace jamconverter
 {
     class JamToCSharpConverter
     {
-        readonly StringBuilder ruleMethods = new StringBuilder();
+        private NRefactory.SyntaxTree _syntaxTree;
+        private NRefactory.TypeDeclaration _dummyType;
+        private NRefactory.MethodDeclaration _mainMethod;
 
         public string Convert(string simpleProgram)
         {
-   
-            var csharpbody = new StringBuilder();
+            _syntaxTree = new NRefactory.SyntaxTree();
+            _syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System"));
+            _syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System.Linq"));
+            _syntaxTree.Members.Add(new NRefactory.UsingDeclaration("static BuiltinFunctions"));
+            _dummyType = new NRefactory.TypeDeclaration {Name = "Dummy"};
+            _syntaxTree.Members.Add(_dummyType);
 
+
+            new List<NRefactory.Statement>();
             var parser = new Parser(simpleProgram);
-            var variables = new List<string>();
+            var body = new NRefactory.BlockStatement();
             while (true)
             {
                 var statement = parser.ParseStatement();
                 if (statement == null)
                     break;
 
-                ProcessStatement(statement, csharpbody, variables);
+                var nStatement = ProcessStatement(statement);
+                if (nStatement != null)
+                    body.Statements.Add(nStatement);
             }
+            
+            _mainMethod = new NRefactory.MethodDeclaration { Name = "Main", ReturnType = new NRefactory.PrimitiveType("void"), Modifiers = NRefactory.Modifiers.Static, Body = body};
+            _dummyType.Members.Add(_mainMethod);
 
-            var variableDeclarations = variables.Select(v => "JamList " + v + ";\n").SeperateWithSpace();
-
-            return 
-       $@"
-using System;
-using static BuiltinFunctions;
-using System.Linq;
-
-class Dummy
-{{
-    {ruleMethods}
-
-    static void Main()
-    {{
-       {variableDeclarations}
-       {csharpbody}
-    }}
-}}";
+            return _syntaxTree.ToString();
         }
 
-        private void ProcessStatement(Statement statement, StringBuilder csharpbody, List<string> variables)
+        private NRefactory.Statement ProcessStatement(Statement statement, StringBuilder csharpbody=null, List<string> variables=null)
         {
+            if (statement == null)
+                return null;
+
             if (statement is IfStatement)
-            {
-                ProcessIfStatement(csharpbody, variables, (IfStatement) statement);
-                return;
-            }
+                return ProcessIfStatement((IfStatement) statement);
 
             if (statement is WhileStatement)
-            {
-                ProcessWhileStatement(csharpbody, variables, (WhileStatement)statement);
-                return;
-            }
+                return ProcessWhileStatement((WhileStatement) statement);
 
             if (statement is RuleDeclarationStatement)
             {
                 ProcessRuleDeclarationStatement(variables, (RuleDeclarationStatement) statement);
-                return;
+                return null;
             }
 
             if (statement is ReturnStatement)
-            {
-                csharpbody.AppendLine($"return {CSharpFor(((ReturnStatement) statement).ReturnExpression)};");
-                return;
-            }
+                return new NRefactory.ReturnStatement(ProcessExpressionList(statement.As<ReturnStatement>().ReturnExpression));
 
             if (statement is ForStatement)
-            {
-                ProcessForStatement(csharpbody, variables, (ForStatement) statement);
-                return;
-            }
+                return ProcessForStatement((ForStatement) statement);
 
             if (statement is BreakStatement)
-            {
-                csharpbody.AppendLine("break;");
-                return;
-            }
+                return new NRefactory.BreakStatement();
 
             if (statement is ContinueStatement)
-            {
-                csharpbody.AppendLine("continue;");
-                return;
-            }
+                return new NRefactory.ContinueStatement();
 
             if (statement is BlockStatement)
-            {
-                ProcessBlockStatement((BlockStatement)statement, csharpbody, variables);
-                return;
-            }
+                return ProcessBlockStatement((BlockStatement) statement);
 
             if (statement is SwitchStatement)
-            {
-                ProcessSwitchStatement((SwitchStatement) statement, csharpbody, variables);
-                return;
-            }
+                return ProcessSwitchStatement((SwitchStatement) statement);
 
-            ProcessExpressionStatement((ExpressionStatement) statement, csharpbody, variables);
+            return ProcessExpressionStatement((ExpressionStatement) statement);
         }
-
-        private void ProcessSwitchStatement(SwitchStatement switchStatement, StringBuilder csharpbody, List<string> variables)
+        
+        private NRefactory.SwitchStatement ProcessSwitchStatement(SwitchStatement switchStatement)
         {
-            csharpbody.AppendLine($"switch ({CSharpFor(switchStatement.Variable)}.Elements.First()) {{");
+            var invocationExpression = new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("SwitchTokenFor"), ProcessExpression(switchStatement.Variable));
+            var result = new NRefactory.SwitchStatement() {Expression = invocationExpression};
+           
             foreach(var switchCase in switchStatement.Cases)
             {
-                csharpbody.AppendLine($"case \"{switchCase.CaseExpression.Value}\":");
-                foreach (var statement in switchCase.Statements)
-                    ProcessStatement(statement, csharpbody, variables);
-                csharpbody.AppendLine("break;");
+                var section = new NRefactory.SwitchSection();
+                section.CaseLabels.Add(new NRefactory.CaseLabel(new NRefactory.PrimitiveExpression(switchCase.CaseExpression.Value)));
+                section.Statements.AddRange(switchCase.Statements.Select(s => ProcessStatement(s)));
+                section.Statements.Add(new NRefactory.BreakStatement());
+                result.SwitchSections.Add(section);
             }
-            csharpbody.AppendLine("}");
+            return result;
         }
-
-        private void ProcessForStatement(StringBuilder csharpbody, List<string> variables, ForStatement statement)
+        
+        private NRefactory.ForeachStatement ProcessForStatement(ForStatement statement)
         {
-            csharpbody.Append($"foreach (var {statement.LoopVariable.Value} in {CSharpFor(statement.List)}) ");
-            ProcessBlockStatement(statement.Body, csharpbody, variables);
+            return new NRefactory.ForeachStatement
+            {
+                VariableType = JamListAstType,
+                VariableName = statement.LoopVariable.Value,
+                InExpression = ProcessExpressionList(statement.List),
+                EmbeddedStatement = ProcessStatement(statement.Body)
+            };
         }
 
-        private void ProcessExpressionStatement(ExpressionStatement expressionStatement, StringBuilder csharpbody, List<string> variables)
+        private NRefactory.ExpressionStatement ProcessExpressionStatement(ExpressionStatement expressionStatement)
         {
             if (expressionStatement.Expression is InvocationExpression)
-                csharpbody.AppendLine($"{CSharpFor(expressionStatement.Expression)};");
+                return new NRefactory.ExpressionStatement(ProcessExpression(expressionStatement.Expression));
 
             if (expressionStatement.Expression is BinaryOperatorExpression)
-                ProcessAssignmentExpressionStatement(csharpbody, variables, (BinaryOperatorExpression) expressionStatement.Expression);
+                return new NRefactory.ExpressionStatement(ProcessAssignmentExpressionStatement((BinaryOperatorExpression) expressionStatement.Expression));
+
+            throw new ArgumentException("Unsupported expression: " + expressionStatement.Expression);
         }
 
-        private void ProcessAssignmentExpressionStatement(StringBuilder csharpbody, List<string> variables, BinaryOperatorExpression assignmentExpression)
+        private NRefactory.Expression ProcessAssignmentExpressionStatement(BinaryOperatorExpression assignmentExpression)
         {
-            var variableName = VariableNameFor((LiteralExpression) assignmentExpression.Left);
-            if (!variables.Contains(variableName))
-                variables.Add(variableName);
-            
-            var value = CSharpFor(assignmentExpression.Right);
+            var variableName = VariableNameFor((LiteralExpression)assignmentExpression.Left);
+            if (_dummyType.Members.OfType<NRefactory.FieldDeclaration>().All(f => f.Variables.Any(v => v.Name != variableName)))
+                _dummyType.Members.Add(new NRefactory.FieldDeclaration() {Variables = { new NRefactory.VariableInitializer(variableName) } , ReturnType = JamListAstType, Modifiers = NRefactory.Modifiers.Static});
 
+            var leftExpression = new NRefactory.IdentifierExpression(VariableNameFor(assignmentExpression.Left.As<LiteralExpression>()));
             switch (assignmentExpression.Operator)
             {
                 case Operator.Assignment:
-                    csharpbody.AppendLine($"{variableName} = {value};");
-                    break;
-                case Operator.Append:
-                    csharpbody.AppendLine($"{variableName}.Append({value});");
-                    break;
-                case Operator.Subtract:
-                    csharpbody.AppendLine($"{variableName}.Subtract({value});");
-                    break;
+                    
+                    return new NRefactory.AssignmentExpression(leftExpression, NRefactory.AssignmentOperatorType.Assign, ProcessExpressionList(assignmentExpression.Right));
+
                 default:
-                    throw new NotSupportedException("Unsupported operator in assignment: " + assignmentExpression.Operator);
+                    var csharpMethodNameForAssignmentOperator = CsharpMethodNameForAssignmentOperator(assignmentExpression.Operator);
+                    var memberReferenceExpression = new NRefactory.MemberReferenceExpression(leftExpression, csharpMethodNameForAssignmentOperator);
+                    var processExpression = ProcessExpressionList(assignmentExpression.Right);
+                    return new NRefactory.InvocationExpression(memberReferenceExpression, processExpression);
+            }
+        }
+
+        private static string CsharpMethodNameForAssignmentOperator(Operator assignmentOperator)
+        {
+            switch (assignmentOperator)
+            {
+                case Operator.Append:
+                    return "Append";
+                case Operator.Subtract:
+                    return "Subtract";
+                default:
+                    throw new NotSupportedException("Unsupported operator in assignment: " + assignmentOperator);
             }
         }
 
         private void ProcessRuleDeclarationStatement(List<string> variables, RuleDeclarationStatement ruleDeclaration)
         {
-            var ruleMethodCsharp = new StringBuilder();
-
             //because the parser always interpets an invocation without any arguments as one with a single argument: an empty expressionlist,  let's make sure we always are ready to take a single argument
-            var arguments = ruleDeclaration.Arguments.Length == 0 ? new[] {"dummyArgument"} : ruleDeclaration.Arguments;
+            var arguments = ruleDeclaration.Arguments.Length == 0 ? new[] { "dummyArgument" } : ruleDeclaration.Arguments;
 
-            ruleMethodCsharp.AppendLine($"public static JamList {MethodNameFor(ruleDeclaration)}({arguments.Select(a => $"JamList {ArgumentNameFor(a)}").SeperateWithComma()}) {{");
+            var body = new NRefactory.BlockStatement();
+
+            var processRuleDeclarationStatement = new NRefactory.MethodDeclaration()
+            {
+                Name = MethodNameFor(ruleDeclaration),
+                ReturnType = JamListAstType,
+                Modifiers = NRefactory.Modifiers.Static,
+                Body = body
+            };
+            processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a => new NRefactory.ParameterDeclaration(JamListAstType, ArgumentNameFor(a))));
+
             foreach (var subStatement in ruleDeclaration.Body.Statements)
-                ProcessStatement(subStatement, ruleMethodCsharp, variables);
+                body.Statements.Add(ProcessStatement(subStatement, null, variables));
 
             if (!(ruleDeclaration.Body.Statements.Last() is ReturnStatement))
-                ruleMethodCsharp.AppendLine("return null;");
-            ruleMethodCsharp.AppendLine("}");
-            ruleMethods.Append(ruleMethodCsharp);
+                body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.NullReferenceExpression()));
+            
+            _dummyType.Members.Add(processRuleDeclarationStatement);
         }
 
-        private void ProcessIfStatement(StringBuilder csharpbody, List<string> variables, IfStatement ifStatement)
+        public static NRefactory.AstType JamListAstType => new NRefactory.SimpleType("JamList");
+
+        private NRefactory.IfElseStatement ProcessIfStatement(IfStatement ifStatement)
         {
-            var conditionCSharp = CSharpFor(ifStatement.Condition);
-            csharpbody.Append($"if ({conditionCSharp}) ");
-
-            ProcessStatement(ifStatement.Body, csharpbody, variables);
-
-            if (ifStatement.Else == null)
-                return;
-
-            csharpbody.AppendLine("else ");
-
-            ProcessStatement(ifStatement.Else, csharpbody, variables);
+            return new NRefactory.IfElseStatement(ProcessCondition(ifStatement.Condition), ProcessStatement(ifStatement.Body), ProcessStatement(ifStatement.Else));
+        }
+        
+        private NRefactory.BlockStatement ProcessBlockStatement(BlockStatement blockStatement)
+        {
+            var processBlockStatement = new NRefactory.BlockStatement();
+            processBlockStatement.Statements.AddRange(blockStatement.Statements.Select(s => ProcessStatement(s)));
+            return processBlockStatement;
         }
 
-        private void ProcessBlockStatement(BlockStatement blockStatement, StringBuilder csharpbody, List<string> variables)
+        private NRefactory.WhileStatement ProcessWhileStatement(WhileStatement whileStatement)
         {
-            csharpbody.AppendLine("{");
-
-            foreach (var subStatement in blockStatement.Statements)
-                ProcessStatement(subStatement, csharpbody, variables);
-            csharpbody.AppendLine("}");
-        }
-
-        private void ProcessWhileStatement(StringBuilder csharpbody, List<string> variables, WhileStatement whileStatement)
-        {
-            var conditionCSharp = CSharpFor(whileStatement.Condition);
-            csharpbody.AppendLine($"while ({conditionCSharp})");
-            ProcessBlockStatement(whileStatement.Body, csharpbody, variables);
+            return new NRefactory.WhileStatement(ProcessCondition(whileStatement.Condition), ProcessStatement(whileStatement.Body, null, null));
         }
 
         private string ArgumentNameFor(string argumentName)
@@ -230,20 +221,23 @@ class Dummy
         {
             return input.Replace(".", "_");
         }
-
-
-        public string CSharpFor(Condition condition)
+    
+        NRefactory.Expression ProcessCondition(Condition condition)
         {
-            var negationString = condition.Negated ? "!" : "";
+            var conditionWithoutNegation = ConditionWithoutNegation(condition);
 
-            if (condition.Right == null)
-                return $"{negationString}{CSharpFor(condition.Left)}.AsBool()";
-
-            var csharpMethodForConditionOperator = CSharpMethodForConditionOperator(condition.Operator);
-            return $"{negationString}{CSharpFor(condition.Left)}.{csharpMethodForConditionOperator}({CSharpFor(condition.Right)})";
+            return condition.Negated ? new NRefactory.UnaryOperatorExpression(NRefactory.UnaryOperatorType.Not, conditionWithoutNegation) : conditionWithoutNegation;
         }
 
-        private string CSharpMethodForConditionOperator(Operator @operator)
+        private NRefactory.Expression ConditionWithoutNegation(Condition condition)
+        {
+            if (condition.Right == null)
+                return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(ProcessExpression(condition.Left), "AsBool"));
+
+            return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(ProcessExpression(condition.Left), CSharpMethodForConditionOperator(condition.Operator)), ProcessExpressionList(condition.Right));
+        }
+
+        string CSharpMethodForConditionOperator(Operator @operator)
         {
             switch (@operator)
             {
@@ -256,34 +250,14 @@ class Dummy
             }
         }
 
-        public string CSharpFor(ExpressionList expressionList)
+        public NRefactory.Expression ProcessExpressionList(ExpressionList expressionList)
         {
-            if (expressionList.Expressions.Length == 0)
-                return "new JamList()";
+            NRefactory.Expression result = new NRefactory.ObjectCreateExpression(JamListAstType);
+ 
+            foreach(var expression in expressionList.Expressions)
+                result = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(result, "With"), ProcessExpression(expression));
 
-            var queue = new Queue<Expression>(expressionList.Expressions);
-            var sb = new StringBuilder();
-            bool first = true;
-            while (queue.Any())
-            {
-                if (queue.Peek() is LiteralExpression)
-                {
-                    var literalExpressions = PopAllLiteralExpressionsFromQueue(queue);
-                    var formatString = first ? "new JamList({0})" : ".With({0})";
-                    sb.AppendFormat(formatString, literalExpressions.Select(le => le.Value).InQuotes().SeperateWithComma());
-                }
-                else
-                {
-                    var expression = queue.Dequeue();
-                    if (first)
-                        sb.Append(CSharpFor(expression));
-                    else
-                        sb.Append($".With({CSharpFor(expression)})");
-                }
-                first = false;
-            }
-
-            return sb.ToString();
+            return result;
         }
 
         private IEnumerable<LiteralExpression> PopAllLiteralExpressionsFromQueue(Queue<Expression> queue)
@@ -297,47 +271,61 @@ class Dummy
             }
         }
 
-        string CSharpFor(Expression e)
+        NRefactory.Expression ProcessExpression(Expression e)
         {
             var literalExpression = e as LiteralExpression;
             if (literalExpression != null)
-                return $"new JamList({literalExpression.Value.InQuotes()})";
-            
+                return new NRefactory.ObjectCreateExpression(JamListAstType, new NRefactory.PrimitiveExpression(literalExpression.Value));
+                        
             var dereferenceExpression = e as VariableDereferenceExpression;
             if (dereferenceExpression != null)
-            {
-                var sb = new StringBuilder(VariableNameFor((LiteralExpression) dereferenceExpression.VariableExpression));
+                return ProcessVariableDereferenceExpression(dereferenceExpression);
 
-                if (dereferenceExpression.IndexerExpression != null)
-                    sb.Append($".IndexedBy({CSharpFor(dereferenceExpression.IndexerExpression)})");
-
-                foreach (var modifier in dereferenceExpression.Modifiers)
-                {
-                    var csharpMethod = CSharpMethodForModifier(modifier, sb);
-
-                    sb.Append($".{csharpMethod}({CSharpFor(modifier.Value)})");
-
-                }
-                return sb.ToString();
-            }
             var combineExpression = e as CombineExpression;
             if (combineExpression != null)
-                return $"JamList.Combine({combineExpression.Elements.Select(CSharpFor).SeperateWithComma()})";
+            {
+                var combineMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("JamList"), "Combine");
+                return new NRefactory.InvocationExpression(combineMethod, combineExpression.Elements.Select(ProcessExpression));
+            }
 
             var invocationExpression = e as InvocationExpression;
             if (invocationExpression != null)
             {
-                var literalRule = (LiteralExpression) invocationExpression.RuleExpression;
-                var methodName = MethodNameFor(literalRule.Value);
-                return $"{methodName}({invocationExpression.Arguments.Select(CSharpFor).SeperateWithComma()})";
+                var methodName = MethodNameFor(invocationExpression.RuleExpression.As<LiteralExpression>().Value);
+
+                return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(methodName), invocationExpression.Arguments.Select(ProcessExpressionList));
             }
 
             if (e == null)
-                return "new JamList()";
+                return new NRefactory.ObjectCreateExpression(JamListAstType);
+
             throw new ParsingException("CSharpFor cannot deal with " + e);
         }
 
-        private string CSharpMethodForModifier(VariableDereferenceModifier modifier, StringBuilder sb)
+        private NRefactory.Expression ProcessVariableDereferenceExpression(VariableDereferenceExpression dereferenceExpression)
+        {
+            var variableExpression = new NRefactory.IdentifierExpression(VariableNameFor(dereferenceExpression.VariableExpression.As<LiteralExpression>()));
+            NRefactory.Expression resultExpression = variableExpression;
+
+            if (dereferenceExpression.IndexerExpression != null)
+            {
+                var memberReferenceExpression = new NRefactory.MemberReferenceExpression(resultExpression, "IndexedBy");
+                var indexerExpression = ProcessExpression(dereferenceExpression.IndexerExpression);
+                resultExpression = new NRefactory.InvocationExpression(memberReferenceExpression, indexerExpression);
+            }
+
+            foreach (var modifier in dereferenceExpression.Modifiers)
+            {
+                var csharpMethod = CSharpMethodForModifier(modifier);
+
+                var memberReferenceExpression = new NRefactory.MemberReferenceExpression(resultExpression, csharpMethod);
+                var valueExpression = ProcessExpression(modifier.Value);
+                resultExpression = new NRefactory.InvocationExpression(memberReferenceExpression, valueExpression);
+            }
+            return resultExpression;
+        }
+
+        private string CSharpMethodForModifier(VariableDereferenceModifier modifier)
         {
             switch (modifier.Command)
             {

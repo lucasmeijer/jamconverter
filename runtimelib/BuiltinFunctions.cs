@@ -19,6 +19,11 @@ public static class BuiltinFunctions
         return new JamList(input.Elements.Select(CalculateMD5Hash).ToArray());
     }
 
+    public static string SwitchTokenFor(JamList input)
+    {
+        return input.Elements.First();
+    }
+
     static string CalculateMD5Hash(string input)
     {
         byte[] inputBytes = Encoding.ASCII.GetBytes(input);
