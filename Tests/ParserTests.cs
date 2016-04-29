@@ -413,7 +413,6 @@ actions response myactionname
             Assert.AreEqual(ruleName, statement.As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
         }
 
-
         private static Condition ParseCondition(string jamCode)
         {
             return new Parser(jamCode).ParseCondition();

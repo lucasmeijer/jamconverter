@@ -9,9 +9,6 @@
 * implement W32_GETREG
 * implement GroupByVar
 
-lotsofwork stuff:
-- replace all string output with NRefactory AST output
-
 hard stuff:
 
 include statement
