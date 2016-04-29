@@ -2,6 +2,7 @@ Possible ways to split up tasks at hackweek:
 - embed mono in jam,  write icalls for builtin rules
 - make jam be able to output all the builtin rules that get called, so we can compare a new impl against an old one.
 - work on the actual converter
+- figure out how to make jam do a multipass build, so that pass1 can actually build the c# buildprogram,  and then pass2 actually builds what the buildprogram explained how to build
 - take converter output, and start a "for experiment only" refactoring session on what we could clean it up into
 - write alternative to C.Application  that allows for compiler toolchain / architecture to be passed in. I'm
   thinking something like "new CppProgram("myprogramname", new MSVCToolChain(Architecture.x64));"
