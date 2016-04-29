@@ -158,7 +158,7 @@ namespace jamconverter
                 if (forLoop != null && forLoop.LoopVariable.Value == variableName)
                     return new NRefactory.IdentifierExpression(cleanName);
 
-                return new NRefactory.IndexerExpression(new NRefactory.IdentifierExpression("Globals"), new NRefactory.PrimitiveExpression(cleanName));
+                return StaticGlobalVariableFor(cleanName);
             }
 
             var dereferenceExpression = expression as VariableDereferenceExpression;
@@ -166,6 +166,23 @@ namespace jamconverter
                 return new NRefactory.IndexerExpression(new NRefactory.IdentifierExpression("Globals"), ProcessExpression(expression));
 
             throw new ParsingException();
+        }
+
+        private NRefactory.MemberReferenceExpression StaticGlobalVariableFor(string cleanName)
+        {
+            if (_staticGlobals.Members.OfType<NRefactory.PropertyDeclaration>().All(p => p.Name != cleanName))
+            {
+                var indexerExpression = new NRefactory.IndexerExpression(new NRefactory.ThisReferenceExpression(), new NRefactory.PrimitiveExpression(cleanName));
+                _staticGlobals.Members.Add(new NRefactory.PropertyDeclaration()
+                {
+                    Name = cleanName,
+                    ReturnType = JamListAstType,
+                    Modifiers = NRefactory.Modifiers.Public,
+                    Getter = new NRefactory.Accessor() {Body = new NRefactory.BlockStatement() {Statements = {new NRefactory.ReturnStatement(indexerExpression.Clone())}}},
+                    Setter = new NRefactory.Accessor() {Body = new NRefactory.BlockStatement() { Statements = {new NRefactory.AssignmentExpression(indexerExpression.Clone(), new NRefactory.IdentifierExpression("value"))}} }
+                });
+            }
+            return new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), cleanName);
         }
 
         private T FindParentOfType<T>(Node node) where T : Node
