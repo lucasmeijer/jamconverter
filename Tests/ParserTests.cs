@@ -27,8 +27,8 @@ namespace jamconverter
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
             var expressionList = invocationExpression.Arguments[0];
-            Assert.AreEqual(1, expressionList.Expressions.Length);
-            Assert.AreEqual("a", expressionList.Expressions[0].As<LiteralExpression>().Value);
+            Assert.AreEqual(1, expressionList.Length);
+            Assert.AreEqual("a", expressionList[0].As<LiteralExpression>().Value);
         }
 
         [Test]
@@ -40,8 +40,8 @@ namespace jamconverter
 
             Assert.AreEqual(2, invocationExpression.Arguments.Length);
             
-            Assert.AreEqual("a", invocationExpression.Arguments[0].Expressions[0].As<LiteralExpression>().Value);
-            Assert.AreEqual("b", invocationExpression.Arguments[1].Expressions[0].As<LiteralExpression>().Value);
+            Assert.AreEqual("a", invocationExpression.Arguments[0][0].As<LiteralExpression>().Value);
+            Assert.AreEqual("b", invocationExpression.Arguments[1][0].As<LiteralExpression>().Value);
         }
 
         [Test]
@@ -54,9 +54,9 @@ namespace jamconverter
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
 
             var expressionList = invocationExpression.Arguments[0];
-            Assert.AreEqual(3, expressionList.Expressions.Length);
+            Assert.AreEqual(3, expressionList.Length);
 
-            var literalExpressions = expressionList.Expressions.Cast<LiteralExpression>().ToArray();
+            var literalExpressions = expressionList.Cast<LiteralExpression>().ToArray();
             Assert.AreEqual("a", literalExpressions[0].Value);
             Assert.AreEqual("b", literalExpressions[1].Value);
             Assert.AreEqual("c", literalExpressions[2].Value);
@@ -110,8 +110,8 @@ namespace jamconverter
             Assert.AreEqual("a", left.Value);
 
             var right = assignmentExpression.Right;
-            Assert.AreEqual(1, right.Expressions.Length);
-            Assert.AreEqual("b", right.Expressions[0].As<LiteralExpression>().Value);
+            Assert.AreEqual(1, right.Length);
+            Assert.AreEqual("b", right[0].As<LiteralExpression>().Value);
         }
 
         [Test]
@@ -136,6 +136,8 @@ namespace jamconverter
         {
             var ifStatement = ParseStatement<IfStatement>("if $(somevar) {}");
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
+
+            Assert.AreEqual(ifStatement, ifStatement.Body.Parent);
         }
 
         [Test]
@@ -143,7 +145,7 @@ namespace jamconverter
         {
             var ifStatement = ParseStatement<IfStatement>("if $(somevar) = 3 {}");
             Assert.AreEqual(Operator.Assignment, ifStatement.Condition.Operator);
-            Assert.AreEqual("3", ifStatement.Condition.Right.Expressions[0].As<LiteralExpression>().Value);
+            Assert.AreEqual("3", ifStatement.Condition.Right[0].As<LiteralExpression>().Value);
 
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
         }
@@ -269,7 +271,7 @@ namespace jamconverter
             Assert.AreEqual("MyRule", invocationExpression.RuleExpression.As<LiteralExpression>().Value);
 
             Assert.AreEqual(1, invocationExpression.Arguments.Length);
-            Assert.AreEqual("myarg", (invocationExpression.Arguments[0].Expressions[0]).As<LiteralExpression>().Value);
+            Assert.AreEqual("myarg", (invocationExpression.Arguments[0][0]).As<LiteralExpression>().Value);
         }
 
         [Test]
@@ -277,7 +279,7 @@ namespace jamconverter
         {
             var node = ParseStatement<ReturnStatement>("return 123 ;");
 
-            Assert.AreEqual("123", node.ReturnExpression.Expressions[0].As<LiteralExpression> ().Value);
+            Assert.AreEqual("123", node.ReturnExpression[0].As<LiteralExpression> ().Value);
         }
 
         [Test]
@@ -285,7 +287,7 @@ namespace jamconverter
         {
             var returnStatement = ParseStatement<ReturnStatement>("return 123 harry ;");
 
-            var expressions = returnStatement.ReturnExpression.Expressions.Cast<LiteralExpression>().ToArray();
+            var expressions = returnStatement.ReturnExpression.Cast<LiteralExpression>().ToArray();
             Assert.AreEqual("123", expressions[0].Value);
             Assert.AreEqual("harry", expressions[1].Value);
         }
@@ -311,10 +313,10 @@ a = 3 ;
         [Test]
         public void ParseExpressionListTest()
         {
-            ExpressionList expressionList = ParseExpressionList("[ MD5 myvalue] harry");
-            Assert.AreEqual(2, expressionList.Expressions.Length);
-            Assert.IsTrue(expressionList.Expressions[0] is InvocationExpression);
-            Assert.IsTrue(expressionList.Expressions[1] is LiteralExpression);
+            var expressionList = ParseExpressionList("[ MD5 myvalue] harry");
+            Assert.AreEqual(2, expressionList.Length);
+            Assert.IsTrue(expressionList[0] is InvocationExpression);
+            Assert.IsTrue(expressionList[1] is LiteralExpression);
         }
 
 
@@ -328,7 +330,7 @@ actions response myactionname
     echo somethingelse
 }");
             Assert.AreEqual("myactionname", actionsDeclarationStatement.Name);
-            CollectionAssert.AreEqual(new[] { "response"}, actionsDeclarationStatement.Modifiers.Expressions.Cast<LiteralExpression>().Select(le => le.Value));
+            CollectionAssert.AreEqual(new[] { "response"}, actionsDeclarationStatement.Modifiers.Cast<LiteralExpression>().Select(le => le.Value));
 
             Assert.AreEqual(2, actionsDeclarationStatement.Actions.Length);
             Assert.AreEqual("echo something", actionsDeclarationStatement.Actions[0].TrimStart());
@@ -352,7 +354,7 @@ actions response myactionname
 
             Assert.AreEqual("myliteral", condition.Left.As<LiteralExpression>().Value);
             Assert.IsFalse(condition.Negated);
-            Assert.IsTrue(condition.Right.Expressions[0] is VariableDereferenceExpression);
+            Assert.IsTrue(condition.Right[0] is VariableDereferenceExpression);
             Assert.AreEqual(Operator.Assignment, condition.Operator );
         }
 
@@ -373,7 +375,7 @@ actions response myactionname
             Assert.IsFalse(condition.Negated);
             Assert.AreEqual("myvar", condition.Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
             Assert.AreEqual(Operator.In, condition.Operator);
-            Assert.AreEqual(3, condition.Right.Expressions.Length);
+            Assert.AreEqual(3, condition.Right.Length);
         }
 
 
@@ -422,7 +424,7 @@ actions response myactionname
         public void ExpressionListWithOnLiteral()
         {
             //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
-            CollectionAssert.AreEqual(new[] { "I","am","on","else","boat"}, ParseExpressionList("I am on else boat").Expressions.Cast<LiteralExpression>().Select(le => le.Value));
+            CollectionAssert.AreEqual(new[] { "I","am","on","else","boat"}, ParseExpressionList("I am on else boat").Cast<LiteralExpression>().Select(le => le.Value));
         }
 
         [Test]
@@ -432,7 +434,7 @@ actions response myactionname
             var variableOnTargetExpression = ParseStatement<ExpressionStatement>("myvar on mytarget = 3 ;").Expression.As<BinaryOperatorExpression>().Left.As<VariableOnTargetExpression>();
 
             Assert.AreEqual("myvar", variableOnTargetExpression.Variable.As<LiteralExpression>().Value);
-            Assert.AreEqual("mytarget", variableOnTargetExpression.Targets.Expressions[0].As<LiteralExpression>().Value);
+            Assert.AreEqual("mytarget", variableOnTargetExpression.Targets[0].As<LiteralExpression>().Value);
         }
 
         [Test]
@@ -469,7 +471,7 @@ actions response myactionname
         {
             var forStatement = ParseStatement<ForStatement>("for myvar in $(mylist) {} ");
             Assert.AreEqual("myvar",forStatement.LoopVariable.As<LiteralExpression>().Value);
-            Assert.IsTrue(forStatement.List.Expressions[0] is VariableDereferenceExpression);
+            Assert.IsTrue(forStatement.List[0] is VariableDereferenceExpression);
             Assert.AreEqual(0, forStatement.Body.Statements.Length);
         }
 
@@ -508,7 +510,7 @@ actions response myactionname
             return returnValue;
         }
 
-        static ExpressionList ParseExpressionList(string jamCode) 
+        static NodeList<Expression> ParseExpressionList(string jamCode) 
         {
             var parser = new Parser(jamCode);
             var expressionList = parser.ParseExpressionList();

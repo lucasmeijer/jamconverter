@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using jamconverter.AST;
 using NRefactory = ICSharpCode.NRefactory.CSharp;
 
@@ -12,6 +11,7 @@ namespace jamconverter
         private NRefactory.SyntaxTree _syntaxTree;
         private NRefactory.TypeDeclaration _dummyType;
         private NRefactory.MethodDeclaration _mainMethod;
+        private NRefactory.TypeDeclaration _staticGlobals;
 
         public string Convert(string simpleProgram)
         {
@@ -22,8 +22,11 @@ namespace jamconverter
             _dummyType = new NRefactory.TypeDeclaration {Name = "Dummy"};
             _syntaxTree.Members.Add(_dummyType);
 
+            _staticGlobals = new NRefactory.TypeDeclaration {Name = "StaticGlobals", BaseTypes = { new NRefactory.SimpleType("GlobalVariables") }};
+            _syntaxTree.Members.Add(_staticGlobals);
 
-            new List<NRefactory.Statement>();
+             _dummyType.Members.Add(new NRefactory.FieldDeclaration() {ReturnType = StaticGlobalsType, Modifiers = NRefactory.Modifiers.Static, Variables = {new NRefactory.VariableInitializer("Globals", new NRefactory.ObjectCreateExpression(StaticGlobalsType))}});
+
             var parser = new Parser(simpleProgram);
             var body = new NRefactory.BlockStatement();
             while (true)
@@ -43,7 +46,9 @@ namespace jamconverter
             return _syntaxTree.ToString();
         }
 
-        private NRefactory.Statement ProcessStatement(Statement statement, StringBuilder csharpbody=null, List<string> variables=null)
+        private NRefactory.SimpleType StaticGlobalsType => new NRefactory.SimpleType(_staticGlobals.Name);
+
+        private NRefactory.Statement ProcessStatement(Statement statement)
         {
             if (statement == null)
                 return null;
@@ -56,7 +61,7 @@ namespace jamconverter
 
             if (statement is RuleDeclarationStatement)
             {
-                ProcessRuleDeclarationStatement(variables, (RuleDeclarationStatement) statement);
+                ProcessRuleDeclarationStatement((RuleDeclarationStatement) statement);
                 return null;
             }
 
@@ -90,7 +95,7 @@ namespace jamconverter
             {
                 var section = new NRefactory.SwitchSection();
                 section.CaseLabels.Add(new NRefactory.CaseLabel(new NRefactory.PrimitiveExpression(switchCase.CaseExpression.Value)));
-                section.Statements.AddRange(switchCase.Statements.Select(s => ProcessStatement(s)));
+                section.Statements.AddRange(switchCase.Statements.Select(ProcessStatement));
                 section.Statements.Add(new NRefactory.BreakStatement());
                 result.SwitchSections.Add(section);
             }
@@ -116,16 +121,13 @@ namespace jamconverter
             if (expressionStatement.Expression is BinaryOperatorExpression)
                 return new NRefactory.ExpressionStatement(ProcessAssignmentExpressionStatement((BinaryOperatorExpression) expressionStatement.Expression));
 
-            throw new ArgumentException("Unsupported expression: " + expressionStatement.Expression);
+            throw new ArgumentException("Unsupported node: " + expressionStatement.Expression);
         }
 
         private NRefactory.Expression ProcessAssignmentExpressionStatement(BinaryOperatorExpression assignmentExpression)
         {
-            var variableName = VariableNameFor((LiteralExpression)assignmentExpression.Left);
-            if (_dummyType.Members.OfType<NRefactory.FieldDeclaration>().All(f => f.Variables.Any(v => v.Name != variableName)))
-                _dummyType.Members.Add(new NRefactory.FieldDeclaration() {Variables = { new NRefactory.VariableInitializer(variableName) } , ReturnType = JamListAstType, Modifiers = NRefactory.Modifiers.Static});
-
-            var leftExpression = new NRefactory.IdentifierExpression(VariableNameFor(assignmentExpression.Left.As<LiteralExpression>()));
+            var leftExpression = VariableExpressionFor(assignmentExpression.Left.As<LiteralExpression>().Value, assignmentExpression);
+            
             switch (assignmentExpression.Operator)
             {
                 case Operator.Assignment:
@@ -138,6 +140,33 @@ namespace jamconverter
                     var processExpression = ProcessExpressionList(assignmentExpression.Right);
                     return new NRefactory.InvocationExpression(memberReferenceExpression, processExpression);
             }
+        }
+
+        private NRefactory.Expression VariableExpressionFor(string variableName, Expression expression)
+        {
+            var cleanName = CleanIllegalCharacters(variableName);
+
+            var parentRule = FindParentOfType<RuleDeclarationStatement>(expression);
+            if (parentRule != null && parentRule.Arguments.Contains(variableName))
+                return new NRefactory.IdentifierExpression(cleanName);
+
+            var forLoop = FindParentOfType<ForStatement>(expression);
+            if (forLoop != null && forLoop.LoopVariable.Value == variableName)
+                return new NRefactory.IdentifierExpression(cleanName);
+            
+            return new NRefactory.IndexerExpression(new NRefactory.IdentifierExpression("Globals"), new NRefactory.PrimitiveExpression(cleanName));
+        }
+
+        private T FindParentOfType<T>(Node node) where T : Node
+        {
+            if (node.Parent == null)
+                return null;
+
+            var needleNode = node.Parent as T;
+            if (needleNode != null)
+                return needleNode;
+
+            return FindParentOfType<T>(node.Parent);
         }
 
         private static string CsharpMethodNameForAssignmentOperator(Operator assignmentOperator)
@@ -153,7 +182,7 @@ namespace jamconverter
             }
         }
 
-        private void ProcessRuleDeclarationStatement(List<string> variables, RuleDeclarationStatement ruleDeclaration)
+        private void ProcessRuleDeclarationStatement(RuleDeclarationStatement ruleDeclaration)
         {
             //because the parser always interpets an invocation without any arguments as one with a single argument: an empty expressionlist,  let's make sure we always are ready to take a single argument
             var arguments = ruleDeclaration.Arguments.Length == 0 ? new[] { "dummyArgument" } : ruleDeclaration.Arguments;
@@ -170,7 +199,7 @@ namespace jamconverter
             processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a => new NRefactory.ParameterDeclaration(JamListAstType, ArgumentNameFor(a))));
 
             foreach (var subStatement in ruleDeclaration.Body.Statements)
-                body.Statements.Add(ProcessStatement(subStatement, null, variables));
+                body.Statements.Add(ProcessStatement(subStatement));
 
             if (!(ruleDeclaration.Body.Statements.Last() is ReturnStatement))
                 body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.NullReferenceExpression()));
@@ -188,13 +217,13 @@ namespace jamconverter
         private NRefactory.BlockStatement ProcessBlockStatement(BlockStatement blockStatement)
         {
             var processBlockStatement = new NRefactory.BlockStatement();
-            processBlockStatement.Statements.AddRange(blockStatement.Statements.Select(s => ProcessStatement(s)));
+            processBlockStatement.Statements.AddRange(blockStatement.Statements.Select(ProcessStatement));
             return processBlockStatement;
         }
 
         private NRefactory.WhileStatement ProcessWhileStatement(WhileStatement whileStatement)
         {
-            return new NRefactory.WhileStatement(ProcessCondition(whileStatement.Condition), ProcessStatement(whileStatement.Body, null, null));
+            return new NRefactory.WhileStatement(ProcessCondition(whileStatement.Condition), ProcessStatement(whileStatement.Body));
         }
 
         private string ArgumentNameFor(string argumentName)
@@ -210,11 +239,6 @@ namespace jamconverter
         private static string MethodNameFor(RuleDeclarationStatement ruleDeclarationStatement)
         {
             return MethodNameFor(ruleDeclarationStatement.Name);
-        }
-
-        private static string VariableNameFor(LiteralExpression variableExpression)
-        {
-            return CleanIllegalCharacters(variableExpression.Value);
         }
 
         static string CleanIllegalCharacters(string input)
@@ -250,11 +274,11 @@ namespace jamconverter
             }
         }
 
-        public NRefactory.Expression ProcessExpressionList(ExpressionList expressionList)
+        public NRefactory.Expression ProcessExpressionList(NodeList<Expression> expressionList)
         {
             NRefactory.Expression result = new NRefactory.ObjectCreateExpression(JamListAstType);
  
-            foreach(var expression in expressionList.Expressions)
+            foreach(var expression in expressionList)
                 result = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(result, "With"), ProcessExpression(expression));
 
             return result;
@@ -304,7 +328,7 @@ namespace jamconverter
 
         private NRefactory.Expression ProcessVariableDereferenceExpression(VariableDereferenceExpression dereferenceExpression)
         {
-            var variableExpression = new NRefactory.IdentifierExpression(VariableNameFor(dereferenceExpression.VariableExpression.As<LiteralExpression>()));
+            var variableExpression = VariableExpressionFor(dereferenceExpression.VariableExpression.As<LiteralExpression>().Value, dereferenceExpression);
             NRefactory.Expression resultExpression = variableExpression;
 
             if (dereferenceExpression.IndexerExpression != null)

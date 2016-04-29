@@ -15,7 +15,7 @@ namespace jamconverter
             _scanResult = new Scanner(input).Scan();
         }
 
-        public ExpressionList ParseExpressionList()
+        public NodeList<Expression> ParseExpressionList()
         {
             var expressions = new List<Expression>();
             while (true)
@@ -25,7 +25,7 @@ namespace jamconverter
                     break;
                 expressions.Add(expression);
             }
-            return new ExpressionList {Expressions = expressions.ToArray()};
+            return expressions.ToNodeList();
         }
 
         public Statement ParseStatement()
@@ -79,7 +79,7 @@ namespace jamconverter
 
             _scanResult.Next().Is(TokenType.AccoladeOpen);
 
-            var switchCases = new List<SwitchCase>();
+            var switchCases = new NodeList<SwitchCase>();
             while (true)
             {
                 var next = _scanResult.Next();
@@ -91,7 +91,7 @@ namespace jamconverter
                 var switchCase = new SwitchCase() {CaseExpression = ParseExpression().As<LiteralExpression>()};
                 _scanResult.Next().Is(TokenType.Colon);
 
-                var statements = new List<Statement>();
+                var statements = new NodeList<Statement>();
                 while (true)
                 {
                     var statement = ParseStatement();
@@ -99,11 +99,11 @@ namespace jamconverter
                         break;
                     statements.Add(statement);
                 }
-                switchCase.Statements = statements.ToArray();
+                switchCase.Statements = statements;
                 switchCases.Add(switchCase);
             }
 
-            result.Cases = switchCases.ToArray();
+            result.Cases = switchCases;
             return result;
         }
 
@@ -141,7 +141,7 @@ namespace jamconverter
                 return new ExpressionStatement { Expression = new BinaryOperatorExpression { Left = leftSideOfAssignment, Right = right, Operator = OperatorFor(assignmentToken.tokenType) } };
             }
             
-            var invocationExpression = new InvocationExpression {RuleExpression = ParseExpression(), Arguments = ParseArgumentList().ToArray()};
+            var invocationExpression = new InvocationExpression {RuleExpression = ParseExpression().As<LiteralExpression>(), Arguments = ParseArgumentList()};
 
             _scanResult.Next().Is(TokenType.Terminator);
 
@@ -218,8 +218,8 @@ namespace jamconverter
             }
             return new ActionsDeclarationStatement()
             {
-                Name = expressionList.Expressions.Last().As<LiteralExpression>().Value,
-                Modifiers = new ExpressionList() {Expressions = expressionList.Expressions.Take(expressionList.Expressions.Length - 1).ToArray()},
+                Name = expressionList.Last().As<LiteralExpression>().Value,
+                Modifiers = expressionList.Take(expressionList.Length - 1).ToNodeList(),
                 Actions = actions.ToArray()
             };
         }
@@ -235,7 +235,7 @@ namespace jamconverter
             return new RuleDeclarationStatement
             {
                 Name = ruleNameStr,
-                Arguments = arguments.SelectMany(ele => ele.Expressions.Cast<LiteralExpression>()).Select(le => le.Value).ToArray(),
+                Arguments = arguments.SelectMany(ele => ele.Cast<LiteralExpression>()).Select(le => le.Value).ToArray(),
                 Body = (BlockStatement) body
             };
         }
@@ -250,7 +250,7 @@ namespace jamconverter
                 if (peek.tokenType == TokenType.AccoladeClose)
                 {
                     _scanResult.Next();
-                    return new BlockStatement {Statements = statements.ToArray()};
+                    return new BlockStatement {Statements = statements.ToNodeList()};
                 }
                 
                 statements.Add(ParseStatement());
@@ -304,11 +304,11 @@ namespace jamconverter
                 throw new ParsingException();
 
             var ruleExpression = ParseExpression();
-            var arguments = ParseArgumentList().ToArray();
+            var arguments = ParseArgumentList();
             var closeBracket = _scanResult.Next();
             if (closeBracket.tokenType != TokenType.BracketClose)
                 throw new ParsingException();
-            return new InvocationExpression {RuleExpression = ruleExpression, Arguments = arguments};
+            return new InvocationExpression {RuleExpression = ruleExpression.As<LiteralExpression>(), Arguments = arguments};
         }
 
         private Expression ParseVariableDereferenceExpression()
@@ -333,7 +333,7 @@ namespace jamconverter
                 next = _scanResult.Next();
             }
 
-            var modifiers = new List<VariableDereferenceModifier>();
+            var modifiers = new NodeList<VariableDereferenceModifier>();
 
             if (next.tokenType == TokenType.Colon)
             {
@@ -362,7 +362,7 @@ namespace jamconverter
                     modifiers.Add(new VariableDereferenceModifier {Command = modifier.literal[0], Value = modifierValue});
                 }
             }
-            variableDereferenceExpression.Modifiers = modifiers.ToArray();
+            variableDereferenceExpression.Modifiers = modifiers;
 
             next.Is(TokenType.ParenthesisClose);
             
@@ -398,17 +398,17 @@ namespace jamconverter
 
             var tailElements = combineExpressionTail != null
                 ? combineExpressionTail.Elements
-                : new[] {tail};
+                : new NodeList<Expression>(new[] {tail});
 
             return new CombineExpression
             {
-                Elements = tailElements.Prepend(firstExpression).ToArray()
+                Elements = tailElements.Prepend(firstExpression).ToNodeList()
             };
         }
 
-        private ExpressionList[] ParseArgumentList()
+        private NodeList<NodeList<Expression>> ParseArgumentList()
         {
-            var expressionLists = new List<ExpressionList>();
+            var expressionLists = new NodeList<NodeList<Expression>> ();
             while (true)
             {
                 expressionLists.Add(ParseExpressionList());
@@ -423,7 +423,7 @@ namespace jamconverter
                 break;
             }
 
-            return expressionLists.ToArray();
+            return expressionLists;
         }
 
         public Condition ParseCondition()

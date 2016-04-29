@@ -97,7 +97,6 @@
     <Compile Include="Shell.cs" />
     <Compile Include="Tests\ComparisonTests.cs" />
     <Compile Include="JamRunner.cs" />
-    <Compile Include="Tests\JamToCSharpConverterTests.cs" />
     <Compile Include="Tests\ScanResultTests.cs" />
   </ItemGroup>
   <ItemGroup>
