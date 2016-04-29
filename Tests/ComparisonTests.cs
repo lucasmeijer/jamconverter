@@ -366,6 +366,22 @@ MySwitch c ;
 ");
         }
 
+        [Test]
+        public void DynamicVariables()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+mylist = a b c d e ; 
+myvar = mylist ;
+
+Echo $($(myvar)) ;
+$(myvar) = 1 2 3 ;
+
+Echo $(mylist) ;
+
+");
+        }
+
 
 
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)

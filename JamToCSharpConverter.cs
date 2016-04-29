@@ -126,7 +126,7 @@ namespace jamconverter
 
         private NRefactory.Expression ProcessAssignmentExpressionStatement(BinaryOperatorExpression assignmentExpression)
         {
-            var leftExpression = VariableExpressionFor(assignmentExpression.Left.As<LiteralExpression>().Value, assignmentExpression);
+            var leftExpression = VariableExpressionFor(assignmentExpression.Left);
             
             switch (assignmentExpression.Operator)
             {
@@ -142,19 +142,30 @@ namespace jamconverter
             }
         }
 
-        private NRefactory.Expression VariableExpressionFor(string variableName, Expression expression)
+        private NRefactory.Expression VariableExpressionFor(Expression expression)
         {
-            var cleanName = CleanIllegalCharacters(variableName);
+            var literalExpression = expression as LiteralExpression;
+            if (literalExpression != null)
+            {
+                var variableName = literalExpression.Value;
+                var cleanName = CleanIllegalCharacters(variableName);
 
-            var parentRule = FindParentOfType<RuleDeclarationStatement>(expression);
-            if (parentRule != null && parentRule.Arguments.Contains(variableName))
-                return new NRefactory.IdentifierExpression(cleanName);
+                var parentRule = FindParentOfType<RuleDeclarationStatement>(expression);
+                if (parentRule != null && parentRule.Arguments.Contains(variableName))
+                    return new NRefactory.IdentifierExpression(cleanName);
 
-            var forLoop = FindParentOfType<ForStatement>(expression);
-            if (forLoop != null && forLoop.LoopVariable.Value == variableName)
-                return new NRefactory.IdentifierExpression(cleanName);
-            
-            return new NRefactory.IndexerExpression(new NRefactory.IdentifierExpression("Globals"), new NRefactory.PrimitiveExpression(cleanName));
+                var forLoop = FindParentOfType<ForStatement>(expression);
+                if (forLoop != null && forLoop.LoopVariable.Value == variableName)
+                    return new NRefactory.IdentifierExpression(cleanName);
+
+                return new NRefactory.IndexerExpression(new NRefactory.IdentifierExpression("Globals"), new NRefactory.PrimitiveExpression(cleanName));
+            }
+
+            var dereferenceExpression = expression as VariableDereferenceExpression;
+            if (dereferenceExpression != null)
+                return new NRefactory.IndexerExpression(new NRefactory.IdentifierExpression("Globals"), ProcessExpression(expression));
+
+            throw new ParsingException();
         }
 
         private T FindParentOfType<T>(Node node) where T : Node
@@ -328,7 +339,8 @@ namespace jamconverter
 
         private NRefactory.Expression ProcessVariableDereferenceExpression(VariableDereferenceExpression dereferenceExpression)
         {
-            var variableExpression = VariableExpressionFor(dereferenceExpression.VariableExpression.As<LiteralExpression>().Value, dereferenceExpression);
+            var variableExpression = VariableExpressionFor(dereferenceExpression.VariableExpression);
+
             NRefactory.Expression resultExpression = variableExpression;
 
             if (dereferenceExpression.IndexerExpression != null)

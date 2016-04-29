@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 public class GlobalVariables
 {
@@ -30,6 +31,12 @@ public class GlobalVariables
         {
             _values[variableName] = value;
         }
+    }
+
+    public JamList this[JamList variable]
+    {
+        get { return this[variable.Elements.First()]; }
+        set { this[variable.Elements.First()] = value; }
     }
 }
 

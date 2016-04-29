@@ -24,5 +24,15 @@ namespace runtimelib.tests
             var jamList = globals["myvar"];
             CollectionAssert.AreEqual(value.Elements, jamList.Elements);
         }
+
+        [Test]
+        public void DynamicLookup()
+        {
+            var globals = new GlobalVariables();
+            var value = new JamList("hello");
+            globals["myvar"].Append(value);
+
+            CollectionAssert.AreEqual(value.Elements, globals[new JamList("myvar")].Elements);
+        }
     }
 }

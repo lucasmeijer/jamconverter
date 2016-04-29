@@ -487,6 +487,22 @@ actions response myactionname
             ParseStatement<ContinueStatement>("continue ;");
         }
 
+        [Test]
+        public void DoubleDereference()
+        {
+            var deref = ParseExpression<VariableDereferenceExpression>("$($(myvar))");
+
+            Assert.AreEqual("myvar", deref.VariableExpression.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+        }
+
+        [Test]
+        public void AssignToDynamicVar()
+        {
+            var expressionStatement = ParseStatement<ExpressionStatement>("$(myvar) = 1 2 3 ;");
+            Assert.AreEqual("myvar", expressionStatement.Expression.As<BinaryOperatorExpression>().Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+        }
+
+
         static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);

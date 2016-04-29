@@ -49,6 +49,7 @@ namespace jamconverter
                 case TokenType.Return:
                     return ParseReturnStatement();
                 case TokenType.Literal:
+                case TokenType.VariableDereferencer:
                     return ParseExpressionStatement();
                 case TokenType.On:
                     return ParseOnStatement();
@@ -151,7 +152,7 @@ namespace jamconverter
         private Expression ParseLeftSideOfAssignment()
         {
             var cursor = _scanResult.GetCursor();
-            _scanResult.Next();
+            ParseExpression();
             var nextScanToken = _scanResult.Next();
             _scanResult.SetCursor(cursor);
 
@@ -174,7 +175,7 @@ namespace jamconverter
         private bool IsNextStatementAssignment()
         {
             var cursor = _scanResult.GetCursor();
-            _scanResult.Next();
+            var leftSide = ParseExpression();
             var nextScanToken = _scanResult.Next();
             _scanResult.SetCursor(cursor);
 
