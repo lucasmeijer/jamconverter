@@ -67,12 +67,30 @@ namespace jamconverter
                     return new ContinueStatement();
                 case TokenType.Switch:
                     return ParseSwitchStatement();
+				case TokenType.Local:
+		            return ParseLocalStatement();
                 default:
                     throw new ParsingException("Unexpected token: "+scanToken.tokenType);
             }
         }
 
-        private SwitchStatement ParseSwitchStatement()
+	    private LocalStatement ParseLocalStatement()
+	    {
+			_scanResult.Next().Is(TokenType.Local);
+		    var literalExpression = ParseExpression().As<LiteralExpression>();
+
+		    var next = _scanResult.Next();
+		    NodeList<Expression> value = new NodeList<Expression>();
+		    if (next.tokenType != TokenType.Terminator)
+		    {
+			    next.Is(TokenType.Assignment);
+			    value = ParseExpressionList();
+			    _scanResult.Next().Is(TokenType.Terminator);
+		    }
+		    return new LocalStatement() {Variable = literalExpression, Value = value };
+	    }
+
+	    private SwitchStatement ParseSwitchStatement()
         {
             _scanResult.Next().Is(TokenType.Switch);
 

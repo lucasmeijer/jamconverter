@@ -132,6 +132,8 @@ namespace jamconverter
                     return TokenType.Case;
                 case "switch":
                     return TokenType.Switch;
+				case "local":
+		            return TokenType.Local;
                     
                 default:
                     return TokenType.Literal;
@@ -276,6 +278,7 @@ namespace jamconverter
         Continue,
         Break,
         Switch,
-        Case
+        Case,
+	    Local
     }
 }

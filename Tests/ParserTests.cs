@@ -501,8 +501,24 @@ actions response myactionname
             Assert.AreEqual("myvar", expressionStatement.Expression.As<BinaryOperatorExpression>().Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
         }
 
+		[Test]
+		public void LocalVariableDeclaration()
+		{
+			var localStatement = ParseStatement<LocalStatement>("local a ;");
+			Assert.AreEqual("a", localStatement.Variable.Value);
+			Assert.AreEqual(0, localStatement.Value.Length);
+		}
+		
+		[Test]
+		public void LocalVariableDeclarationWithValue()
+		{
+			var localStatement = ParseStatement<LocalStatement>("local a = 3 ;");
+			Assert.AreEqual("a", localStatement.Variable.Value);
+			Assert.AreEqual("3", localStatement.Value[0].As<LiteralExpression>().Value);
+		}
 
-        static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
+
+		static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);
             var node = parser.ParseStatement();

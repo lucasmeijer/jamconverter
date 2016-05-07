@@ -83,10 +83,26 @@ namespace jamconverter
             if (statement is SwitchStatement)
                 return ProcessSwitchStatement((SwitchStatement) statement);
 
+	        if (statement is LocalStatement)
+		        return ProcessLocalStatement((LocalStatement) statement);
+
+	        if (statement is ActionsDeclarationStatement)
+		        return ProcessActionsDeclarationStatement((ActionsDeclarationStatement) statement);
+
             return ProcessExpressionStatement((ExpressionStatement) statement);
         }
-        
-        private NRefactory.SwitchStatement ProcessSwitchStatement(SwitchStatement switchStatement)
+
+	    private NRefactory.Statement ProcessActionsDeclarationStatement(ActionsDeclarationStatement statement)
+	    {
+		    return new NRefactory.IdentifierExpression("ActionsDeclarationStamentTODO");
+	    }
+    
+	    private NRefactory.Statement ProcessLocalStatement(LocalStatement statement)
+	    {
+			return ProcessAssignment(statement.Variable, Operator.Assignment, statement.Value);
+		}
+
+	    private NRefactory.SwitchStatement ProcessSwitchStatement(SwitchStatement switchStatement)
         {
             var invocationExpression = new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("SwitchTokenFor"), ProcessExpression(switchStatement.Variable));
             var result = new NRefactory.SwitchStatement() {Expression = invocationExpression};
@@ -126,23 +142,30 @@ namespace jamconverter
 
         private NRefactory.Expression ProcessAssignmentExpressionStatement(BinaryOperatorExpression assignmentExpression)
         {
-            var leftExpression = VariableExpressionFor(assignmentExpression.Left);
-            
-            switch (assignmentExpression.Operator)
-            {
-                case Operator.Assignment:
-                    
-                    return new NRefactory.AssignmentExpression(leftExpression, NRefactory.AssignmentOperatorType.Assign, ProcessExpressionList(assignmentExpression.Right));
-
-                default:
-                    var csharpMethodNameForAssignmentOperator = CsharpMethodNameForAssignmentOperator(assignmentExpression.Operator);
-                    var memberReferenceExpression = new NRefactory.MemberReferenceExpression(leftExpression, csharpMethodNameForAssignmentOperator);
-                    var processExpression = ProcessExpressionList(assignmentExpression.Right);
-                    return new NRefactory.InvocationExpression(memberReferenceExpression, processExpression);
-            }
+	        return ProcessAssignment(assignmentExpression.Left, assignmentExpression.Operator, assignmentExpression.Right);
         }
 
-        private NRefactory.Expression VariableExpressionFor(Expression expression)
+	    private NRefactory.Expression ProcessAssignment(Expression left, Operator @operator, NodeList<Expression> right)
+	    {
+		    var leftExpression = VariableExpressionFor(left);
+
+		    switch (@operator)
+		    {
+			    case Operator.Assignment:
+
+				    return new NRefactory.AssignmentExpression(leftExpression, NRefactory.AssignmentOperatorType.Assign,
+					    ProcessExpressionList(right));
+
+			    default:
+				    var csharpMethodNameForAssignmentOperator = CsharpMethodNameForAssignmentOperator(@operator);
+				    var memberReferenceExpression = new NRefactory.MemberReferenceExpression(leftExpression,
+					    csharpMethodNameForAssignmentOperator);
+				    var processExpression = ProcessExpressionList(right);
+				    return new NRefactory.InvocationExpression(memberReferenceExpression, processExpression);
+		    }
+	    }
+
+	    private NRefactory.Expression VariableExpressionFor(Expression expression)
         {
             var literalExpression = expression as LiteralExpression;
             if (literalExpression != null)
@@ -164,6 +187,10 @@ namespace jamconverter
             var dereferenceExpression = expression as VariableDereferenceExpression;
             if (dereferenceExpression != null)
                 return new NRefactory.IndexerExpression(new NRefactory.IdentifierExpression("Globals"), ProcessExpression(expression));
+
+		    var variableOnTargetExpression = expression as VariableOnTargetExpression;
+			if (variableOnTargetExpression != null)
+				return new NRefactory.IdentifierExpression("VariableOnTargetTODO");
 
             throw new ParsingException();
         }
@@ -390,6 +417,10 @@ namespace jamconverter
                     return "GristWith";
                 case 'J':
                     return "JoinWithValue";
+				case 'X':
+		            return "Exclude";
+				case 'I':
+		            return "Include";
                 default:
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);
             }

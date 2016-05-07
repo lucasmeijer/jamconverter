@@ -306,7 +306,22 @@ namespace jamconverter.AST
     public class ContinueStatement : Statement
     {
     }
-    
+
+	public class LocalStatement : Statement
+	{
+		public LiteralExpression Variable
+		{
+			get { return GetChild(Roles.LocalVariable); }
+			set { SetChild(Roles.LocalVariable, value); }
+		}
+
+		public NodeList<Expression> Value
+		{
+			get { return GetChild(Roles.Right); }
+			set { SetChild(Roles.Right, value); }
+		}
+	}
+
     public class InvocationExpression : Expression
     {
         public LiteralExpression RuleExpression
@@ -395,7 +410,8 @@ namespace jamconverter.AST
         public static readonly Role<NodeList<Expression>> ReturnExpression = new Role<NodeList<Expression>>();
         public static readonly Role<Expression> Expression = new Role<Expression>();
         public static readonly Role<Expression> Variable = new Role<Expression>();
-        public static readonly Role<NodeList<SwitchCase>> SwitchCases = new Role<NodeList<SwitchCase>>();
+		public static readonly Role<LiteralExpression> LocalVariable = new Role<LiteralExpression>();
+		public static readonly Role<NodeList<SwitchCase>> SwitchCases = new Role<NodeList<SwitchCase>>();
         public static readonly Role<LiteralExpression> CaseExpression = new Role<LiteralExpression>();
         public static readonly Role<NodeList<Expression>> Elements = new Role<NodeList<Expression>>();
         public static readonly Role<NodeList<VariableDereferenceModifier>> Modifiers = new Role<NodeList<VariableDereferenceModifier>>();
