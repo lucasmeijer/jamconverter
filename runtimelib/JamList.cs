@@ -194,7 +194,7 @@ public class JamList : IEnumerable<JamList>
         object IEnumerator.Current => Current;
     }
 
-    public bool IsIn(JamList list) => Elements.All(e => list._elements.Contains(e));
+    public bool IsIn(params JamList[] values) => Elements.All(e => values.SelectMany(l=>l._elements).Contains(e));
 
 	public static implicit operator JamList(string input)
 	{
