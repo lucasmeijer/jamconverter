@@ -160,7 +160,7 @@ namespace jamconverter
 				    var csharpMethodNameForAssignmentOperator = CsharpMethodNameForAssignmentOperator(@operator);
 				    var memberReferenceExpression = new NRefactory.MemberReferenceExpression(leftExpression,
 					    csharpMethodNameForAssignmentOperator);
-				    var processExpression = ProcessExpressionList(right);
+				    var processExpression = ExpressionsForJamListConstruction(right);
 				    return new NRefactory.InvocationExpression(memberReferenceExpression, processExpression);
 		    }
 	    }
@@ -313,7 +313,7 @@ namespace jamconverter
             if (condition.Right == null)
                 return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(ProcessExpression(condition.Left), "AsBool"));
 
-            return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(ProcessExpression(condition.Left), CSharpMethodForConditionOperator(condition.Operator)), ProcessExpressionList(condition.Right));
+            return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(ProcessExpression(condition.Left), CSharpMethodForConditionOperator(condition.Operator)), ExpressionsForJamListConstruction(condition.Right));
         }
 
         string CSharpMethodForConditionOperator(Operator @operator)
@@ -331,13 +331,27 @@ namespace jamconverter
 
         public NRefactory.Expression ProcessExpressionList(NodeList<Expression> expressionList)
         {
-            NRefactory.Expression result = new NRefactory.ObjectCreateExpression(JamListAstType);
- 
-            foreach(var expression in expressionList)
-                result = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(result, "With"), ProcessExpression(expression));
+			var expressionsForJamListConstruction = ExpressionsForJamListConstruction(expressionList).ToArray();
 
-            return result;
+		/*	if (expressionList.Length == 1)
+	        {
+		        if (expressionList[0] is VariableDereferenceExpression)
+					return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(ProcessExpression(expressionList[0]), "Clone"));
+	        }
+			*/
+	        if (expressionsForJamListConstruction.Length == 1)
+		        return expressionsForJamListConstruction[0];
+
+	        return new NRefactory.ObjectCreateExpression(JamListAstType, expressionsForJamListConstruction);
         }
+
+	    IEnumerable<NRefactory.Expression> ExpressionsForJamListConstruction(NodeList<Expression> expressionList)
+	    {
+		    foreach (var expression in expressionList)
+		    {
+			    yield return ProcessExpression(expression);
+		    }
+	    }
 
         private IEnumerable<LiteralExpression> PopAllLiteralExpressionsFromQueue(Queue<Expression> queue)
         {
@@ -354,7 +368,7 @@ namespace jamconverter
         {
             var literalExpression = e as LiteralExpression;
             if (literalExpression != null)
-                return new NRefactory.ObjectCreateExpression(JamListAstType, new NRefactory.PrimitiveExpression(literalExpression.Value));
+                return new NRefactory.PrimitiveExpression(literalExpression.Value);
                         
             var dereferenceExpression = e as VariableDereferenceExpression;
             if (dereferenceExpression != null)

@@ -93,9 +93,9 @@ public class JamList : IEnumerable<JamList>
         return _elements.SequenceEqual(other._elements);
     }
 
-    public void Append(JamList values)
+    public void Append(params JamList[] values)
     {
-        _elements = _elements.Concat(values._elements).ToArray();
+        _elements = _elements.Concat(values.SelectMany(v=>v.Elements)).ToArray();
     }
 
     public JamList IfEmptyUse(JamList value)
@@ -195,6 +195,16 @@ public class JamList : IEnumerable<JamList>
     }
 
     public bool IsIn(JamList list) => Elements.All(e => list._elements.Contains(e));
+
+	public static implicit operator JamList(string input)
+	{
+		return new JamList(input);
+	}
+
+	public JamList Clone()
+	{
+		return new JamList(_elements);
+	}
 }
 
 //stolen from eric lippert

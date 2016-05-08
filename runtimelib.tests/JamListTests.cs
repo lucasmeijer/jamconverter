@@ -43,14 +43,7 @@ namespace runtimelib.tests
         {
             Assert.AreEqual("this_is_nice", new JamList("this", "is","nice").JoinWithValue(new JamList("_")).ToString());
         }
-
-        [Test]
-        public void With()
-        {
-            var jamlist = new JamList().With("one").With(new JamList("two", "three")).With("four");
-            Assert.AreEqual("one two three four", jamlist.ToString());
-        }
-
+		
         [Test]
         public void AsBoolReturnsTrue()
         {
@@ -95,6 +88,30 @@ namespace runtimelib.tests
             Assert.IsTrue(new JamList("one","two").IsIn(jamlist));
             Assert.IsFalse(new JamList("one", "five").IsIn(jamlist));
         }
+
+	    [Test]
+	    public void ImplicitConversion()
+	    {
+		    JamList j = "hello";
+			CollectionAssert.AreEqual(new[] { "hello"}, j.Elements);
+	    }
+
+	    [Test]
+	    public void AppendWithMoreArguments()
+	    {
+		    var j = new JamList("initial");
+			j.Append("asd", "asd2");
+
+			CollectionAssert.AreEqual(new[] { "initial", "asd", "asd2"}, j.Elements);
+	    }
+
+	    [Test]
+	    public void Clone()
+	    {
+		    var j = new JamList("juha");
+		    var clone = j.Clone();
+			CollectionAssert.AreEqual(new[] { "juha"}, clone.Elements);
+	    }
 
         [Test]
         public void PlayGround()

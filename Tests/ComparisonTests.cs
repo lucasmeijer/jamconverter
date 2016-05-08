@@ -35,7 +35,29 @@ namespace jamconverter.Tests
             AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; Echo $(myvar) ;");
         }
 
-        [Test]
+		[Test]
+		public void ValueSemantics()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"myvar = a b c ;
+myvar2 = $(myvar) ;
+myvar2 += d ; 
+Echo $(myvar) ;
+Echo $(myvar2) ;
+
+rule MyFunc myarg
+{
+  myarg += a ;
+}
+
+myvar3 = hello ;
+MyFunc $(myvar3) ;
+Echo $(myvar3) ;
+
+");
+		}
+
+		[Test]
         public void DoubleVariableAssignment()
         {
             AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; myvar = 234 ; Echo $(myvar) ;");
