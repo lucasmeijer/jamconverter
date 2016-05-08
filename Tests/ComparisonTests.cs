@@ -54,6 +54,23 @@ myvar3 = hello ;
 MyFunc $(myvar3) ;
 Echo $(myvar3) ;
 
+#test return value value semantics
+
+myreturnvalue = a b c ;
+
+rule ReturnMe
+{
+  return $(myreturnvalue) ;
+}
+
+myvar5 = [ ReturnMe ] ;
+myvar5 += d ;
+Echo $(myvar5) ;
+Echo $(myreturnvalue) ;
+
+
+
+
 ");
 		}
 
