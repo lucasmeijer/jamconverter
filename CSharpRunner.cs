@@ -4,7 +4,7 @@ using NiceIO;
 using NUnit.Framework;
 using Unity.IL2CPP;
 
-namespace jamconverter
+namespace jamconverter.Tests
 {
     class CSharpRunner
     {

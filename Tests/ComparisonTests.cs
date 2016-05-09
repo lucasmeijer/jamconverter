@@ -139,9 +139,19 @@ if $(myvar) in d e { Echo Yes ; } else { Echo No ; }
 
 
         [Test]
-        public void ExpressionListAssignment()
+        public void Assignments()
         {
-            AssertConvertedProgramHasIdenticalOutput("myvar = a b ; Echo $(myvar) ; ");
+            AssertConvertedProgramHasIdenticalOutput(
+@"myvar = a b ; 
+Echo $(myvar) ; 
+
+harry ?= sally ;
+Echo $(harry) ;
+
+harry ?= sailor ;
+Echo $(harry) ;
+
+");
         }
 
         [Test]
@@ -310,7 +320,13 @@ Echo d ;
             AssertConvertedProgramHasIdenticalOutput("Echo [ MD5 harry ] ;");
         }
 
-        [Test]
+	    [Test]
+	    public void EmptyRuleInvocation()
+	    {
+			AssertConvertedProgramHasIdenticalOutput("rule Hello { } Hello ; Echo test ;");
+		}
+
+		[Test]
         public void VariableDereferencingWithIndexer()
         {
             AssertConvertedProgramHasIdenticalOutput(

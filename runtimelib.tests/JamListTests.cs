@@ -136,6 +136,17 @@ namespace runtimelib.tests
 			Assert.Throws<ArgumentException>(() => j.Include(pattern));
 		}
 
+	    [Test]
+	    public void AssignIfEmpty()
+	    {
+		    var j = new JamList();
+		    j.AssignIfEmpty("harry");
+			CollectionAssert.AreEqual(new[] { "harry" }, j.Elements);
+
+			j.AssignIfEmpty("sally");
+			CollectionAssert.AreEqual(new[] { "harry" }, j.Elements);
+		}
+
 
 		[Test]
         public void PlayGround()

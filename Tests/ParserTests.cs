@@ -4,7 +4,7 @@ using System.Linq;
 using jamconverter.AST;
 using NUnit.Framework;
 
-namespace jamconverter
+namespace jamconverter.Tests
 {
     [TestFixture]
     public class ParserTests
@@ -94,7 +94,17 @@ namespace jamconverter
             Assert.AreEqual(Operator.Assignment, assignmentExpression.Operator);
         }
 
-        [Test]
+		[Test]
+		public void AssignmentIfEmpty()
+		{
+			var assignmentExpression = ParseStatement<ExpressionStatement>("a ?= b ;").Expression.As<BinaryOperatorExpression>();
+
+			AssertLeftIsA_and_RightIsB(assignmentExpression);
+			Assert.AreEqual(Operator.AssignmentIfEmpty, assignmentExpression.Operator);
+		}
+
+
+		[Test]
         public void Subtract()
         {
             var assignmentExpression = ParseStatement<ExpressionStatement>("a -= b ;").Expression.As<BinaryOperatorExpression>();

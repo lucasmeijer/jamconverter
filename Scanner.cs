@@ -136,6 +136,8 @@ namespace jamconverter
                     return TokenType.AppendOperator;
                 case "-=":
                     return TokenType.SubtractOperator;
+				case "?=":
+		            return TokenType.AssignmentIfEmpty;
                 case "for":
                     return TokenType.For;
                 case "in":
@@ -297,6 +299,7 @@ namespace jamconverter
         Break,
         Switch,
         Case,
-	    Local
+	    Local,
+	    AssignmentIfEmpty
     }
 }

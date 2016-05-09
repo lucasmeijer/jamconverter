@@ -149,7 +149,7 @@ namespace jamconverter
 
         private Statement ParseExpressionStatement()
         {
-            if (IsNextStatementAssignment())
+            if (IsNextTokenAssignment())
             {
                 var leftSideOfAssignment = ParseLeftSideOfAssignment();
 
@@ -182,7 +182,7 @@ namespace jamconverter
                 return new VariableOnTargetExpression() { Variable = variable, Targets = targets };
             }
 
-            if (nextScanToken.tokenType == TokenType.Assignment || nextScanToken.tokenType == TokenType.AppendOperator || nextScanToken.tokenType == TokenType.SubtractOperator)
+            if (nextScanToken.tokenType == TokenType.Assignment || nextScanToken.tokenType == TokenType.AppendOperator || nextScanToken.tokenType == TokenType.SubtractOperator || nextScanToken.tokenType == TokenType.AssignmentIfEmpty)
             {
                 return ParseExpression();
             }
@@ -190,7 +190,7 @@ namespace jamconverter
             throw new ParsingException();
         }
 
-        private bool IsNextStatementAssignment()
+        private bool IsNextTokenAssignment()
         {
             var cursor = _scanResult.GetCursor();
             var leftSide = ParseExpression();
@@ -203,6 +203,7 @@ namespace jamconverter
                 case TokenType.AppendOperator:
                 case TokenType.SubtractOperator:
                 case TokenType.On:
+				case TokenType.AssignmentIfEmpty:
 
                     return true;
             }
@@ -400,6 +401,8 @@ namespace jamconverter
                     return Operator.Subtract;
                 case TokenType.In:
                     return Operator.In;
+				case TokenType.AssignmentIfEmpty:
+		            return Operator.AssignmentIfEmpty;
                 default:
                     throw new NotSupportedException("Unknown operator tokentype: " + tokenType);
             }

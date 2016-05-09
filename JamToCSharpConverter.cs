@@ -157,7 +157,7 @@ namespace jamconverter
 					    ProcessExpressionList(right, mightModify:true));
 
 			    default:
-				    var csharpMethodNameForAssignmentOperator = CsharpMethodNameForAssignmentOperator(@operator);
+				    var csharpMethodNameForAssignmentOperator = CSharpMethodNameForAssignmentOperator(@operator);
 				    var memberReferenceExpression = new NRefactory.MemberReferenceExpression(leftExpression,
 					    csharpMethodNameForAssignmentOperator);
 				    var processExpression = ExpressionsForJamListConstruction(right);
@@ -224,7 +224,7 @@ namespace jamconverter
             return FindParentOfType<T>(node.Parent);
         }
 
-        private static string CsharpMethodNameForAssignmentOperator(Operator assignmentOperator)
+        private static string CSharpMethodNameForAssignmentOperator(Operator assignmentOperator)
         {
             switch (assignmentOperator)
             {
@@ -232,6 +232,8 @@ namespace jamconverter
                     return "Append";
                 case Operator.Subtract:
                     return "Subtract";
+				case Operator.AssignmentIfEmpty:
+		            return "AssignIfEmpty";
                 default:
                     throw new NotSupportedException("Unsupported operator in assignment: " + assignmentOperator);
             }
@@ -263,13 +265,21 @@ namespace jamconverter
             foreach (var subStatement in ruleDeclaration.Body.Statements)
                 body.Statements.Add(ProcessStatement(subStatement));
 
-            if (!(ruleDeclaration.Body.Statements.Last() is ReturnStatement))
+            if (!DoesBodyEndWithReturnStatement(ruleDeclaration))
                 body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.NullReferenceExpression()));
             
             _dummyType.Members.Add(processRuleDeclarationStatement);
         }
 
-        public static NRefactory.AstType JamListAstType => new NRefactory.SimpleType("JamList");
+	    private static bool DoesBodyEndWithReturnStatement(RuleDeclarationStatement ruleDeclaration)
+	    {
+		    var statements = ruleDeclaration.Body.Statements;
+		    if (statements.Length == 0)
+			    return false;
+		    return statements.Last() is ReturnStatement;
+	    }
+
+	    public static NRefactory.AstType JamListAstType => new NRefactory.SimpleType("JamList");
 
         private NRefactory.IfElseStatement ProcessIfStatement(IfStatement ifStatement)
         {
@@ -305,7 +315,7 @@ namespace jamconverter
 
         static string CleanIllegalCharacters(string input)
         {
-            return input.Replace(".", "_");
+	        return input.Replace(".", "_").Replace("+", "Plus");
         }
     
         NRefactory.Expression ProcessCondition(Condition condition)

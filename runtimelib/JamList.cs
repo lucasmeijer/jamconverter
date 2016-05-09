@@ -217,6 +217,13 @@ public class JamList : IEnumerable<JamList>
 		var strings = Elements.Where(e=>Regex.Matches(e, patternStr).Count > 0).ToArray();
 		return new JamList(strings);
 	}
+
+	public void AssignIfEmpty(params JamList[] values)
+	{
+		if (Elements.Any())
+			return;
+		_elements = values.SelectMany(v => v.Elements).ToArray();
+	}
 }
 
 //stolen from eric lippert

@@ -1,7 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 
-namespace jamconverter
+namespace jamconverter.Tests
 {
     [TestFixture]
     public class ScannerTests
@@ -153,7 +153,9 @@ on_new_line");
 			var a = new Scanner("hello:there");
 			var result = a.ScanAllTokens().ToArray();
 
+			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
 
+			Assert.AreEqual("hello:there", result[0].literal);
 		}
 	}
 }
