@@ -222,7 +222,17 @@ public class JamList : IEnumerable<JamList>
 	{
 		if (Elements.Any())
 			return;
-		_elements = values.SelectMany(v => v.Elements).ToArray();
+		Assign(values);
+	}
+
+	public void Assign(params JamList[] values)
+	{
+		_elements = ElementsOf(values);
+	}
+
+	static string[] ElementsOf(JamList[] values)
+	{
+		return values.SelectMany(v => v.Elements).ToArray();
 	}
 }
 
