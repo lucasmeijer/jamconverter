@@ -192,7 +192,19 @@ Echo $(myvar:S=) ;
 ");
         }
 
-        [Test]
+		[Test]
+		[Ignore("Need to investigate jam behaviour")]
+		public void MultipleDifferentModifiers()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+mylist = hello there sailor ;
+Echo $(mylist:I=hello:S=exe:I=sailor:X=hello) ;
+");
+		}
+
+
+		[Test]
         public void EmptyVariableExpansion()
         {
             AssertConvertedProgramHasIdenticalOutput(
@@ -422,8 +434,24 @@ Echo $(mylist) ;
         }
 
 
+		[Test]
+		public void IncludeModifier()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+mylist = hello there sailor ; 
+Echo $(mylist:I=th) ;
 
-        private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
+patterninvar = sai ;
+Echo $(mylist:I=$(patterninvar)) ;
+
+#make test for regex
+Echo $(mylist:I=hel+) ;
+
+");
+		}
+
+		private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
         {
             var jamResult = new JamRunner().Run(simpleProgram).Select(s => s.TrimEnd());
             Console.WriteLine("Jam:");

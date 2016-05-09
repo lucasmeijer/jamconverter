@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 
@@ -113,7 +114,30 @@ namespace runtimelib.tests
 			CollectionAssert.AreEqual(new[] { "juha"}, clone.Elements);
 	    }
 
-        [Test]
+	    [Test]
+	    public void Include()
+	    {
+		    var j = new JamList("hello","there","sailor");
+			CollectionAssert.AreEqual(new[] {"there"}, j.Include("th").Elements);
+	    }
+
+		[Test]
+		public void IncludeWithRegex()
+		{
+			var j = new JamList("hello", "there", "sailor");
+			CollectionAssert.AreEqual(new[] { "hello" }, j.Include("hel+").Elements);
+		}
+
+		[Test]
+		public void IncludeOnlyAllowsSingleElement()
+		{
+			var j = new JamList("hello", "there", "sailor");
+			var pattern = new JamList("one","two");
+			Assert.Throws<ArgumentException>(() => j.Include(pattern));
+		}
+
+
+		[Test]
         public void PlayGround()
         {
         }

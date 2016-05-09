@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 public class JamList : IEnumerable<JamList>
 {
@@ -204,6 +205,17 @@ public class JamList : IEnumerable<JamList>
 	public JamList Clone()
 	{
 		return new JamList(_elements);
+	}
+
+	public JamList Include(JamList pattern)
+	{
+		if (pattern.Elements.Count() != 1)
+			throw new ArgumentException();
+
+		var patternStr = pattern.Elements.Single();
+		
+		var strings = Elements.Where(e=>Regex.Matches(e, patternStr).Count > 0).ToArray();
+		return new JamList(strings);
 	}
 }
 

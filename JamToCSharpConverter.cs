@@ -360,18 +360,7 @@ namespace jamconverter
 		    }
 	    }
 
-        private IEnumerable<LiteralExpression> PopAllLiteralExpressionsFromQueue(Queue<Expression> queue)
-        {
-            while(queue.Any())
-            {
-                if (queue.Peek() is LiteralExpression)
-                    yield return (LiteralExpression) queue.Dequeue();
-                else
-                    yield break;
-            }
-        }
-
-        NRefactory.Expression ProcessExpression(Expression e)
+	    NRefactory.Expression ProcessExpression(Expression e)
         {
             var literalExpression = e as LiteralExpression;
             if (literalExpression != null)
