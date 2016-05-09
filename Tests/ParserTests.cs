@@ -237,7 +237,7 @@ namespace jamconverter
             Assert.IsNull(variableDereferenceExpression.Modifiers[1].Value);
         }
 
-        [Test]
+		[Test]
         public void VariableExpansionModifiersWithEmptyValue()
         {
             var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(harry:B=)");
@@ -516,6 +516,16 @@ actions response myactionname
 			Assert.AreEqual("a", localStatement.Variable.Value);
 			Assert.AreEqual("3", localStatement.Value[0].As<LiteralExpression>().Value);
 		}
+
+	    [Test]
+	    public void RuleInvocationWithArgumentContainingColon()
+	    {
+		    var expressionStatement = ParseStatement<ExpressionStatement>("MyRule my:funky:arg0 ;");
+		    var invocationExpression = expressionStatement.Expression.As<InvocationExpression>();
+
+			Assert.AreEqual(1, invocationExpression.Arguments.Length);
+			Assert.AreEqual("my:funky:arg0", invocationExpression.Arguments[0].Single().As<LiteralExpression>().Value);
+	    }
 
 
 		static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement

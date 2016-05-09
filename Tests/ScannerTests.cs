@@ -146,5 +146,14 @@ on_new_line");
             //we do not expect the comment to be reported by the scanner
             CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.WhiteSpace, TokenType.Literal, TokenType.EOF}, result.Select(r => r.tokenType));
         }
-    }
+
+		[Test]
+		public void LiteralContainingColon()
+		{
+			var a = new Scanner("hello:there");
+			var result = a.ScanAllTokens().ToArray();
+
+
+		}
+	}
 }
