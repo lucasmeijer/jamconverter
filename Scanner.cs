@@ -161,12 +161,23 @@ namespace jamconverter
         private string ReadLiteral(bool allowColon)
         {
             int i;
+			bool isQuoteLiteral = _input[nextChar] == '"';
+
             for (i = nextChar; i != _input.Length; i++)
             {
 				//dont allow colons as the first character
 	            bool reallyAllowCon = allowColon && nextChar != i;
-                if (IsLiteral(_input[i], reallyAllowCon))
-                    continue;
+				if (isQuoteLiteral) 
+				{
+					if (i == nextChar || _input [i] != '"' || _input [i-1] == '\\')
+						continue;
+					i++;
+				} 
+				else 
+				{
+					if (IsLiteral (_input [i], reallyAllowCon))
+						continue;
+				}
                 break;
             }
 
@@ -176,7 +187,11 @@ namespace jamconverter
                 return _input[i].ToString();
             }
 
-            var result = _input.Substring(nextChar, Math.Max(1,i - nextChar));
+			string result;
+			if (isQuoteLiteral)
+				result = _input.Substring(nextChar+1, i - nextChar -2).Replace("\\\"", "\"");
+			else
+	            result = _input.Substring(nextChar, Math.Max(1,i - nextChar));
             nextChar = i;
             return result;
         }

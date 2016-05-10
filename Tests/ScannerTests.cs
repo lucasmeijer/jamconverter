@@ -157,5 +157,27 @@ on_new_line");
 
 			Assert.AreEqual("hello:there", result[0].literal);
 		}
+
+		[Test]
+		public void QuotedLiteral()
+		{
+			var a = new Scanner("\"hello there\"");
+			var result = a.ScanAllTokens().ToArray();
+
+			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+
+			Assert.AreEqual("hello there", result[0].literal);
+		}
+
+		[Test]
+		public void QuotedLiteralContainingEscapedQuote()
+		{
+			var a = new Scanner("\"hello \\\"there\"");
+			var result = a.ScanAllTokens().ToArray();
+
+			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+
+			Assert.AreEqual("hello \"there", result[0].literal);
+		}
 	}
 }
