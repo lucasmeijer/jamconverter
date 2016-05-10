@@ -35,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuiltinFunctions.cs" />
+    <Compile Include="DynamicRuleInvocationService.cs" />
     <Compile Include="GlobalVariables.cs" />
     <Compile Include="JamList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

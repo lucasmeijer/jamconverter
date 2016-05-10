@@ -184,9 +184,25 @@ Echo $(harry_sally) _ $(johny_sally) ;
 ");
         }
 
+		[Test]
+	    public void DynamicRuleInvocation()
+	    {
+
+		    AssertConvertedProgramHasIdenticalOutput(
+				@"
+rule harry arg0 { Echo harry $(arg0) ; return harryreturn ; }
+rule sally arg0 { Echo sally $(arg0) ; return sallyreturn ; }
+rule MakeArg2 { Echo makearg2 ; return one ; }
+
+myrules = harry sally ;
+whynot = yolo ;
+#Echo [ $(myrules) $(whynot) [ MakeArg2 ] ] ;
+$(myrules) $(whynot) [ MakeArg2 ] ;
+");
+	    }
 
 
-        [Test]
+	    [Test]
         public void CombineExpression()
         {
             AssertConvertedProgramHasIdenticalOutput(
