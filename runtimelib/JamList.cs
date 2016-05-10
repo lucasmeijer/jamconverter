@@ -16,7 +16,7 @@ public class JamList : IEnumerable<JamList>
 
     public JamList(params JamList[] values)
     {
-        _elements = values.SelectMany(v => v._elements).ToArray();
+	    _elements = ElementsOf(values);
     }
 
     public JamList()
@@ -24,7 +24,12 @@ public class JamList : IEnumerable<JamList>
         _elements = new string[0];
     }
 
-    public IEnumerable<string> Elements => _elements;
+	public JamList(IEnumerable<JamList> values)
+	{
+		_elements = ElementsOf(values.ToArray());
+	}
+
+	public IEnumerable<string> Elements => _elements;
 
     public override string ToString()
     {
@@ -233,6 +238,27 @@ public class JamList : IEnumerable<JamList>
 	static string[] ElementsOf(JamList[] values)
 	{
 		return values.SelectMany(v => v.Elements).ToArray();
+	}
+}
+
+public static class JamListExtensions
+{
+	public static void Assign(this JamList[] jamlists, params JamList[] values)
+	{
+		foreach(var jamlist in jamlists)
+			jamlist.Assign(values);
+	}
+
+	public static void Append(this JamList[] jamlists, params JamList[] values)
+	{
+		foreach (var jamlist in jamlists)
+			jamlist.Append(values);
+	}
+
+	public static void AssignIfEmpty(this JamList[] jamlists, params JamList[] values)
+	{
+		foreach (var jamlist in jamlists)
+			jamlist.AssignIfEmpty(values);
 	}
 }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
@@ -148,10 +149,25 @@ namespace runtimelib.tests
 		}
 
 
-		[Test]
-        public void PlayGround()
-        {
-        }
+	    [Test]
+	    public void DereferenceElements()
+	    {
+			var globals = new GlobalVariables();
+		    globals["one"] = "1";
+		    globals["two"] = "2";
+
+		    var variableNames = new JamList("one", "two");
+
+			//		    JamList[] dereferenced = variableNames.DereferenceElements(globals);
+			JamList[] dereferenced = globals.DereferenceElements(variableNames);
+			//
+
+			dereferenced[0].Append("another1");
+			dereferenced[1].Append("another2");
+
+			CollectionAssert.AreEqual(new[] { "1", "another1"}, globals["one"].Elements);
+			CollectionAssert.AreEqual(new[] { "2", "another2" }, globals["two"].Elements);
+	    }
     }
 
 }

@@ -29,11 +29,12 @@ public class GlobalVariables
         }
     }
 
+	/*
     public JamList this[JamList variable]
     {
         get { return this[variable.Elements.First()]; }
         set { this[variable.Elements.First()] = value; }
-    }
+    }*/
 
 	private Variables VariablesFor(string targetName)
 	{
@@ -81,6 +82,11 @@ public class GlobalVariables
 		{
 			_owner._currentOnContext = null;
 		}
+	}
+
+	public JamList[] DereferenceElements(JamList variableNames)
+	{
+		return variableNames.Elements.Select(e => this[e]).ToArray();
 	}
 }
 

@@ -263,7 +263,24 @@ namespace jamconverter.AST
         }
     }
 
-    public class WhileStatement : Statement
+	public class AssignmentStatement : Statement
+	{
+		public Expression Left
+		{
+			get { return GetChild(Roles.Left); }
+			set { SetChild(Roles.Left, value); }
+		}
+
+		public NodeList<Expression> Right
+		{
+			get { return GetChild(Roles.Right); }
+			set { SetChild(Roles.Right, value); }
+		}
+
+		public Operator Operator { get; set; }
+	}
+
+	public class WhileStatement : Statement
     {
         public Condition Condition
         {

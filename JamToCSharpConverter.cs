@@ -88,8 +88,14 @@ namespace jamconverter
 
 	        if (statement is ActionsDeclarationStatement)
 		        return ProcessActionsDeclarationStatement((ActionsDeclarationStatement) statement);
+			
+			if (statement is AssignmentStatement)
+			{
+				AssignmentStatement assignmentStatement = (AssignmentStatement)statement;
+				return ProcessAssignment(assignmentStatement.Left, assignmentStatement.Operator, assignmentStatement.Right);
+			}
 
-            return ProcessExpressionStatement((ExpressionStatement) statement);
+	        return ProcessExpressionStatement((ExpressionStatement) statement);
         }
 
 	    private NRefactory.Statement ProcessActionsDeclarationStatement(ActionsDeclarationStatement statement)
@@ -133,69 +139,57 @@ namespace jamconverter
         {
             if (expressionStatement.Expression is InvocationExpression)
                 return new NRefactory.ExpressionStatement(ProcessExpression(expressionStatement.Expression));
-
-            if (expressionStatement.Expression is BinaryOperatorExpression)
-                return new NRefactory.ExpressionStatement(ProcessAssignmentExpressionStatement((BinaryOperatorExpression) expressionStatement.Expression));
-
+	
             throw new ArgumentException("Unsupported node: " + expressionStatement.Expression);
         }
 
-        private NRefactory.Expression ProcessAssignmentExpressionStatement(BinaryOperatorExpression assignmentExpression)
-        {
-	        return ProcessAssignment(assignmentExpression.Left, assignmentExpression.Operator, assignmentExpression.Right);
-        }
-
-	    private NRefactory.Expression ProcessAssignment(Expression left, Operator @operator, NodeList<Expression> right)
+	    private NRefactory.Statement ProcessAssignment(Expression left, Operator @operator, NodeList<Expression> right)
 	    {
-		    var leftExpression = VariableExpressionFor(left);
-
-		    switch (@operator)
-		    {
-			    case Operator.Assignment:
-
-				    return new NRefactory.AssignmentExpression(leftExpression, NRefactory.AssignmentOperatorType.Assign,
-					    ProcessExpressionList(right, mightModify:true));
-
-			    default:
-				    var csharpMethodNameForAssignmentOperator = CSharpMethodNameForAssignmentOperator(@operator);
-				    var memberReferenceExpression = new NRefactory.MemberReferenceExpression(leftExpression,
-					    csharpMethodNameForAssignmentOperator);
-				    var processExpression = ExpressionsForJamListConstruction(right);
-				    return new NRefactory.InvocationExpression(memberReferenceExpression, processExpression);
-		    }
+		    var csharpMethodNameForAssignmentOperator = CSharpMethodNameForAssignmentOperator(@operator);
+		    var memberReferenceExpression = new NRefactory.MemberReferenceExpression(ProcessExpressionForLeftHandOfAssignment(left),
+			    csharpMethodNameForAssignmentOperator);
+		    var processExpression = ExpressionsForJamListConstruction(right);
+		    return new NRefactory.InvocationExpression(memberReferenceExpression, processExpression);
 	    }
 
-	    private NRefactory.Expression VariableExpressionFor(Expression expression)
-        {
-            var literalExpression = expression as LiteralExpression;
-            if (literalExpression != null)
-            {
-                var variableName = literalExpression.Value;
-                var cleanName = CleanIllegalCharacters(variableName);
+	    private NRefactory.Expression ProcessExpressionForLeftHandOfAssignment(Expression left)
+	    {
+			//lefthandside:
+			//mads = 2		    ->  Globals.mads.Assign("2");
+			//mads_arg = 2		    ->  mads_arg.Assign("2");
+			//$(mads) = 2       ->  Globals.DereferenceElements(Globals.mads).Assign("2");
+			//$($(mads)) = 2    ->  Globals.DereferenceElements().DerefenceElements().Assign("2");
 
-                var parentRule = FindParentOfType<RuleDeclarationStatement>(expression);
-                if (parentRule != null && parentRule.Arguments.Contains(variableName))
-                    return new NRefactory.IdentifierExpression(cleanName);
+			var literalExpression = left as LiteralExpression;
+		    if (literalExpression != null)
+			    return ProcessIdentifier(left, literalExpression.Value);
 
-                var forLoop = FindParentOfType<ForStatement>(expression);
-                if (forLoop != null && forLoop.LoopVariable.Value == variableName)
-                    return new NRefactory.IdentifierExpression(cleanName);
+		    var deref = left as VariableDereferenceExpression;
+		    if (deref != null)
+			    return GlobalsDereferenceElementsInvocationFor(ProcessExpressionForLeftHandOfAssignment(deref.VariableExpression));
+			    
+		    throw new NotImplementedException();
+	    }
 
-                return StaticGlobalVariableFor(cleanName);
-            }
+	    private NRefactory.Expression ProcessIdentifier(Expression parentExpression, string identifierName)
+	    {
+		    var cleanName = CleanIllegalCharacters(identifierName);
 
-            var dereferenceExpression = expression as VariableDereferenceExpression;
-            if (dereferenceExpression != null)
-                return new NRefactory.IndexerExpression(new NRefactory.IdentifierExpression("Globals"), ProcessExpression(expression));
+		    if (parentExpression != null)
+		    {
+			    var parentRule = FindParentOfType<RuleDeclarationStatement>(parentExpression);
+			    if (parentRule != null && parentRule.Arguments.Contains(identifierName))
+				    return new NRefactory.IdentifierExpression(cleanName);
 
-		    var variableOnTargetExpression = expression as VariableOnTargetExpression;
-			if (variableOnTargetExpression != null)
-				return new NRefactory.IdentifierExpression("VariableOnTargetTODO");
+			    var forLoop = FindParentOfType<ForStatement>(parentExpression);
+			    if (forLoop != null && forLoop.LoopVariable.Value == identifierName)
+				    return new NRefactory.IdentifierExpression(cleanName);
+		    }
 
-            throw new ParsingException();
-        }
+		    return StaticGlobalVariableFor(cleanName);
+	    }
 
-        private NRefactory.MemberReferenceExpression StaticGlobalVariableFor(string cleanName)
+	    private NRefactory.MemberReferenceExpression StaticGlobalVariableFor(string cleanName)
         {
             if (_staticGlobals.Members.OfType<NRefactory.PropertyDeclaration>().All(p => p.Name != cleanName))
             {
@@ -228,6 +222,8 @@ namespace jamconverter
         {
             switch (assignmentOperator)
             {
+				case Operator.Assignment:
+		            return "Assign";
                 case Operator.Append:
                     return "Append";
                 case Operator.Subtract:
@@ -372,7 +368,8 @@ namespace jamconverter
 
 	    NRefactory.Expression ProcessExpression(Expression e)
         {
-            var literalExpression = e as LiteralExpression;
+			
+			var literalExpression = e as LiteralExpression;
             if (literalExpression != null)
                 return new NRefactory.PrimitiveExpression(literalExpression.Value);
                         
@@ -403,9 +400,24 @@ namespace jamconverter
 
         private NRefactory.Expression ProcessVariableDereferenceExpression(VariableDereferenceExpression dereferenceExpression)
         {
-            var variableExpression = VariableExpressionFor(dereferenceExpression.VariableExpression);
+			//righthandside:
+			//mads         ->   "mads"
+			//$(mads);     ->   Globals.mads
+			//$(mads_arg); ->   mads_arg
+			//$($(mads));  ->   Globals.DereferenceElements(Globals.mads)
+			//$($($(mads)));  ->   Globals.DereferenceElements(Globals.DereferenceElements(Globals.mads))
 
-            NRefactory.Expression resultExpression = variableExpression;
+			NRefactory.Expression resultExpression = null;
+
+			var literalExpression = dereferenceExpression.VariableExpression as LiteralExpression;
+	        if (literalExpression != null)
+	        {
+		        resultExpression = ProcessIdentifier(literalExpression, literalExpression.Value);
+	        }
+
+	        var nestedDeref = dereferenceExpression.VariableExpression as VariableDereferenceExpression;
+	        if (nestedDeref != null)
+		        resultExpression = GlobalsDereferenceElementsInvocationFor(ProcessVariableDereferenceExpression(nestedDeref));			
 
             if (dereferenceExpression.IndexerExpression != null)
             {
@@ -425,7 +437,12 @@ namespace jamconverter
             return resultExpression;
         }
 
-        private string CSharpMethodForModifier(VariableDereferenceModifier modifier)
+	    private NRefactory.InvocationExpression GlobalsDereferenceElementsInvocationFor(NRefactory.Expression argument)
+	    {
+		    return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElements"), argument);
+	    }
+
+	    private string CSharpMethodForModifier(VariableDereferenceModifier modifier)
         {
             switch (modifier.Command)
             {

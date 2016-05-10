@@ -1,8 +1,21 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using ICSharpCode.NRefactory.CSharp;
 using jamconverter.AST;
 using NUnit.Framework;
+using BinaryOperatorExpression = jamconverter.AST.BinaryOperatorExpression;
+using BlockStatement = jamconverter.AST.BlockStatement;
+using BreakStatement = jamconverter.AST.BreakStatement;
+using ContinueStatement = jamconverter.AST.ContinueStatement;
+using Expression = jamconverter.AST.Expression;
+using ExpressionStatement = jamconverter.AST.ExpressionStatement;
+using ForStatement = jamconverter.AST.ForStatement;
+using InvocationExpression = jamconverter.AST.InvocationExpression;
+using ReturnStatement = jamconverter.AST.ReturnStatement;
+using Statement = jamconverter.AST.Statement;
+using SwitchStatement = jamconverter.AST.SwitchStatement;
+using WhileStatement = jamconverter.AST.WhileStatement;
 
 namespace jamconverter.Tests
 {
@@ -88,7 +101,7 @@ namespace jamconverter.Tests
         [Test]
         public void Assignment()
         {
-            var assignmentExpression = ParseStatement<ExpressionStatement>("a = b ;").Expression.As<BinaryOperatorExpression>();
+            var assignmentExpression = ParseStatement<AssignmentStatement>("a = b ;");
 
             AssertLeftIsA_and_RightIsB(assignmentExpression);
             Assert.AreEqual(Operator.Assignment, assignmentExpression.Operator);
@@ -97,7 +110,7 @@ namespace jamconverter.Tests
 		[Test]
 		public void AssignmentIfEmpty()
 		{
-			var assignmentExpression = ParseStatement<ExpressionStatement>("a ?= b ;").Expression.As<BinaryOperatorExpression>();
+			var assignmentExpression = ParseStatement<AssignmentStatement>("a ?= b ;");
 
 			AssertLeftIsA_and_RightIsB(assignmentExpression);
 			Assert.AreEqual(Operator.AssignmentIfEmpty, assignmentExpression.Operator);
@@ -107,19 +120,19 @@ namespace jamconverter.Tests
 		[Test]
         public void Subtract()
         {
-            var assignmentExpression = ParseStatement<ExpressionStatement>("a -= b ;").Expression.As<BinaryOperatorExpression>();
+            var assignmentStatement = ParseStatement<AssignmentStatement>("a -= b ;");
 
-            AssertLeftIsA_and_RightIsB(assignmentExpression);
-            Assert.AreEqual(Operator.Subtract, assignmentExpression.Operator);
+            AssertLeftIsA_and_RightIsB(assignmentStatement);
+            Assert.AreEqual(Operator.Subtract, assignmentStatement.Operator);
         }
 
 
-        private static void AssertLeftIsA_and_RightIsB(BinaryOperatorExpression assignmentExpression)
+        private static void AssertLeftIsA_and_RightIsB(AssignmentStatement assignmentStatement)
         {
-            var left = (LiteralExpression) assignmentExpression.Left;
+            var left = (LiteralExpression)assignmentStatement.Left;
             Assert.AreEqual("a", left.Value);
 
-            var right = assignmentExpression.Right;
+            var right = assignmentStatement.Right;
             Assert.AreEqual(1, right.Length);
             Assert.AreEqual("b", right[0].As<LiteralExpression>().Value);
         }
@@ -305,19 +318,19 @@ namespace jamconverter.Tests
         [Test]
         public void AppendOperator()
         {
-            var expressionStatement = ParseStatement<ExpressionStatement>("a += 3 ;");
-            Assert.IsTrue(expressionStatement.Expression.As<BinaryOperatorExpression>().Operator == Operator.Append);
+            var assignmentStatement = ParseStatement<AssignmentStatement>("a += 3 ;");
+            Assert.IsTrue(assignmentStatement.Operator == Operator.Append);
         }
 
 
         [Test]
         public void Comment()
         {
-            var expressionStatement = ParseStatement<ExpressionStatement>(
+            var assignmentStatement = ParseStatement<AssignmentStatement>(
 @"#mycomment
 a = 3 ;
 ");
-            Assert.IsTrue(expressionStatement.Expression.As<BinaryOperatorExpression>().Operator == Operator.Assignment);
+            Assert.IsTrue(assignmentStatement.Operator == Operator.Assignment);
         }
 
         [Test]
@@ -440,10 +453,10 @@ actions response myactionname
         public void VariableOnTargetAssignment()
         {
             //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
-            var variableOnTargetExpression = ParseStatement<ExpressionStatement>("myvar on mytarget = 3 ;").Expression.As<BinaryOperatorExpression>().Left.As<VariableOnTargetExpression>();
+            var assignmentStatment = ParseStatement<AssignmentStatement>("myvar on mytarget = 3 ;").Left.As<VariableOnTargetExpression>();
 
-            Assert.AreEqual("myvar", variableOnTargetExpression.Variable.As<LiteralExpression>().Value);
-            Assert.AreEqual("mytarget", variableOnTargetExpression.Targets[0].As<LiteralExpression>().Value);
+            Assert.AreEqual("myvar", assignmentStatment.Variable.As<LiteralExpression>().Value);
+            Assert.AreEqual("mytarget", assignmentStatment.Targets[0].As<LiteralExpression>().Value);
         }
 
         [Test]
@@ -464,7 +477,7 @@ actions response myactionname
             var onStatement = ParseStatement<OnStatement>("on $(TARGET) linkFlags += -shared - fPIC ; ");
 
             Assert.AreEqual("TARGET", onStatement.Target.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
-            onStatement.Body.As<ExpressionStatement>().Expression.As<BinaryOperatorExpression>();
+            onStatement.Body.As<AssignmentStatement>();
         }
 
         [Test]
@@ -507,8 +520,8 @@ actions response myactionname
         [Test]
         public void AssignToDynamicVar()
         {
-            var expressionStatement = ParseStatement<ExpressionStatement>("$(myvar) = 1 2 3 ;");
-            Assert.AreEqual("myvar", expressionStatement.Expression.As<BinaryOperatorExpression>().Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+            var assignmentStatement = ParseStatement<AssignmentStatement>("$(myvar) = 1 2 3 ;");
+            Assert.AreEqual("myvar", assignmentStatement.Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
         }
 
 		[Test]

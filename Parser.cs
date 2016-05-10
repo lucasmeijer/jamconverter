@@ -50,7 +50,7 @@ namespace jamconverter
                     return ParseReturnStatement();
                 case TokenType.Literal:
                 case TokenType.VariableDereferencer:
-                    return ParseExpressionStatement();
+                    return ParseAssignmentOrExpressionStatement();
                 case TokenType.On:
                     return ParseOnStatement();
                 case TokenType.While:
@@ -147,7 +147,7 @@ namespace jamconverter
             return new WhileStatement() { Condition = ParseCondition(), Body = ParseBlockStatement() };
         }
 
-        private Statement ParseExpressionStatement()
+        private Statement ParseAssignmentOrExpressionStatement()
         {
             if (IsNextTokenAssignment())
             {
@@ -157,7 +157,7 @@ namespace jamconverter
                 var right = ParseExpressionList();
                 _scanResult.Next().Is(TokenType.Terminator);
 
-                return new ExpressionStatement { Expression = new BinaryOperatorExpression { Left = leftSideOfAssignment, Right = right, Operator = OperatorFor(assignmentToken.tokenType) } };
+                return new AssignmentStatement() { Left = leftSideOfAssignment, Right = right, Operator = OperatorFor(assignmentToken.tokenType) };
             }
             
             var invocationExpression = new InvocationExpression {RuleExpression = ParseExpression().As<LiteralExpression>(), Arguments = ParseArgumentList()};
