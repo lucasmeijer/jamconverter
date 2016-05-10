@@ -451,33 +451,9 @@ namespace jamconverter
 			//@(mads)      ->   new JamList("mads")
 			//@(mads:S=.exe) -> new JamList("mads").WithSuffix(".exe");
 
-			NRefactory.Expression resultExpression = null;
+			var resultExpression = ProcessExpansionStyleExpressionVariablePreModifiers(expansionStyleExpression);
 
-			var literalExpression = expansionStyleExpression.VariableExpression as LiteralExpression;
-	        if (literalExpression != null)
-	        {
-				if (expansionStyleExpression is VariableDereferenceExpression)
-			        resultExpression = ProcessIdentifier(literalExpression, literalExpression.Value);
-		        if (expansionStyleExpression is LiteralExpansionExpression)
-			        resultExpression = new NRefactory.ObjectCreateExpression(JamListAstType, ProcessExpression(literalExpression));
-	        }
-
-	        var nestedDeref = expansionStyleExpression.VariableExpression as VariableDereferenceExpression;
-	        if (nestedDeref != null)
-	        {
-		        resultExpression = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElements"), ProcessExpansionStyleExpression(nestedDeref));
-	        }
-			
-			var combineExpression = expansionStyleExpression.VariableExpression as CombineExpression;
-			if (combineExpression != null)
-			{
-				resultExpression = ProcessExpression(combineExpression);
-			}
-
-			if (resultExpression == null)
-				throw new NotSupportedException("Unknown variablexpressiontype: "+expansionStyleExpression.VariableExpression);
-
-			if (expansionStyleExpression.IndexerExpression != null)
+	        if (expansionStyleExpression.IndexerExpression != null)
             {
                 var memberReferenceExpression = new NRefactory.MemberReferenceExpression(resultExpression, "IndexedBy");
                 var indexerExpression = ProcessExpression(expansionStyleExpression.IndexerExpression);
@@ -495,6 +471,24 @@ namespace jamconverter
             return resultExpression;
         }
 
+	    private NRefactory.Expression ProcessExpansionStyleExpressionVariablePreModifiers(ExpansionStyleExpression expansionStyleExpression)
+	    {
+			if (expansionStyleExpression is LiteralExpansionExpression)
+				return new NRefactory.ObjectCreateExpression(JamListAstType, ProcessExpression(expansionStyleExpression.VariableExpression));
+			
+			//we know we are a variabledereferenceexpression now
+		    expansionStyleExpression.As<VariableDereferenceExpression>();
+
+			var literalExpression = expansionStyleExpression.VariableExpression as LiteralExpression;
+		    if (literalExpression != null)
+			    return ProcessIdentifier(literalExpression, literalExpression.Value);
+
+		    return new NRefactory.InvocationExpression(
+					    new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElements"),
+					    ProcessExpression(expansionStyleExpression.VariableExpression)
+						);
+	    }
+
 	    private string CSharpMethodForModifier(VariableDereferenceModifier modifier)
         {
             switch (modifier.Command)
@@ -511,6 +505,8 @@ namespace jamconverter
 		            return "Exclude";
 				case 'I':
 		            return "Include";
+				case 'R':
+		            return "Rooted_TODO";
                 default:
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);
             }

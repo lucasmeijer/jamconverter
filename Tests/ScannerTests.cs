@@ -215,5 +215,16 @@ on_new_line");
 
 			Assert.AreEqual("hello \"there", result[0].literal);
 		}
+
+		[Test]
+		public void SmallerThanInLiteral()
+		{
+			var a = new Scanner("<you<can>do>this>");
+			var result = a.ScanAllTokens().ToArray();
+
+			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+
+			Assert.AreEqual("<you<can>do>this>", result[0].literal);
+		}
 	}
 }
