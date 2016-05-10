@@ -95,8 +95,24 @@ namespace jamconverter
 				return ProcessAssignment(assignmentStatement.Left, assignmentStatement.Operator, assignmentStatement.Right);
 			}
 
+	        if (statement is OnStatement)
+		        return ProcessOnStatement((OnStatement) statement);
+
 	        return ProcessExpressionStatement((ExpressionStatement) statement);
         }
+
+	    private NRefactory.Statement ProcessOnStatement(OnStatement statement)
+	    {
+		    var onStartContextMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "OnTargetContext");
+
+		    var onStartContextInvocation = new NRefactory.InvocationExpression(onStartContextMethod, ProcessExpression(statement.Target));
+			
+		    return new NRefactory.UsingStatement
+		    {
+			    ResourceAcquisition = onStartContextInvocation,
+			    EmbeddedStatement = ProcessStatement(statement.Body)
+		    };
+		}
 
 	    private NRefactory.Statement ProcessActionsDeclarationStatement(ActionsDeclarationStatement statement)
 	    {
@@ -155,11 +171,13 @@ namespace jamconverter
 	    private NRefactory.Expression ProcessExpressionForLeftHandOfAssignment(Expression left)
 	    {
 			//lefthandside:
-			//mads = 2		    ->  Globals.mads.Assign("2");
-			//mads_arg = 2		    ->  mads_arg.Assign("2");
-			//$(mads) = 2       ->  Globals.DereferenceElements(Globals.mads).Assign("2");
-			//$($(mads)) = 2    ->  Globals.DereferenceElements().DerefenceElements().Assign("2");
-
+			//mads = 2				         ->  Globals.mads.Assign("2");
+			//mads_arg = 2				   ->  mads_arg.Assign("2");
+			//$(mads) = 2					->  Globals.DereferenceElements(Globals.mads).Assign("2");
+			//$($(mads)) = 2				->  Globals.DereferenceElements().DerefenceElements().Assign("2");
+			//mads on mytarget = 2			->  Globals.GetOrCreateVariableOnTargetContext("mytarget", "mads").Assign(2);
+			//$(mads) on mytarget = 2		->  Globals.GetOrCreateVariableOnTargetContext("mytarget", Globals.mads).Assign(2);
+			//$(mads) on $(mytargets) = 2	->  Globals.GetOrCreateVariableOnTargetContext(Globals.mytargets, Globals.mads).Assign(2);
 			var literalExpression = left as LiteralExpression;
 		    if (literalExpression != null)
 			    return ProcessIdentifier(left, literalExpression.Value);
@@ -167,8 +185,16 @@ namespace jamconverter
 		    var deref = left as VariableDereferenceExpression;
 		    if (deref != null)
 			    return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElementsNonFlat"), ProcessExpressionForLeftHandOfAssignment(deref.VariableExpression));
-			    
-		    throw new NotImplementedException();
+
+		    var variableOnTargetExpression = left as VariableOnTargetExpression;
+		    if (variableOnTargetExpression != null)
+		    {
+			    var variableExpression = ProcessExpression(variableOnTargetExpression.Variable);
+			    var targetExpression = ProcessExpressionList(variableOnTargetExpression.Targets);
+				return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "GetOrCreateVariableOnTargetContext"), targetExpression, variableExpression);
+			}
+
+			throw new NotImplementedException();
 	    }
 
 	    private NRefactory.Expression ProcessIdentifier(Expression parentExpression, string identifierName)

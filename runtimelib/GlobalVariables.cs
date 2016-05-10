@@ -14,14 +14,24 @@ public class GlobalVariables
     {
         get
         {
-	        Variables variables = _currentOnContext ?? _values;
-            JamList result = null;
-            if (variables.TryGetValue(variableName, out result))
-                return result;
+	        if (_currentOnContext != null)
+	        {
+		        JamList result = null;
+		        if (_currentOnContext.TryGetValue(variableName, out result))
+			        return result;
+	        }
 
-            result = new JamList();
-            variables[variableName] = result;
-            return result;
+	        {
+		        JamList result = null;
+		        if (_values.TryGetValue(variableName, out result))
+			        return result;
+	        }
+
+	        {
+			    var result = new JamList();
+				_values[variableName] = result;
+				return result;
+			}
         }
         set
         {
@@ -47,31 +57,43 @@ public class GlobalVariables
 		return variables;
 	}
 
-	public JamList GetOrCreateVariableOnTargetContext(string target, string variable)
+	public IEnumerable<JamList> GetOrCreateVariableOnTargetContext(JamList targetNames, JamList variableNames)
 	{
-		var variables = VariablesFor(target);
-		
-		JamList result;
-		if (variables.TryGetValue(variable, out result))
-			return result;
+		foreach (var targetName in targetNames)
+		{
+			var variables = VariablesFor(targetName);
 
-		var r = new JamList();
-		variables[variable] = r;
-		return r;
+			foreach (var variable in variableNames.Elements)
+			{
+				JamList result;
+				if (variables.TryGetValue(variable, out result))
+				{
+					yield return result;
+					continue;
+				}
+
+				var r = new JamList();
+				variables[variable] = r;
+				yield return r;
+			}
+		}
 	}
 
-	public IDisposable OnTargetContext(string targetName)
+	public IDisposable OnTargetContext(JamList targetName)
 	{
 		if (_currentOnContext != null)
 			throw new NotSupportedException("Nesting target contexts");
 
-		_onTargetVariables.TryGetValue(targetName, out _currentOnContext);
+		if (targetName.Elements.Count() != 1)
+			throw new ArgumentException("on statement being invoked on multiple targets. you couldn't even do this in jam!");
+
+		_onTargetVariables.TryGetValue(targetName.Elements.Single(), out _currentOnContext);
 		return new TemporaryTargetContext(this);
 	}
 
 	private class TemporaryTargetContext : IDisposable
 	{
-		private GlobalVariables _owner;
+		private readonly GlobalVariables _owner;
 
 		public TemporaryTargetContext(GlobalVariables owner)
 		{

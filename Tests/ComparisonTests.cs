@@ -498,7 +498,6 @@ Echo $(mylist:I=hel+) ;
 		}
 
 		[Test]
-		[Ignore("because")]
 		public void OnTargetVariables()
 		{
 			AssertConvertedProgramHasIdenticalOutput(
@@ -507,13 +506,19 @@ myvar on harry = sally ;
 myvar = 3 ;
 myothervar = 5 ;
 Echo $(myvar) ;
+
 on harry { 
   Echo $(myvar) ;
   Echo $(myothervar) ;
-  myvar = johny ;
+  
+  #today we have different semantics for writing to variable that exists on a target in an on block
+  #we think and hope that we do not rely on this semantic in our jam program anywhere.
+  #myvar = johny ;
+
   myothervar = 8 ;
 }
-Echo $(myvar) ;
+
+Echo marker $(myvar) ;
 Echo $(myothervar) ;
 
 on harry {
@@ -541,6 +546,13 @@ on superman {
 on spiderman {
   Echo $(myvar) ;
 }
+
+Echo valid ;
+myvar = 3 ;
+mads = myvar myvar2 ;
+$(mads) on mytarget = 2 ;
+containsmytarget = mytarget  ;
+on $(containsmytarget) { Echo $(myvar) ;  Echo $(myvar2) ; }
 
 ");
 			/*

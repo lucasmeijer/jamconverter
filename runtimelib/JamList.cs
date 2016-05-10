@@ -248,19 +248,19 @@ public class JamList : IEnumerable<string>
 
 public static class JamListExtensions
 {
-	public static void Assign(this JamList[] jamlists, params JamList[] values)
+	public static void Assign(this IEnumerable<JamList> jamlists, params JamList[] values)
 	{
 		foreach(var jamlist in jamlists)
 			jamlist.Assign(values);
 	}
 
-	public static void Append(this JamList[] jamlists, params JamList[] values)
+	public static void Append(this IEnumerable<JamList> jamlists, params JamList[] values)
 	{
 		foreach (var jamlist in jamlists)
 			jamlist.Append(values);
 	}
 
-	public static void AssignIfEmpty(this JamList[] jamlists, params JamList[] values)
+	public static void AssignIfEmpty(this IEnumerable<JamList> jamlists, params JamList[] values)
 	{
 		foreach (var jamlist in jamlists)
 			jamlist.AssignIfEmpty(values);
