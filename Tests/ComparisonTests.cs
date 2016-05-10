@@ -397,17 +397,23 @@ while $(myvar)
 }");
         }
 
-        //[Test]
-        public void OnVariables()
-        {
-            AssertConvertedProgramHasIdenticalOutput(
+	    [Test]
+	    public void Conditions()
+	    {
+			AssertConvertedProgramHasIdenticalOutput(
 @"
-myvar = one ;
-Echo a $(myvar) ;
-on $(mytarget) { Echo b $(myvar) ; myglobal = wham ; }
-Echo $(myglobal) ;
+one = 1 ;
+zero = 0 ;
+
+if $(one) && $(zero) { Echo Yes ; } else { Echo no ; }
+if $(one) && $(one) { Echo Yes ; } else { Echo no ; }
+if $(zero) || $(one) { Echo Yes ; } else { Echo no ; }
+if $(zero) || $(zero) { Echo Yes ; } else { Echo no ; }
+if $(zero) != $(one) { Echo Yes ; } else { Echo no ; }
+if $(zero) != $(zero) { Echo Yes ; } else { Echo no ; }
+
 ");
-        }
+		}
 
         [Test]
         public void ForLoop()
@@ -494,10 +500,29 @@ Echo $(mylist:I=$(patterninvar)) ;
 #make test for regex
 Echo $(mylist:I=hel+) ;
 
+Echo $(mylist:I=o$) ;
+
 ");
 		}
 
-		[Test]
+	    [Test]
+		[Ignore("WIP")]
+	    public void Regex()
+	    {
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+x = x ;
+mylist = x ab) ;
+Echo $(mylist:I=$(x)) ;
+Echo $(mylist:I=$\(x)) ;
+Echo $(mylist:I=\$(x)) ;
+Echo $(mylist:I=b($$)) ;
+Echo $$\(x) ;
+"
+			);
+	    }
+
+	    [Test]
 		public void OnTargetVariables()
 		{
 			AssertConvertedProgramHasIdenticalOutput(

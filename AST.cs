@@ -218,7 +218,10 @@ namespace jamconverter.AST
         Append,
         Subtract,
         In,
-	    AssignmentIfEmpty
+	    AssignmentIfEmpty,
+	    And,
+	    Or,
+	    NotEqual
     }
 
     public class RuleDeclarationStatement : Statement

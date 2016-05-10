@@ -163,7 +163,39 @@ namespace jamconverter.Tests
             Assert.AreEqual(ifStatement, ifStatement.Body.Parent);
         }
 
-        [Test]
+	    [Test]
+	    public void IfStatementWithAddOperator()
+	    {
+		    var ifStatement = ParseStatement<IfStatement>("if $(a) && $(b) {}");
+		    Assert.AreEqual(Operator.And, ifStatement.Condition.Operator);
+		    AssertLeftIsA_And_RightIsB(ifStatement);
+	    }
+
+	    private static void AssertLeftIsA_And_RightIsB(IfStatement ifStatement)
+	    {
+		    Assert.AreEqual("a",
+			    ifStatement.Condition.Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+		    Assert.AreEqual("b",
+			    ifStatement.Condition.Right[0].As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+	    }
+
+	    [Test]
+		public void IfStatementWithOrOperator()
+		{
+			var ifStatement = ParseStatement<IfStatement>("if $(a) || $(b) {}");
+			Assert.AreEqual(Operator.Or, ifStatement.Condition.Operator);
+			AssertLeftIsA_And_RightIsB(ifStatement);
+		}
+
+		[Test]
+		public void IfStatementWithNotEqualOperator()
+		{
+			var ifStatement = ParseStatement<IfStatement>("if $(a) != $(b) {}");
+			Assert.AreEqual(Operator.NotEqual, ifStatement.Condition.Operator);
+			AssertLeftIsA_And_RightIsB(ifStatement);
+		}
+
+		[Test]
         public void IfStatementWithBinaryOperatorCondition()
         {
             var ifStatement = ParseStatement<IfStatement>("if $(somevar) = 3 {}");
@@ -173,7 +205,7 @@ namespace jamconverter.Tests
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
         }
 
-        [Test]
+	    [Test]
         public void IfStatementWithNegatedCondition()
         {
             var ifStatement = ParseStatement<IfStatement>("if ! $(somevar) {}");
@@ -285,6 +317,12 @@ namespace jamconverter.Tests
             var value = variableDereferenceExpression.Modifiers[0].Value.As<VariableDereferenceExpression>();
             Assert.AreEqual("pietje", (value.VariableExpression).As<LiteralExpression>().Value);
         }
+
+	    [Test]
+	    public void VariableExpansionModifierWithRegex()
+	    {
+		    //var variableDereferenceExpression
+	    }
 
         [Test]
         public void InvocationExpressionWithBrackets()

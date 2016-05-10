@@ -11,7 +11,7 @@ namespace jamconverter
         private bool _insideVariableExpansionModifierSpan;
 	    private int _insideVariableExpansionDepth = 0;
 
-		List<ScanToken> _previouslyScannedTokens = new List<ScanToken>();
+	    readonly List<ScanToken> _previouslyScannedTokens = new List<ScanToken>();
 
         public Scanner(string input)
         {
@@ -152,6 +152,12 @@ namespace jamconverter
                     return TokenType.Switch;
 				case "local":
 		            return TokenType.Local;
+				case "&&":
+		            return TokenType.And;
+				case "||":
+		            return TokenType.Or;
+				case "!=":
+		            return TokenType.NotEqual;
                     
                 default:
                     return TokenType.Literal;
@@ -300,6 +306,9 @@ namespace jamconverter
         Switch,
         Case,
 	    Local,
-	    AssignmentIfEmpty
+	    AssignmentIfEmpty,
+	    And,
+	    Or,
+	    NotEqual
     }
 }

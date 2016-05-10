@@ -363,6 +363,12 @@ namespace jamconverter
                     return "JamEquals";
                 case Operator.In:
                     return "IsIn";
+				case Operator.And:
+		            return "And";
+				case Operator.Or:
+		            return "Or";
+				case Operator.NotEqual:
+		            return "NotJamEquals";
                 default:
                     throw new NotSupportedException("Unknown conditional operator: "+@operator);
             }

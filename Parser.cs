@@ -403,6 +403,12 @@ namespace jamconverter
                     return Operator.In;
 				case TokenType.AssignmentIfEmpty:
 		            return Operator.AssignmentIfEmpty;
+				case TokenType.And:
+					return Operator.And;
+				case TokenType.Or:
+		            return Operator.Or;
+				case TokenType.NotEqual:
+		            return Operator.NotEqual;
                 default:
                     throw new NotSupportedException("Unknown operator tokentype: " + tokenType);
             }

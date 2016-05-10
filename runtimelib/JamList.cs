@@ -244,6 +244,21 @@ public class JamList : IEnumerable<string>
 	{
 		return values.SelectMany(v => v.Elements).ToArray();
 	}
+
+	public bool And(JamList value)
+	{
+		return AsBool() && value.AsBool();
+	}
+
+	public bool Or(JamList value)
+	{
+		return AsBool() || value.AsBool();
+	}
+
+	public bool NotJamEquals(JamList value)
+	{
+		return !JamEquals(value);
+	}
 }
 
 public static class JamListExtensions
