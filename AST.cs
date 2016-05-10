@@ -28,6 +28,8 @@ namespace jamconverter.AST
 		public virtual IEnumerable<T> GetAllChildrenOfType<T>() where T : Node
 		{
 			foreach (var child in MyChildren) {
+				if (child == null)
+					continue;
 				if (child is T)
 					yield return (T)child;
 				foreach(var c in child.GetAllChildrenOfType<T>())
