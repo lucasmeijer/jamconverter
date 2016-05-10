@@ -14,7 +14,7 @@ namespace jamconverter.Tests
 
             var file = tmpDir.Combine("Main.cs").WriteAllText(program);
             Console.WriteLine(".cs: "+file);
-            var csc = new NPath("C:/il2cpp-dependencies/Roslyn/Binaries/csc.exe");
+			var csc = new NPath(Environment.OSVersion.Platform == PlatformID.Win32NT ? "C:/il2cpp-dependencies/Roslyn/Binaries/csc.exe" : "/usr/local/bin/mcs");
 
             var executable = tmpDir.Combine("program.exe");
             if (additionalLibs == null) additionalLibs = new NPath[0];
