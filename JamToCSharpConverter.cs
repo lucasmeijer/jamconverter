@@ -12,7 +12,9 @@ namespace jamconverter
         private NRefactory.TypeDeclaration _dummyType;
         private NRefactory.MethodDeclaration _mainMethod;
         private NRefactory.TypeDeclaration _staticGlobals;
-		private List<ActionsDeclarationStatement> _actions = new  List<ActionsDeclarationStatement>();
+		private NodeList<Statement> _topLevel;
+		private IEnumerable<ActionsDeclarationStatement> _actions;
+		private IEnumerable<RuleDeclarationStatement> _rules;
 
         public string Convert(string simpleProgram)
         {
@@ -29,22 +31,35 @@ namespace jamconverter
              _dummyType.Members.Add(new NRefactory.FieldDeclaration() {ReturnType = StaticGlobalsType, Modifiers = NRefactory.Modifiers.Static, Variables = {new NRefactory.VariableInitializer("Globals", new NRefactory.ObjectCreateExpression(StaticGlobalsType))}});
 
             var parser = new Parser(simpleProgram);
-            var body = new NRefactory.BlockStatement();
-            while (true)
-            {
-                var statement = parser.ParseStatement();
-                if (statement == null)
-                    break;
+			_topLevel = new NodeList<Statement> ();
+			while (true)
+			{
+				var statement = parser.ParseStatement();
+				if (statement == null)
+					break;
 
+				_topLevel.Add (statement);
+			}
+			_actions = _topLevel.GetAllChildrenOfType<ActionsDeclarationStatement> ();
+			_rules = _topLevel.GetAllChildrenOfType<RuleDeclarationStatement> ();
+
+            var body = new NRefactory.BlockStatement();
+			foreach (var statement in _topLevel)
+            {
                 var nStatement = ProcessStatement(statement);
                 if (nStatement != null)
                     body.Statements.Add(nStatement);
-            }
+			}
+			body.Statements.Add (new NRefactory.InvocationExpression (new NRefactory.IdentifierExpression ("Globals.SendVariablesToJam")));
             
             _mainMethod = new NRefactory.MethodDeclaration { Name = "Main", ReturnType = new NRefactory.PrimitiveType("void"), Modifiers = NRefactory.Modifiers.Static, Body = body};
             _dummyType.Members.Add(_mainMethod);
 
-			foreach (var action in _actions) 
+			var actions = new NRefactory.TypeDeclaration {
+				ClassType = NRefactory.ClassType.Class,
+				Name = "Actions",
+			};
+			foreach (var action in _actions.DistinctBy(a => a.Name)) 
 			{
 				var actionWrapperBody = new NRefactory.BlockStatement();
 
@@ -54,10 +69,11 @@ namespace jamconverter
 						new NRefactory.IdentifierExpression("values"),
 					})
 				));
-				var actionMethod = new NRefactory.MethodDeclaration { Name = action.Name, ReturnType = JamListAstType, Modifiers = NRefactory.Modifiers.Static, Body = actionWrapperBody };
+				var actionMethod = new NRefactory.MethodDeclaration { Name = action.Name, ReturnType = JamListAstType, Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public, Body = actionWrapperBody };
 				actionMethod.Parameters.Add (new NRefactory.ParameterDeclaration( new NRefactory.PrimitiveType("JamList[]"), "values", NRefactory.ParameterModifier.Params));
-				_dummyType.Members.Add(actionMethod);
+				actions.Members.Add(actionMethod);
 			}
+			_dummyType.Members.Add(actions);
 
             return _syntaxTree.ToString();
         }
@@ -170,7 +186,6 @@ namespace jamconverter
 
 	    private NRefactory.Statement ProcessActionsDeclarationStatement(ActionsDeclarationStatement statement)
 	    {
-			_actions.Add (statement);
 			return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("MakeActions"), new NRefactory.Expression[]{
 				new NRefactory.PrimitiveExpression(statement.Name),
 				new NRefactory.PrimitiveExpression(String.Join("\n", statement.Actions)),
@@ -392,14 +407,19 @@ namespace jamconverter
 
             var body = new NRefactory.BlockStatement();
 
+			var methodName = MethodNameFor(ruleDeclaration);
+
             var processRuleDeclarationStatement = new NRefactory.MethodDeclaration()
             {
-                Name = MethodNameFor(ruleDeclaration),
+				Name = methodName,
                 ReturnType = JamListAstType,
                 Modifiers = NRefactory.Modifiers.Static,
                 Body = body
             };
             processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a => new NRefactory.ParameterDeclaration(JamListAstType, ArgumentNameFor(a))));
+
+			if (IsActions(methodName))
+				body.Statements.Add (new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(ActionsNameFor(methodName)), arguments.Select(a => new NRefactory.IdentifierExpression(ArgumentNameFor(a)))));
 
 	        foreach (var arg in arguments)
 	        {
@@ -449,10 +469,25 @@ namespace jamconverter
             return CleanIllegalCharacters(argumentName);
         }
 
+		private bool IsActions(string name)
+		{
+			return _actions.Any(x => x.Name == name);
+		}
+
+		private bool IsRule(string name)
+		{
+			return _rules.Any(x => x.Name == name);
+		}
+			
         private static string MethodNameFor(string ruleName)
         {
             return CleanIllegalCharacters(ruleName);
         }
+
+		private static string ActionsNameFor(string name)
+		{
+			return "Actions."+name;
+		}
 
         private static string MethodNameFor(RuleDeclarationStatement ruleDeclarationStatement)
         {
@@ -537,7 +572,10 @@ namespace jamconverter
             var invocationExpression = e as InvocationExpression;
             if (invocationExpression != null)
             {
-                var methodName = MethodNameFor(invocationExpression.RuleExpression.As<LiteralExpression>().Value);
+				var name = invocationExpression.RuleExpression.As<LiteralExpression>().Value;
+                var methodName = MethodNameFor(name);
+				if (IsActions (name) && !IsRule(name))
+					methodName = ActionsNameFor(methodName);
 
                 return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(methodName), invocationExpression.Arguments.Select(a=>ProcessExpressionList(a)));
             }
