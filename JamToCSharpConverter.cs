@@ -166,7 +166,7 @@ namespace jamconverter
 
 		    var deref = left as VariableDereferenceExpression;
 		    if (deref != null)
-			    return GlobalsDereferenceElementsInvocationFor(ProcessExpressionForLeftHandOfAssignment(deref.VariableExpression));
+			    return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElementsNonFlat"), ProcessExpressionForLeftHandOfAssignment(deref.VariableExpression));
 			    
 		    throw new NotImplementedException();
 	    }
@@ -417,9 +417,11 @@ namespace jamconverter
 
 	        var nestedDeref = dereferenceExpression.VariableExpression as VariableDereferenceExpression;
 	        if (nestedDeref != null)
-		        resultExpression = GlobalsDereferenceElementsInvocationFor(ProcessVariableDereferenceExpression(nestedDeref));			
+	        {
+		        resultExpression = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElements"), ProcessVariableDereferenceExpression(nestedDeref));
+	        }
 
-            if (dereferenceExpression.IndexerExpression != null)
+	        if (dereferenceExpression.IndexerExpression != null)
             {
                 var memberReferenceExpression = new NRefactory.MemberReferenceExpression(resultExpression, "IndexedBy");
                 var indexerExpression = ProcessExpression(dereferenceExpression.IndexerExpression);
@@ -436,11 +438,6 @@ namespace jamconverter
             }
             return resultExpression;
         }
-
-	    private NRefactory.InvocationExpression GlobalsDereferenceElementsInvocationFor(NRefactory.Expression argument)
-	    {
-		    return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElements"), argument);
-	    }
 
 	    private string CSharpMethodForModifier(VariableDereferenceModifier modifier)
         {

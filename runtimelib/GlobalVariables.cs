@@ -84,9 +84,14 @@ public class GlobalVariables
 		}
 	}
 
-	public JamList[] DereferenceElements(JamList variableNames)
+	public JamList[] DereferenceElementsNonFlat(JamList variableNames)
 	{
 		return variableNames.Elements.Select(e => this[e]).ToArray();
+	}
+
+	public JamList DereferenceElements(JamList variableNames)
+	{
+		return new JamList(variableNames.Elements.SelectMany(v=>this[v]).ToArray());
 	}
 }
 

@@ -424,6 +424,16 @@ for myvar in $(mylist) f g
   Echo $(myvar) ;
 }
 
+
+one = 1 ;
+two = 2 ;
+myvars = one two ; #evil bonus points: add myvar here
+for myvar in $(myvars)
+{
+   Echo $(myvar) $($(myvar)) ;
+}
+
+
 ");
         }
 
