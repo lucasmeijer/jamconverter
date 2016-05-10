@@ -89,7 +89,7 @@ namespace jamconverter
 			    if (!char.IsWhiteSpace(_input[nextChar]))
 				    _insideVariableExpansionModifierSpan = true;
 
-		    return new ScanToken() {tokenType = TokenTypeFor(literal), literal = literal};
+			return new ScanToken() {tokenType = TokenTypeFor(literal), literal = literal.Replace ("\\", "")};
 	    }
 		
 	    private TokenType TokenTypeFor(string literal)
@@ -189,7 +189,7 @@ namespace jamconverter
 
 			string result;
 			if (isQuoteLiteral)
-				result = _input.Substring(nextChar+1, i - nextChar -2).Replace("\\\"", "\"");
+				result = _input.Substring(nextChar+1, i - nextChar -2);
 			else
 	            result = _input.Substring(nextChar, Math.Max(1,i - nextChar));
             nextChar = i;
