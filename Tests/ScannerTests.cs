@@ -147,48 +147,48 @@ on_new_line");
             CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.WhiteSpace, TokenType.Literal, TokenType.EOF}, result.Select(r => r.tokenType));
         }
 
-		[Test]
-		public void LiteralContainingColon()
-		{
-			var a = new Scanner("hello:there");
-			var result = a.ScanAllTokens().ToArray();
+        [Test]
+        public void LiteralContainingColon()
+        {
+            var a = new Scanner("hello:there");
+            var result = a.ScanAllTokens().ToArray();
 
-			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
 
-			Assert.AreEqual("hello:there", result[0].literal);
-		}
+            Assert.AreEqual("hello:there", result[0].literal);
+        }
 
-		[Test]
-		public void LiteralEscapedCharacters()
-		{
-			var a = new Scanner("\\=");
-			var result = a.ScanAllTokens().ToArray();
+        [Test]
+        public void LiteralEscapedCharacters()
+        {
+            var a = new Scanner("\\=");
+            var result = a.ScanAllTokens().ToArray();
 
-			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
 
-			Assert.AreEqual("=", result[0].literal);
-		}
+            Assert.AreEqual("=", result[0].literal);
+        }
 
-		[Test]
-		public void QuotedLiteral()
-		{
-			var a = new Scanner("\"hello there\"");
-			var result = a.ScanAllTokens().ToArray();
+        [Test]
+        public void QuotedLiteral()
+        {
+            var a = new Scanner("\"hello there\"");
+            var result = a.ScanAllTokens().ToArray();
 
-			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
 
-			Assert.AreEqual("hello there", result[0].literal);
-		}
+            Assert.AreEqual("hello there", result[0].literal);
+        }
 
-		[Test]
-		public void QuotedLiteralContainingEscapedQuote()
-		{
-			var a = new Scanner("\"hello \\\"there\"");
-			var result = a.ScanAllTokens().ToArray();
+        [Test]
+        public void QuotedLiteralContainingEscapedQuote()
+        {
+            var a = new Scanner("\"hello \\\"there\"");
+            var result = a.ScanAllTokens().ToArray();
 
-			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
 
-			Assert.AreEqual("hello \"there", result[0].literal);
-		}
-	}
+            Assert.AreEqual("hello \"there", result[0].literal);
+        }
+    }
 }
