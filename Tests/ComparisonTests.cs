@@ -479,7 +479,7 @@ Echo $(mylist:I=hel+) ;
             try
             {
                 var csharp = new JamToCSharpConverter().Convert(simpleProgram);
-                csharpResult = new CSharpRunner().Run(csharp, new[] {new NPath("c:/jamconverter/bin/runtimelib.dll")}).Select(s => s.TrimEnd());
+				csharpResult = new CSharpRunner().Run(csharp, new[] {JamRunner.ConverterRoot.Combine(new NPath("bin/runtimelib.dll"))}).Select(s => s.TrimEnd());
 
                 Console.WriteLine("C#:");
                 foreach (var l in csharpResult)
