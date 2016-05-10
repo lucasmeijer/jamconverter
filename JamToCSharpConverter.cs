@@ -130,7 +130,7 @@ namespace jamconverter
             {
                 VariableType = JamListAstType,
                 VariableName = statement.LoopVariable.Value,
-                InExpression = ProcessExpressionList(statement.List),
+                InExpression = new NRefactory.MemberReferenceExpression(ProcessExpressionList(statement.List),"ElementsAsJamLists"),
                 EmbeddedStatement = ProcessStatement(statement.Body)
             };
         }

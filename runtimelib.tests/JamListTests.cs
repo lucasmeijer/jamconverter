@@ -158,16 +158,25 @@ namespace runtimelib.tests
 
 		    var variableNames = new JamList("one", "two");
 
-			//		    JamList[] dereferenced = variableNames.DereferenceElements(globals);
 			JamList[] dereferenced = globals.DereferenceElements(variableNames);
-			//
-
+		
 			dereferenced[0].Append("another1");
 			dereferenced[1].Append("another2");
 
 			CollectionAssert.AreEqual(new[] { "1", "another1"}, globals["one"].Elements);
 			CollectionAssert.AreEqual(new[] { "2", "another2" }, globals["two"].Elements);
 	    }
-    }
+
+	    [Test]
+	    public void ElementsAsJamList()
+	    {
+		    var j = new JamList("one", "two");
+
+		    var elementsAsLists = j.ElementsAsJamLists.ToArray();
+			CollectionAssert.AreEqual(new[] { "one" }, elementsAsLists[0]);
+			CollectionAssert.AreEqual(new[] { "two" }, elementsAsLists[1]);
+
+		}
+	}
 
 }
