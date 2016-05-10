@@ -293,31 +293,38 @@ namespace jamconverter
             return ifStatement;
         }
 
-        public Expression ParseExpression()
-        {
-            switch (_scanResult.Peek().tokenType)
-            {
-                case TokenType.EOF:
-                case TokenType.Colon:
-                case TokenType.Terminator:
-                case TokenType.ParenthesisClose:
-                case TokenType.BracketClose:
-                case TokenType.Assignment:
-                case TokenType.AppendOperator:
-                case TokenType.SubtractOperator:
-                    return null;
-                case TokenType.VariableDereferencer:
-                    return ParseVariableDereferenceExpression();
-                case TokenType.AccoladeOpen:
-                    return null;
-                case TokenType.BracketOpen:
-                    return ParseInvocationExpression();
-                default:
-                    return ScanForCombineExpression(new LiteralExpression { Value = _scanResult.Next().literal });
-            }
-        }
-        
-        private Expression ParseInvocationExpression()
+	    public Expression ParseExpression()
+	    {
+		    switch (_scanResult.Peek().tokenType)
+		    {
+			    case TokenType.EOF:
+			    case TokenType.Colon:
+			    case TokenType.Terminator:
+			    case TokenType.ParenthesisClose:
+			    case TokenType.BracketClose:
+				case TokenType.Assignment:
+				case TokenType.AppendOperator:
+				case TokenType.SubtractOperator:
+				    return null;
+			    case TokenType.VariableDereferencer:
+				    return ParseVariableDereferenceExpression();
+			    case TokenType.AccoladeOpen:
+				    return null;
+			    case TokenType.BracketOpen:
+				    return ParseInvocationExpression();
+
+				case TokenType.Not:
+				    _scanResult.Next();
+				    var expression = ParseExpression();
+				    if (expression is BinaryOperatorExpression)
+					    throw new ParsingException("see IfStatementWithNegationAndRightSide test");
+				    return new NotOperatorExpression { Expression = expression};
+			    default:
+				    return ScanForCombineExpression(new LiteralExpression {Value = _scanResult.Next().literal});
+		    }
+	    }
+
+	    private Expression ParseInvocationExpression()
         {
             var bracketOpen = _scanResult.Next();
             if (bracketOpen.tokenType != TokenType.BracketOpen)
@@ -389,24 +396,27 @@ namespace jamconverter
             return ScanForCombineExpression(variableDereferenceExpression);
         }
 
-        private static Operator OperatorFor(TokenType tokenType)
-        {
-            switch (tokenType)
-            {
-                case TokenType.AppendOperator:
-                    return Operator.Append;
-                case TokenType.Assignment:
-                    return Operator.Assignment;
-                case TokenType.SubtractOperator:
-                    return Operator.Subtract;
-                case TokenType.In:
-                    return Operator.In;
-				case TokenType.AssignmentIfEmpty:
-		            return Operator.AssignmentIfEmpty;
-                default:
-                    throw new NotSupportedException("Unknown operator tokentype: " + tokenType);
-            }
-        }
+	    private static readonly Dictionary<TokenType, Operator> _binaryOperators = new Dictionary<TokenType, Operator>
+	    {
+		    {TokenType.AppendOperator, Operator.Append},
+		    {TokenType.Assignment, Operator.Assignment},
+		    {TokenType.SubtractOperator, Operator.Subtract},
+		    {TokenType.In, Operator.In},
+		    {TokenType.AssignmentIfEmpty, Operator.AssignmentIfEmpty},
+		    {TokenType.And, Operator.And},
+		    {TokenType.Or, Operator.Or},
+		    {TokenType.NotEqual, Operator.NotEqual}
+	    };
+		
+		static bool IsBinaryOperator(TokenType tokenType)
+		{
+			return _binaryOperators.ContainsKey(tokenType);
+		}
+
+		private static Operator OperatorFor(TokenType tokenType)
+		{
+			return _binaryOperators[tokenType];
+		}
 
         Expression ScanForCombineExpression(Expression firstExpression)
         {
@@ -447,32 +457,23 @@ namespace jamconverter
 
             return expressionLists;
         }
-
-        public Condition ParseCondition()
+		
+        public Expression ParseCondition()
         {
-            var condition = new Condition();
+	        var simpleExpression = this.ParseExpression();
 
-            if (_scanResult.Peek().tokenType == TokenType.Not)
-            {
-                condition.Negated = true;
-                _scanResult.Next();
-            }
+	        var nextToken = this._scanResult.Peek().tokenType;
+			
+	        if (!IsBinaryOperator(nextToken))
+		        return simpleExpression;
 
-            condition.Left = ParseExpression();
-            var peek = _scanResult.Peek();
-            if (peek.tokenType == TokenType.AccoladeOpen || peek.tokenType == TokenType.EOF)
-                return condition;
+	        this._scanResult.Next();
 
-            if (condition.Negated)
-                throw new ParsingException("We do not support conditions that use the ! negation, and also have an operator and a right side.  jam has very weird behaviour in that case");
-
-            _scanResult.Next();
-            condition.Operator = OperatorFor(peek.tokenType);
-            condition.Right = ParseExpressionList();
-
-            return condition;
+	        return new BinaryOperatorExpression() {Left = simpleExpression, Operator = OperatorFor(nextToken), Right = this.ParseExpressionList()};
+	        //if $(rene) in macosx32 macosx64 win32 {}
         }
     }
+
 
     public class ParsingException : Exception
     {

@@ -87,11 +87,13 @@ Echo $(myreturnvalue) ;
 @"
 myvar = 123 ; 
 if $(myvar) { Echo msg1 ; } else { Echo msg1a ; }
+
 if ! $(myvar) { Echo msg2 ; } else { Echo msg2a ; }
 
 if $(myvar) = 123 { Echo msg3 ; }  else { Echo msg3a ; }
 
 if $(myvar) = 321 { Echo msg5 ; } else { Echo msg5a ; }
+#This doesnt work because jam is crazy: if ! $(myvar) = 321 { Echo msg5 ; } else { Echo msg5a ; }
 
 myemptyvar = ;
 if $(myemptyvar) { Echo msgA ; } else { Echo msg6a ; }
@@ -104,6 +106,7 @@ if $(myvar) = 3212 { Echo yes ; } else if $(myvar) = 123 { Echo no ; } else Echo
         Echo end ;
 ");
         }
+	
 
         [Test]
         public void EqualsConditional()
@@ -413,17 +416,29 @@ while $(myvar)
 }");
         }
 
-        //[Test]
-        public void OnVariables()
-        {
-            AssertConvertedProgramHasIdenticalOutput(
+	    [Test]
+	    public void Conditions()
+	    {
+			AssertConvertedProgramHasIdenticalOutput(
 @"
-myvar = one ;
-Echo a $(myvar) ;
-on $(mytarget) { Echo b $(myvar) ; myglobal = wham ; }
-Echo $(myglobal) ;
+one = 1 ;
+
+if $(one) && $(zero) { Echo Yes ; } else { Echo no ; }
+if $(one) && $(one) { Echo Yes ; } else { Echo no ; }
+if $(zero) || $(one) { Echo Yes ; } else { Echo no ; }
+if $(zero) || $(zero) { Echo Yes ; } else { Echo no ; }
+if $(zero) != $(one) { Echo Yes ; } else { Echo no ; }
+if $(zero) != $(zero) { Echo Yes ; } else { Echo no ; }
+if $(zero) = $(one) { Echo Yes ; } else { Echo no ; }
+if $(zero) = $(zero) { Echo Yes ; } else { Echo no ; }
+
+if $(zero) { Echo with parenthesis ; }
+
+#if ($(zero)) || ! ($(one) && $(one)) { Echo with parenthesis 2 ; } else { Echo with parenthesis no 2 ; }
+
+
 ");
-        }
+		}
 
         [Test]
         public void ForLoop()
@@ -501,7 +516,7 @@ Echo $(mylist) ;
 		{
 			AssertConvertedProgramHasIdenticalOutput(
 @"
-mylist = hello there sailor ; 
+mylist = hello there sailor.c ; 
 Echo $(mylist:I=th) ;
 
 patterninvar = sai ;
@@ -510,10 +525,53 @@ Echo $(mylist:I=$(patterninvar)) ;
 #make test for regex
 Echo $(mylist:I=hel+) ;
 
+# Jam treats double backslashes like one that still escapes the next character.
+# Both expressions should match 'sailor.c'.
+Echo $(mylist:I=\.c) ;
+Echo $(mylist:I=\\.c) ;
+
+pathWithBackslash = a\\b ;
+Echo $(pathWithBackslash) ;
+#Echo $(pathWithBackslash:I=\\) ; # Not valid in Jam. Jam does one level of escaping, regex another.
+Echo $(pathWithBackslash:I=\\\\) ;
+
+Echo $(mylist:I=\\.c$) ;
+Echo $(mylist:I=\\.c\$) ;
+
 ");
 		}
 
-		[Test]
+	    [Test]
+	    public void Escaping()
+	    {
+		    AssertConvertedProgramHasIdenticalOutput(
+@"
+mylist = a\ b   a\\b    a\bb   a\n\r\t\bc  a\$b  a$b ;
+for e in $(mylist) {
+  Echo $(e) ;
+}
+"
+			);
+	    }
+
+	    [Test]
+		[Ignore("WIP")]
+	    public void Regex()
+	    {
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+x = x ;
+mylist = x ab) ;
+Echo $(mylist:I=$(x)) ;
+Echo $(mylist:I=$\(x)) ;
+Echo $(mylist:I=\$(x)) ;
+Echo $(mylist:I=b($$)) ;
+Echo $$\(x) ;
+"
+			);
+	    }
+
+	    [Test]
 		public void OnTargetVariables()
 		{
 			AssertConvertedProgramHasIdenticalOutput(

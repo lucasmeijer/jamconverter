@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace jamconverter
 {
@@ -150,48 +151,55 @@ namespace jamconverter
                     return TokenType.Case;
                 case "switch":
                     return TokenType.Switch;
-                case "local":
-                    return TokenType.Local;
+				case "local":
+		            return TokenType.Local;
+				case "&&":
+		            return TokenType.And;
+				case "||":
+		            return TokenType.Or;
+				case "!=":
+		            return TokenType.NotEqual;
                     
                 default:
                     return TokenType.Literal;
             }
         }
+
+		private StringBuilder _builder = new StringBuilder();
         
         private string ReadLiteral(bool allowColon)
         {
             int i;
-            bool isQuoteLiteral = _input[nextChar] == '"';
-
-            for (i = nextChar; i != _input.Length; i++)
+            for (i = nextChar; i < _input.Length; i++)
             {
-                //dont allow colons as the first character
-                bool reallyAllowCon = allowColon && nextChar != i;
-                if (isQuoteLiteral) 
-                {
-                    if (i == nextChar || _input [i] != '"' || _input [i-1] == '\\')
-                        continue;
-                    i++;
-                } 
-                else 
-                {
-                    if (IsLiteral (_input [i], reallyAllowCon))
-                        continue;
-                }
-                break;
+				//dont allow colons as the first character
+	            bool reallyAllowCon = allowColon && nextChar != i;
+				char ch = _input[i];
+	            if (IsLiteral(ch, reallyAllowCon) || (ch == '$' && (i + 1) < _input.Length && _input[i + 1] != '(')) // Prevent single $ inside literal being treated as DereferenceVariable token.
+	            {
+		            if (ch == '\\' && (i + 1) < _input.Length)
+		            {
+			            ++i;
+			            _builder.Append(_input[i]);
+		            }
+		            else
+			            _builder.Append(ch);
+		            continue;
+	            }
+	            break;
             }
-
+			
+			// Return special characters recognized by TokenForLiteral from here
+			// even though that doesn't make any sense.
             if (i == nextChar)
             {
                 nextChar++;
                 return _input[i].ToString();
             }
 
-            string result;
-            if (isQuoteLiteral)
-                result = _input.Substring(nextChar+1, i - nextChar -2);
-            else
-                result = _input.Substring(nextChar, Math.Max(1,i - nextChar));
+	        var result = _builder.ToString();
+	        _builder.Clear();
+
             nextChar = i;
             return result;
         }
@@ -268,7 +276,7 @@ namespace jamconverter
         }
     }
 
-    public class ScanToken
+    public class ScanToken : IEquatable<ScanToken>
     {
         public TokenType tokenType;
         public string literal;
@@ -279,6 +287,11 @@ namespace jamconverter
                 throw new ParsingException();
             return this;
         }
+
+	    public bool Equals(ScanToken other)
+	    {
+		    return (other != null && other.literal == literal && other.tokenType == tokenType);
+	    }
     }
 
     public enum TokenType
@@ -314,7 +327,10 @@ namespace jamconverter
         Break,
         Switch,
         Case,
-        Local,
-        AssignmentIfEmpty
+	    Local,
+	    AssignmentIfEmpty,
+	    And,
+	    Or,
+	    NotEqual
     }
 }
