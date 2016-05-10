@@ -122,6 +122,8 @@ public class GlobalVariables
 
 	public void SendVariablesToJam()
 	{
+		if (!Jam.Interop.Enabled)
+			return;
 		foreach (var targetVars in _onTargetVariables) 
 		{
 			foreach (var targetVar in targetVars.Value)
