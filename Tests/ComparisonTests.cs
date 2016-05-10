@@ -36,6 +36,11 @@ namespace jamconverter.Tests
         }
 
 		[Test]
+		public void DereferenceCombineExpression()
+		{
+			AssertConvertedProgramHasIdenticalOutput("abc = 123 ; myvar = a ; Echo $($(myvar)bc:G=hi) ;");		}
+
+		[Test]
 		public void ValueSemantics()
 		{
 			AssertConvertedProgramHasIdenticalOutput(
