@@ -347,6 +347,22 @@ Echo d ;
 		}
 
 		[Test]
+		public void RuleInvocationWithImplicitParameters()
+		{
+			AssertConvertedProgramHasIdenticalOutput(@"
+				# Single implicit parameter
+				rule Hello1 { Echo $(1) ; } Hello1 a ;
+				# Two implicit parameter with only one being referenced
+				rule Hello2 { Echo $(2) ; } Hello2 a : b ;
+				# argument with explicit name being referenced using numeric reference
+				rule Hello3 explicitA : explicitB { Echo $(2) _ $(explicitB) ; } Hello3 a : b ;
+				# > < syntax
+				rule Hello4 { Echo $(<) _ $(>) ; } Hello4 a : b ;
+			"
+			);
+		}
+						
+		[Test]
         public void VariableDereferencingWithIndexer()
         {
             AssertConvertedProgramHasIdenticalOutput(

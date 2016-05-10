@@ -264,9 +264,20 @@ namespace jamconverter
 
 		    if (parentExpression != null)
 		    {
-			    var parentRule = FindParentOfType<RuleDeclarationStatement>(parentExpression);
-			    if (parentRule != null && parentRule.Arguments.Contains(identifierName))
-				    return new NRefactory.IdentifierExpression(cleanName);
+				var parentRule = FindParentOfType<RuleDeclarationStatement>(parentExpression);
+
+				if (parentRule != null) 
+				{
+					var implicitIndex = GetImplicitVariableIndex (identifierName);
+					if (implicitIndex != 0) {
+						if (parentRule.Arguments.Length >= implicitIndex)
+							return new NRefactory.IdentifierExpression (parentRule.Arguments [implicitIndex - 1]);
+						else
+							return new NRefactory.IdentifierExpression (GetImplicitVariableName (implicitIndex));
+					}
+					if (parentRule.Arguments.Contains (identifierName))
+						return new NRefactory.IdentifierExpression (cleanName);
+				}
 
 			    var forLoop = FindParentOfType<ForStatement>(parentExpression);
 			    if (forLoop != null && forLoop.LoopVariable.Value == identifierName)
@@ -322,10 +333,62 @@ namespace jamconverter
             }
         }
 
+		static int GetImplicitVariableIndex(string variable)
+		{
+			if (variable.Length == 1) 
+			{
+				var ch = variable [0];
+				if (ch >= '1' && ch <= '9')
+					return ch - '0';
+				else if (ch == '<')
+					return 1;
+				else if (ch == '>')
+					return 2;
+			}
+			return 0;
+		}
+
+		static string GetImplicitVariableName(int index)
+		{
+			return "implicitArgument" + index;
+		}
+
+		static string[] SetupArgumentsFor(RuleDeclarationStatement ruleDeclaration)
+		{
+			//because the parser always interpets an invocation without any arguments as one with a single argument: an empty expressionlist,  let's make sure we always are ready to take a single argument
+			var arguments = ruleDeclaration.Arguments;
+
+			var variables = ruleDeclaration.GetAllChildrenOfType<VariableDereferenceExpression> ();
+
+			foreach (var v in variables) 
+			{
+				var variable = v.VariableExpression.As<LiteralExpression>();
+				var implicitIndex = GetImplicitVariableIndex (variable.Value);
+				if (implicitIndex != 0) 
+				{
+					if (arguments.Count () < implicitIndex) 
+					{
+						var newArguments = new string[implicitIndex];
+						Array.Copy (arguments, newArguments, arguments.Length);
+						for (int i = 0; i < implicitIndex; i++) 
+						{
+							if (newArguments[i] == null)
+								newArguments[i] = GetImplicitVariableName (i + 1);
+						}
+						arguments = newArguments;
+					}
+				}
+			}
+
+			if (arguments.Length == 0)
+				arguments = new[] { "dummyArgument" };
+
+			return arguments;
+		}
+
         private void ProcessRuleDeclarationStatement(RuleDeclarationStatement ruleDeclaration)
         {
-            //because the parser always interpets an invocation without any arguments as one with a single argument: an empty expressionlist,  let's make sure we always are ready to take a single argument
-            var arguments = ruleDeclaration.Arguments.Length == 0 ? new[] { "dummyArgument" } : ruleDeclaration.Arguments;
+			var arguments = SetupArgumentsFor (ruleDeclaration);
 
             var body = new NRefactory.BlockStatement();
 
