@@ -175,7 +175,7 @@ namespace jamconverter
 				//dont allow colons as the first character
 	            bool reallyAllowCon = allowColon && nextChar != i;
 				char ch = _input[i];
-	            if (IsLiteral(ch, reallyAllowCon))
+	            if (IsLiteral(ch, reallyAllowCon) || (ch == '$' && (i + 1) < _input.Length && _input[i + 1] != '(')) // Prevent single $ inside literal being treated as DereferenceVariable token.
 	            {
 		            if (ch == '\\' && (i + 1) < _input.Length)
 		            {
@@ -276,7 +276,7 @@ namespace jamconverter
         }
     }
 
-    public class ScanToken
+    public class ScanToken : IEquatable<ScanToken>
     {
         public TokenType tokenType;
         public string literal;
@@ -287,6 +287,11 @@ namespace jamconverter
                 throw new ParsingException();
             return this;
         }
+
+	    public bool Equals(ScanToken other)
+	    {
+		    return (other != null && other.literal == literal && other.tokenType == tokenType);
+	    }
     }
 
     public enum TokenType

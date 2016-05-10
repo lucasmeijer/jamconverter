@@ -519,8 +519,8 @@ Echo $(pathWithBackslash) ;
 #Echo $(pathWithBackslash:I=\\) ; # Not valid in Jam. Jam does one level of escaping, regex another.
 Echo $(pathWithBackslash:I=\\\\) ;
 
-#Echo $(mylist:I=\\.c$) ; # We should accept this (Jam does). We don't scan it correctly.
-Echo $(mylist:I=\\.c\$) ; # This works with our code as well.
+Echo $(mylist:I=\\.c$) ;
+Echo $(mylist:I=\\.c\$) ;
 
 ");
 		}
@@ -530,7 +530,7 @@ Echo $(mylist:I=\\.c\$) ; # This works with our code as well.
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(
 @"
-mylist = a\ b   a\\b    a\bb   a\n\r\t\bc  a\$b  ; # a$b ; ##TODO we don't handle the last case correctly yet; see ScannerTests.LiteralContainingEscapedDollarSign
+mylist = a\ b   a\\b    a\bb   a\n\r\t\bc  a\$b  a$b ;
 for e in $(mylist) {
   Echo $(e) ;
 }

@@ -172,7 +172,6 @@ on_new_line");
 	    }
 
 	    [Test]
-		[Ignore("The scanner treats $ as a token rather than $( and so breaks up the literal incorrectly")]
 	    public void LiteralContainingEscapedDollarSign()
 	    {
 		    var scanner1 = new Scanner(@"a\$b");
