@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace jamconverter
 {
@@ -163,26 +164,42 @@ namespace jamconverter
                     return TokenType.Literal;
             }
         }
+
+		private StringBuilder _builder = new StringBuilder();
         
         private string ReadLiteral(bool allowColon)
         {
             int i;
-            for (i = nextChar; i != _input.Length; i++)
+            for (i = nextChar; i < _input.Length; i++)
             {
 				//dont allow colons as the first character
 	            bool reallyAllowCon = allowColon && nextChar != i;
-                if (IsLiteral(_input[i], reallyAllowCon))
-                    continue;
-                break;
+				char ch = _input[i];
+	            if (IsLiteral(ch, reallyAllowCon))
+	            {
+		            if (ch == '\\' && (i + 1) < _input.Length)
+		            {
+			            ++i;
+			            _builder.Append(_input[i]);
+		            }
+		            else
+			            _builder.Append(ch);
+		            continue;
+	            }
+	            break;
             }
-
+			
+			// Return special characters recognized by TokenForLiteral from here
+			// even though that doesn't make any sense.
             if (i == nextChar)
             {
                 nextChar++;
                 return _input[i].ToString();
             }
 
-            var result = _input.Substring(nextChar, Math.Max(1,i - nextChar));
+	        var result = _builder.ToString();
+	        _builder.Clear();
+
             nextChar = i;
             return result;
         }

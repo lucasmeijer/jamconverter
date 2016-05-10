@@ -500,7 +500,7 @@ Echo $(mylist) ;
 		{
 			AssertConvertedProgramHasIdenticalOutput(
 @"
-mylist = hello there sailor ; 
+mylist = hello there sailor.c ; 
 Echo $(mylist:I=th) ;
 
 patterninvar = sai ;
@@ -509,10 +509,34 @@ Echo $(mylist:I=$(patterninvar)) ;
 #make test for regex
 Echo $(mylist:I=hel+) ;
 
-#Echo $(mylist:I=o$) ;
+# Jam treats double backslashes like one that still escapes the next character.
+# Both expressions should match 'sailor.c'.
+Echo $(mylist:I=\.c) ;
+Echo $(mylist:I=\\.c) ;
+
+pathWithBackslash = a\\b ;
+Echo $(pathWithBackslash) ;
+#Echo $(pathWithBackslash:I=\\) ; # Not valid in Jam. Jam does one level of escaping, regex another.
+Echo $(pathWithBackslash:I=\\\\) ;
+
+#Echo $(mylist:I=\\.c$) ; # We should accept this (Jam does). We don't scan it correctly.
+Echo $(mylist:I=\\.c\$) ; # This works with our code as well.
 
 ");
 		}
+
+	    [Test]
+	    public void Escaping()
+	    {
+		    AssertConvertedProgramHasIdenticalOutput(
+@"
+mylist = a\ b   a\\b    a\bb   a\n\r\t\bc  a\$b  ; # a$b ; ##TODO we don't handle the last case correctly yet; see ScannerTests.LiteralContainingEscapedDollarSign
+for e in $(mylist) {
+  Echo $(e) ;
+}
+"
+			);
+	    }
 
 	    [Test]
 		[Ignore("WIP")]
