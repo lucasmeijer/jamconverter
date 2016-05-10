@@ -158,11 +158,36 @@ on_new_line");
             Assert.AreEqual("hello:there", result[0].literal);
         }
 
-        [Test]
-        public void LiteralEscapedCharacters()
-        {
-            var a = new Scanner("\\=");
-            var result = a.ScanAllTokens().ToArray();
+	    [Test]
+	    public void LiteralContainingBackslash()
+	    {
+		    var scanner = new Scanner(@"a\ b   a\\b    a\bb   a\n\r\t\bc");
+		    var result = scanner.ScanAllTokens().ToArray();
+
+			Assert.That(result.Length, Is.EqualTo(8));
+			Assert.That(result[0].literal, Is.EqualTo("a b"));
+			Assert.That(result[2].literal, Is.EqualTo(@"a\b"));
+			Assert.That(result[4].literal, Is.EqualTo("abb"));
+			Assert.That(result[6].literal, Is.EqualTo("anrtbc"));
+	    }
+
+	    [Test]
+	    public void LiteralContainingEscapedDollarSign()
+	    {
+		    var scanner1 = new Scanner(@"a\$b");
+			var scanner2 = new Scanner(@"a$b");
+
+			var result1 = scanner1.ScanAllTokens().ToArray();
+			var result2 = scanner2.ScanAllTokens().ToArray();
+
+			CollectionAssert.AreEqual(result1, result2);
+	    }
+
+		[Test]
+		public void LiteralEscapedCharacters()
+		{
+			var a = new Scanner("\\=");
+			var result = a.ScanAllTokens().ToArray();
 
             CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
 
@@ -191,29 +216,15 @@ on_new_line");
             Assert.AreEqual("hello \"there", result[0].literal);
         }
 
-	    [Test]
-	    public void LiteralContainingBackslash()
-	    {
-		    var scanner = new Scanner(@"a\ b   a\\b    a\bb   a\n\r\t\bc");
-		    var result = scanner.ScanAllTokens().ToArray();
+		[Test]
+		public void SmallerThanInLiteral()
+		{
+			var a = new Scanner("<you<can>do>this>");
+			var result = a.ScanAllTokens().ToArray();
 
-			Assert.That(result.Length, Is.EqualTo(8));
-			Assert.That(result[0].literal, Is.EqualTo("a b"));
-			Assert.That(result[2].literal, Is.EqualTo(@"a\b"));
-			Assert.That(result[4].literal, Is.EqualTo("abb"));
-			Assert.That(result[6].literal, Is.EqualTo("anrtbc"));
-	    }
+			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
 
-	    [Test]
-	    public void LiteralContainingEscapedDollarSign()
-	    {
-		    var scanner1 = new Scanner(@"a\$b");
-			var scanner2 = new Scanner(@"a$b");
-
-			var result1 = scanner1.ScanAllTokens().ToArray();
-			var result2 = scanner2.ScanAllTokens().ToArray();
-
-			CollectionAssert.AreEqual(result1, result2);
-	    }
+			Assert.AreEqual("<you<can>do>this>", result[0].literal);
+		}
 	}
 }

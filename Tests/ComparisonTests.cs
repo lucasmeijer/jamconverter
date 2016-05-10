@@ -36,6 +36,11 @@ namespace jamconverter.Tests
         }
 
 		[Test]
+		public void DereferenceCombineExpression()
+		{
+			AssertConvertedProgramHasIdenticalOutput("abc = 123 ; myvar = a ; Echo $($(myvar)bc:G=hi) ;");		}
+
+		[Test]
 		public void ValueSemantics()
 		{
 			AssertConvertedProgramHasIdenticalOutput(
@@ -171,6 +176,10 @@ rule MyRule myarg
 myarg = 5 ;
 MyRule 4 ;
 Echo $(myarg) ;
+
+myvar = harry johny ;
+$(myvar)_sally = 123 ;
+Echo $(harry_sally) _ $(johny_sally) ;
 
 ");
         }
@@ -555,6 +564,19 @@ for e in $(mylist) {
 	    }
 
 	    [Test]
+	    public void Quoting()
+	    {
+		    AssertConvertedProgramHasIdenticalOutput(
+@"
+mylist = foo"" ""bar a\""b ;
+for e in $(mylist) {
+  Echo $(e) ;
+}
+"
+			);
+	    }
+
+	    [Test]
 		[Ignore("WIP")]
 	    public void Regex()
 	    {
@@ -629,31 +651,22 @@ containsmytarget = mytarget  ;
 on $(containsmytarget) { Echo $(myvar) ;  Echo $(myvar2) ; }
 
 ");
-			/*
-			 * 
-			 * var value = GreenGoblin();
-			 * 
-			 * foreach(target in new JamList(Globals.mytargets, "harry", Globals.anotherone).Elements)			
-			 *   Globals.GetVariableForTargetContext(target, "myvar").Assign(value);
-			 * 
-			 * 
-			 * 
-			 *
-			 * 
-			 */
+		}
 
-			/*
-			 * VariablesOnTargets.Set("harry","myvar","sally");
-			 * Globals.myvar = 3;
-			 * Echo(Globals.myvar) ;
-			 * using (Globals.OnContext("harry"))
-			 * {
-			 *    Echo(Globals.myvar) ;
-			 *    Globals.myvar = "johny";
-			 * }
-			 * Echo(Globals.myvar);
-			 */
+		[Test]
+		public void LiteralExpansion()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+Echo @(harry:S=.exe) ;
 
+myvar = hello there ;
+Echo @($(myvar)/somepath:S=.ini) ;
+
+
+
+"
+			);
 		}
 
 		private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)

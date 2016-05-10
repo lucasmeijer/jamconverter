@@ -178,28 +178,36 @@ namespace jamconverter.AST
         }
     }
 
-    public class VariableDereferenceExpression : Expression
+	public class ExpansionStyleExpression : Expression
+	{
+		public Expression VariableExpression
+		{
+			get { return GetChild(Roles.Variable); }
+			set { SetChild(Roles.Variable, value); }
+		}
+
+		public NodeList<VariableDereferenceModifier> Modifiers
+		{
+			get { return GetChild(Roles.Modifiers); }
+			set { SetChild(Roles.Modifiers, value); }
+		}
+
+		public Expression IndexerExpression
+		{
+			get { return GetChild(Roles.IndexerExpression); }
+			set { SetChild(Roles.IndexerExpression, value); }
+		}
+	}
+
+	public class VariableDereferenceExpression : ExpansionStyleExpression
     {
-        public Expression VariableExpression
-        {
-            get { return GetChild(Roles.Variable); }
-            set { SetChild(Roles.Variable, value); }
-        }
-
-        public NodeList<VariableDereferenceModifier> Modifiers
-        {
-            get { return GetChild(Roles.Modifiers); }
-            set { SetChild(Roles.Modifiers, value); }
-        }
-
-        public Expression IndexerExpression
-        {
-            get { return GetChild(Roles.IndexerExpression); }
-            set { SetChild(Roles.IndexerExpression, value); }
-        }        
     }
 
-    public class VariableDereferenceModifier : Node
+	public class LiteralExpansionExpression : ExpansionStyleExpression
+	{
+	}
+
+	public class VariableDereferenceModifier : Node
     {
         public char Command { get; set; }
 

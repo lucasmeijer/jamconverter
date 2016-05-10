@@ -565,6 +565,28 @@ actions response myactionname
 			Assert.AreEqual("my:funky:arg0", invocationExpression.Arguments[0].Single().As<LiteralExpression>().Value);
 	    }
 
+	    [Test]
+	    public void LiteralExpansionExpression()
+	    {
+		    var result = ParseExpression<LiteralExpansionExpression>("@(myname:S=exe)");
+			Assert.AreEqual("myname", result.VariableExpression.As<LiteralExpression>().Value);
+	    }
+
+		[Test]
+		public void asdasd()
+		{
+			var notExpression = ParseExpression<NotOperatorExpression>("! $($(<)-mkdir)");
+
+
+			var result = notExpression.Expression.As<VariableDereferenceExpression>();
+
+			var combineExpression = result.VariableExpression.As<CombineExpression>();
+
+			Assert.AreEqual(2, combineExpression.Elements.Length);
+
+			Assert.AreEqual("<", combineExpression.Elements[0].As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+			Assert.AreEqual("-mkdir", combineExpression.Elements[1].As<LiteralExpression>().Value);
+		}
 
 		static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {

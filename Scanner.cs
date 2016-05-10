@@ -50,8 +50,8 @@ namespace jamconverter
 
             var c = _input[nextChar];
 
-            if (c == '(' && _previouslyScannedTokens.Last().tokenType == TokenType.VariableDereferencer)
-                _insideVariableExpansionDepth++;
+		    if (c == '(' && (_previouslyScannedTokens.Last().tokenType == TokenType.VariableDereferencer || _previouslyScannedTokens.Last().tokenType == TokenType.LiteralExpansion))
+				_insideVariableExpansionDepth++;
 
             if (c == ')' && _insideVariableExpansionDepth>0)
                 _insideVariableExpansionDepth--;
@@ -90,10 +90,10 @@ namespace jamconverter
                 if (!char.IsWhiteSpace(_input[nextChar]))
                     _insideVariableExpansionModifierSpan = true;
 
-            return new ScanToken() {tokenType = TokenTypeFor(literal), literal = literal.Replace ("\\", "")};
-        }
-        
-        private TokenType TokenTypeFor(string literal)
+		    return new ScanToken() {tokenType = TokenTypeFor(literal), literal = literal};
+	    }
+		
+	    private TokenType TokenTypeFor(string literal)
         {
             switch (literal)
             {
@@ -107,6 +107,8 @@ namespace jamconverter
                     return TokenType.Colon;
                 case "$":
                     return TokenType.VariableDereferencer;
+				case "@":
+		            return TokenType.LiteralExpansion;
                 case "(":
                     return TokenType.ParenthesisOpen;
                 case ")":
@@ -170,6 +172,7 @@ namespace jamconverter
         private string ReadLiteral(bool allowColon)
         {
             int i;
+	        bool inQuote = false;
             for (i = nextChar; i < _input.Length; i++)
             {
 				//dont allow colons as the first character
@@ -331,6 +334,7 @@ namespace jamconverter
 	    AssignmentIfEmpty,
 	    And,
 	    Or,
-	    NotEqual
+	    NotEqual,
+	    LiteralExpansion
     }
 }

@@ -260,7 +260,7 @@ namespace jamconverter
 
 		    var deref = left as VariableDereferenceExpression;
 		    if (deref != null)
-			    return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElementsNonFlat"), ProcessExpressionForLeftHandOfAssignment(deref.VariableExpression));
+			    return DereferenceElementsNonFlatInvocationFor(ProcessExpressionForLeftHandOfAssignment(deref.VariableExpression));
 
 		    var variableOnTargetExpression = left as VariableOnTargetExpression;
 		    if (variableOnTargetExpression != null)
@@ -270,7 +270,16 @@ namespace jamconverter
 				return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "GetOrCreateVariableOnTargetContext"), targetExpression, variableExpression);
 			}
 
-			throw new NotImplementedException();
+		    var combineExpression = left as CombineExpression;
+		    if (combineExpression != null)
+			    return DereferenceElementsNonFlatInvocationFor(ProcessExpression(combineExpression));
+
+		    throw new NotImplementedException();
+	    }
+
+	    private NRefactory.InvocationExpression DereferenceElementsNonFlatInvocationFor(NRefactory.Expression expression)
+	    {
+		    return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElementsNonFlat"), expression);
 	    }
 
 	    private NRefactory.Expression ProcessIdentifier(Expression parentExpression, string identifierName)
@@ -558,9 +567,9 @@ namespace jamconverter
             if (literalExpression != null)
                 return new NRefactory.PrimitiveExpression(literalExpression.Value);
                         
-            var dereferenceExpression = e as VariableDereferenceExpression;
-            if (dereferenceExpression != null)
-                return ProcessVariableDereferenceExpression(dereferenceExpression);
+            var expansionStyleExpression = e as ExpansionStyleExpression;
+            if (expansionStyleExpression != null)
+                return ProcessExpansionStyleExpression(expansionStyleExpression);
 
             var combineExpression = e as CombineExpression;
             if (combineExpression != null)
@@ -601,7 +610,7 @@ namespace jamconverter
             throw new NotImplementedException("CSharpFor cannot deal with " + e);
         }
 
-        private NRefactory.Expression ProcessVariableDereferenceExpression(VariableDereferenceExpression dereferenceExpression)
+        private NRefactory.Expression ProcessExpansionStyleExpression(ExpansionStyleExpression expansionStyleExpression)
         {
 			//righthandside:
 			//mads         ->   "mads"
@@ -609,29 +618,20 @@ namespace jamconverter
 			//$(mads_arg); ->   mads_arg
 			//$($(mads));  ->   Globals.DereferenceElements(Globals.mads)
 			//$($($(mads)));  ->   Globals.DereferenceElements(Globals.DereferenceElements(Globals.mads))
+			//
+			//@(mads)      ->   new JamList("mads")
+			//@(mads:S=.exe) -> new JamList("mads").WithSuffix(".exe");
 
-			NRefactory.Expression resultExpression = null;
+			var resultExpression = ProcessExpansionStyleExpressionVariablePreModifiers(expansionStyleExpression);
 
-			var literalExpression = dereferenceExpression.VariableExpression as LiteralExpression;
-	        if (literalExpression != null)
-	        {
-		        resultExpression = ProcessIdentifier(literalExpression, literalExpression.Value);
-	        }
-
-	        var nestedDeref = dereferenceExpression.VariableExpression as VariableDereferenceExpression;
-	        if (nestedDeref != null)
-	        {
-		        resultExpression = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElements"), ProcessVariableDereferenceExpression(nestedDeref));
-	        }
-
-	        if (dereferenceExpression.IndexerExpression != null)
+	        if (expansionStyleExpression.IndexerExpression != null)
             {
                 var memberReferenceExpression = new NRefactory.MemberReferenceExpression(resultExpression, "IndexedBy");
-                var indexerExpression = ProcessExpression(dereferenceExpression.IndexerExpression);
+                var indexerExpression = ProcessExpression(expansionStyleExpression.IndexerExpression);
                 resultExpression = new NRefactory.InvocationExpression(memberReferenceExpression, indexerExpression);
             }
 
-            foreach (var modifier in dereferenceExpression.Modifiers)
+            foreach (var modifier in expansionStyleExpression.Modifiers)
             {
                 var csharpMethod = CSharpMethodForModifier(modifier);
 
@@ -641,6 +641,24 @@ namespace jamconverter
             }
             return resultExpression;
         }
+
+	    private NRefactory.Expression ProcessExpansionStyleExpressionVariablePreModifiers(ExpansionStyleExpression expansionStyleExpression)
+	    {
+			if (expansionStyleExpression is LiteralExpansionExpression)
+				return new NRefactory.ObjectCreateExpression(JamListAstType, ProcessExpression(expansionStyleExpression.VariableExpression));
+			
+			//we know we are a variabledereferenceexpression now
+		    expansionStyleExpression.As<VariableDereferenceExpression>();
+
+			var literalExpression = expansionStyleExpression.VariableExpression as LiteralExpression;
+		    if (literalExpression != null)
+			    return ProcessIdentifier(literalExpression, literalExpression.Value);
+
+		    return new NRefactory.InvocationExpression(
+					    new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElements"),
+					    ProcessExpression(expansionStyleExpression.VariableExpression)
+						);
+	    }
 
 	    private string CSharpMethodForModifier(VariableDereferenceModifier modifier)
         {
@@ -658,6 +676,8 @@ namespace jamconverter
 		            return "Exclude";
 				case 'I':
 		            return "Include";
+				case 'R':
+		            return "Rooted_TODO";
                 default:
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);
             }
