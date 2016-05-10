@@ -192,4 +192,14 @@ public static class BuiltinFunctions
 	{
 		return InvokeRule(nameof(Needs), values);
 	}
+
+	public static JamList Clean (params JamList[] values)
+	{
+		return InvokeRule(nameof(Clean), values);
+	}
+
+	public static JamList Split (params JamList[] values)
+	{
+		return InvokeRule(nameof(Split), values);
+	}
 }
