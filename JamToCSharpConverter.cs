@@ -399,9 +399,9 @@ namespace jamconverter
             if (literalExpression != null)
                 return new NRefactory.PrimitiveExpression(literalExpression.Value);
                         
-            var dereferenceExpression = e as VariableDereferenceExpression;
-            if (dereferenceExpression != null)
-                return ProcessVariableDereferenceExpression(dereferenceExpression);
+            var expansionStyleExpression = e as ExpansionStyleExpression;
+            if (expansionStyleExpression != null)
+                return ProcessExpansionStyleExpression(expansionStyleExpression);
 
             var combineExpression = e as CombineExpression;
             if (combineExpression != null)
@@ -439,7 +439,7 @@ namespace jamconverter
             throw new NotImplementedException("CSharpFor cannot deal with " + e);
         }
 
-        private NRefactory.Expression ProcessVariableDereferenceExpression(VariableDereferenceExpression dereferenceExpression)
+        private NRefactory.Expression ProcessExpansionStyleExpression(ExpansionStyleExpression expansionStyleExpression)
         {
 			//righthandside:
 			//mads         ->   "mads"
@@ -447,29 +447,44 @@ namespace jamconverter
 			//$(mads_arg); ->   mads_arg
 			//$($(mads));  ->   Globals.DereferenceElements(Globals.mads)
 			//$($($(mads)));  ->   Globals.DereferenceElements(Globals.DereferenceElements(Globals.mads))
+			//
+			//@(mads)      ->   new JamList("mads")
+			//@(mads:S=.exe) -> new JamList("mads").WithSuffix(".exe");
 
 			NRefactory.Expression resultExpression = null;
 
-			var literalExpression = dereferenceExpression.VariableExpression as LiteralExpression;
+			var literalExpression = expansionStyleExpression.VariableExpression as LiteralExpression;
 	        if (literalExpression != null)
 	        {
-		        resultExpression = ProcessIdentifier(literalExpression, literalExpression.Value);
+				if (expansionStyleExpression is VariableDereferenceExpression)
+			        resultExpression = ProcessIdentifier(literalExpression, literalExpression.Value);
+		        if (expansionStyleExpression is LiteralExpansionExpression)
+			        resultExpression = new NRefactory.ObjectCreateExpression(JamListAstType, ProcessExpression(literalExpression));
 	        }
 
-	        var nestedDeref = dereferenceExpression.VariableExpression as VariableDereferenceExpression;
+	        var nestedDeref = expansionStyleExpression.VariableExpression as VariableDereferenceExpression;
 	        if (nestedDeref != null)
 	        {
-		        resultExpression = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElements"), ProcessVariableDereferenceExpression(nestedDeref));
+		        resultExpression = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElements"), ProcessExpansionStyleExpression(nestedDeref));
 	        }
+			
+			var combineExpression = expansionStyleExpression.VariableExpression as CombineExpression;
+			if (combineExpression != null)
+			{
+				resultExpression = ProcessExpression(combineExpression);
+			}
 
-	        if (dereferenceExpression.IndexerExpression != null)
+			if (resultExpression == null)
+				throw new NotSupportedException("Unknown variablexpressiontype: "+expansionStyleExpression.VariableExpression);
+
+			if (expansionStyleExpression.IndexerExpression != null)
             {
                 var memberReferenceExpression = new NRefactory.MemberReferenceExpression(resultExpression, "IndexedBy");
-                var indexerExpression = ProcessExpression(dereferenceExpression.IndexerExpression);
+                var indexerExpression = ProcessExpression(expansionStyleExpression.IndexerExpression);
                 resultExpression = new NRefactory.InvocationExpression(memberReferenceExpression, indexerExpression);
             }
 
-            foreach (var modifier in dereferenceExpression.Modifiers)
+            foreach (var modifier in expansionStyleExpression.Modifiers)
             {
                 var csharpMethod = CSharpMethodForModifier(modifier);
 

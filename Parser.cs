@@ -307,6 +307,7 @@ namespace jamconverter
 				case TokenType.SubtractOperator:
 				    return null;
 			    case TokenType.VariableDereferencer:
+				case TokenType.LiteralExpansion:
 				    return ParseVariableDereferenceExpression();
 			    case TokenType.AccoladeOpen:
 				    return null;
@@ -340,21 +341,24 @@ namespace jamconverter
 
         private Expression ParseVariableDereferenceExpression()
         {
-            var dollar = _scanResult.Next();
-            if (dollar.tokenType != TokenType.VariableDereferencer)
-                throw new ParsingException();
+            var token = _scanResult.Next();
 
+	        var result = 
+				token.tokenType == TokenType.VariableDereferencer
+		        ? (ExpansionStyleExpression) new VariableDereferenceExpression()
+		        : new LiteralExpansionExpression();
+			
             var open = _scanResult.Next();
             if (open.tokenType != TokenType.ParenthesisOpen)
-                throw new ParsingException("All $ should be followed by ( but got: " + open.tokenType);
+                throw new ParsingException($"All {token.literal} should be followed by ( but got: " + open.tokenType);
 
-            var variableDereferenceExpression = new VariableDereferenceExpression {VariableExpression = ParseExpression()};
+            result.VariableExpression = ParseExpression();
 
             var next = _scanResult.Next();
 
             if (next.tokenType == TokenType.BracketOpen)
             {
-                variableDereferenceExpression.IndexerExpression = ParseExpression();
+                result.IndexerExpression = ParseExpression();
                 if (_scanResult.Next().tokenType != TokenType.BracketClose)
                     throw new ParsingException("Expected bracket close while parsing variable dereference expressions' indexer");
                 next = _scanResult.Next();
@@ -389,11 +393,11 @@ namespace jamconverter
                     modifiers.Add(new VariableDereferenceModifier {Command = modifier.literal[0], Value = modifierValue});
                 }
             }
-            variableDereferenceExpression.Modifiers = modifiers;
+            result.Modifiers = modifiers;
 
             next.Is(TokenType.ParenthesisClose);
             
-            return ScanForCombineExpression(variableDereferenceExpression);
+            return ScanForCombineExpression(result);
         }
 
 	    private static readonly Dictionary<TokenType, Operator> _binaryOperators = new Dictionary<TokenType, Operator>

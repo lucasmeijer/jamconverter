@@ -50,7 +50,7 @@ namespace jamconverter
 
 		    var c = _input[nextChar];
 
-			if (c == '(' && _previouslyScannedTokens.Last().tokenType == TokenType.VariableDereferencer)
+		    if (c == '(' && (_previouslyScannedTokens.Last().tokenType == TokenType.VariableDereferencer || _previouslyScannedTokens.Last().tokenType == TokenType.LiteralExpansion))
 				_insideVariableExpansionDepth++;
 
 		    if (c == ')' && _insideVariableExpansionDepth>0)
@@ -107,6 +107,8 @@ namespace jamconverter
                     return TokenType.Colon;
                 case "$":
                     return TokenType.VariableDereferencer;
+				case "@":
+		            return TokenType.LiteralExpansion;
                 case "(":
                     return TokenType.ParenthesisOpen;
                 case ")":
@@ -332,6 +334,7 @@ namespace jamconverter
 	    AssignmentIfEmpty,
 	    And,
 	    Or,
-	    NotEqual
+	    NotEqual,
+	    LiteralExpansion
     }
 }

@@ -626,31 +626,22 @@ containsmytarget = mytarget  ;
 on $(containsmytarget) { Echo $(myvar) ;  Echo $(myvar2) ; }
 
 ");
-			/*
-			 * 
-			 * var value = GreenGoblin();
-			 * 
-			 * foreach(target in new JamList(Globals.mytargets, "harry", Globals.anotherone).Elements)			
-			 *   Globals.GetVariableForTargetContext(target, "myvar").Assign(value);
-			 * 
-			 * 
-			 * 
-			 *
-			 * 
-			 */
+		}
 
-			/*
-			 * VariablesOnTargets.Set("harry","myvar","sally");
-			 * Globals.myvar = 3;
-			 * Echo(Globals.myvar) ;
-			 * using (Globals.OnContext("harry"))
-			 * {
-			 *    Echo(Globals.myvar) ;
-			 *    Globals.myvar = "johny";
-			 * }
-			 * Echo(Globals.myvar);
-			 */
+		[Test]
+		public void LiteralExpansion()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+Echo @(harry:S=.exe) ;
 
+myvar = hello there ;
+Echo @($(myvar)/somepath:S=.ini) ;
+
+
+
+"
+			);
 		}
 
 		private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)

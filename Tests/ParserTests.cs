@@ -565,6 +565,12 @@ actions response myactionname
 			Assert.AreEqual("my:funky:arg0", invocationExpression.Arguments[0].Single().As<LiteralExpression>().Value);
 	    }
 
+	    [Test]
+	    public void LiteralExpansionExpression()
+	    {
+		    var result = ParseExpression<LiteralExpansionExpression>("@(myname:S=exe)");
+			Assert.AreEqual("myname", result.VariableExpression.As<LiteralExpression>().Value);
+	    }
 
 		static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
