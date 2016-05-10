@@ -12,6 +12,7 @@ namespace jamconverter
         private NRefactory.TypeDeclaration _dummyType;
         private NRefactory.MethodDeclaration _mainMethod;
         private NRefactory.TypeDeclaration _staticGlobals;
+		private List<ActionsDeclarationStatement> _actions = new  List<ActionsDeclarationStatement>();
 
         public string Convert(string simpleProgram)
         {
@@ -42,6 +43,21 @@ namespace jamconverter
             
             _mainMethod = new NRefactory.MethodDeclaration { Name = "Main", ReturnType = new NRefactory.PrimitiveType("void"), Modifiers = NRefactory.Modifiers.Static, Body = body};
             _dummyType.Members.Add(_mainMethod);
+
+			foreach (var action in _actions) 
+			{
+				var actionWrapperBody = new NRefactory.BlockStatement();
+
+				actionWrapperBody.Statements.Add (new NRefactory.ReturnStatement (
+					new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("InvokeRule"), new NRefactory.Expression[]{
+						new NRefactory.PrimitiveExpression(action.Name),
+						new NRefactory.IdentifierExpression("values"),
+					})
+				));
+				_mainMethod = new NRefactory.MethodDeclaration { Name = action.Name, ReturnType = JamListAstType, Modifiers = NRefactory.Modifiers.Static, Body = actionWrapperBody };
+				_mainMethod.Parameters.Add (new NRefactory.ParameterDeclaration( new NRefactory.PrimitiveType("JamList[]"), "values", NRefactory.ParameterModifier.Params));
+				_dummyType.Members.Add(_mainMethod);
+			}
 
             return _syntaxTree.ToString();
         }
@@ -92,9 +108,54 @@ namespace jamconverter
             return ProcessExpressionStatement((ExpressionStatement) statement);
         }
 
+		private NRefactory.Expression GetActionModifiers (ActionsDeclarationStatement statement)
+		{
+			if (!statement.Modifiers.Any())
+				return new NRefactory.IdentifierExpression("Jam.ActionsFlags.None");
+
+			NRefactory.Expression result = null;
+
+			foreach (LiteralExpression modifier in statement.Modifiers)
+			{
+				foreach (var name in Enum.GetNames(typeof(Jam.ActionsFlags))) {
+					if (modifier.Value.ToLower() == name.ToLower()){
+						var modifierExpression = new NRefactory.IdentifierExpression("Jam.ActionsFlags."+name);
+						if (result == null)
+							result = modifierExpression;
+						else 
+							result = new NRefactory.BinaryOperatorExpression(result, NRefactory.BinaryOperatorType.BitwiseAnd, modifierExpression);
+						break;
+					}
+				}
+			}
+
+			return result;
+		}
+
+		private int GetModifierValue (ActionsDeclarationStatement statement, Jam.ActionsFlags flag)
+		{
+			for (int i = 0; i < statement.Modifiers.Count (); i++) 
+			{
+				var modifier = statement.Modifiers [i] as LiteralExpression;
+				if (modifier.Value.ToLower () == flag.ToString ().ToLower ())
+				{
+					modifier = statement.Modifiers [i + 1] as LiteralExpression;
+					return System.Int32.Parse (modifier.Value);
+				}
+			}
+			return 0;
+		}
+
 	    private NRefactory.Statement ProcessActionsDeclarationStatement(ActionsDeclarationStatement statement)
 	    {
-		    return new NRefactory.IdentifierExpression("ActionsDeclarationStamentTODO");
+			_actions.Add (statement);
+			return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("MakeActions"), new NRefactory.Expression[]{
+				new NRefactory.PrimitiveExpression(statement.Name),
+				new NRefactory.PrimitiveExpression(String.Join("\n", statement.Actions)),
+				GetActionModifiers(statement),
+				new NRefactory.PrimitiveExpression(GetModifierValue(statement, Jam.ActionsFlags.MaxTargets)),
+				new NRefactory.PrimitiveExpression(GetModifierValue(statement, Jam.ActionsFlags.MaxLine))
+			});
 	    }
     
 	    private NRefactory.Statement ProcessLocalStatement(LocalStatement statement)
