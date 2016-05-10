@@ -54,9 +54,9 @@ namespace jamconverter
 						new NRefactory.IdentifierExpression("values"),
 					})
 				));
-				_mainMethod = new NRefactory.MethodDeclaration { Name = action.Name, ReturnType = JamListAstType, Modifiers = NRefactory.Modifiers.Static, Body = actionWrapperBody };
-				_mainMethod.Parameters.Add (new NRefactory.ParameterDeclaration( new NRefactory.PrimitiveType("JamList[]"), "values", NRefactory.ParameterModifier.Params));
-				_dummyType.Members.Add(_mainMethod);
+				var actionMethod = new NRefactory.MethodDeclaration { Name = action.Name, ReturnType = JamListAstType, Modifiers = NRefactory.Modifiers.Static, Body = actionWrapperBody };
+				actionMethod.Parameters.Add (new NRefactory.ParameterDeclaration( new NRefactory.PrimitiveType("JamList[]"), "values", NRefactory.ParameterModifier.Params));
+				_dummyType.Members.Add(actionMethod);
 			}
 
             return _syntaxTree.ToString();
