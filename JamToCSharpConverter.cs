@@ -340,22 +340,16 @@ namespace jamconverter
 	        return input.Replace(".", "_").Replace("+", "Plus");
         }
     
-        NRefactory.Expression ProcessCondition(Condition condition)
+        NRefactory.Expression ProcessCondition(Expression condition)
         {
-            var conditionWithoutNegation = ConditionWithoutNegation(condition);
+	        var processExpression = ProcessExpression(condition);
+	        if (condition is BinaryOperatorExpression)
+		        return processExpression;
 
-            return condition.Negated ? new NRefactory.UnaryOperatorExpression(NRefactory.UnaryOperatorType.Not, conditionWithoutNegation) : conditionWithoutNegation;
+	        return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(processExpression,"AsBool"));
         }
 
-        private NRefactory.Expression ConditionWithoutNegation(Condition condition)
-        {
-            if (condition.Right == null)
-                return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(ProcessExpression(condition.Left), "AsBool"));
-
-            return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(ProcessExpression(condition.Left), CSharpMethodForConditionOperator(condition.Operator)), ExpressionsForJamListConstruction(condition.Right));
-        }
-
-        string CSharpMethodForConditionOperator(Operator @operator)
+	    string CSharpMethodForConditionOperator(Operator @operator)
         {
             switch (@operator)
             {
@@ -424,10 +418,25 @@ namespace jamconverter
                 return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(methodName), invocationExpression.Arguments.Select(a=>ProcessExpressionList(a)));
             }
 
+		    var binaryOperatorExpression = e as BinaryOperatorExpression;
+		    if (binaryOperatorExpression != null)
+		    {
+			    var left = ProcessExpression(binaryOperatorExpression.Left);
+			    var right = ProcessExpressionList(binaryOperatorExpression.Right);
+
+				return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(left, CSharpMethodForConditionOperator(binaryOperatorExpression.Operator)), right);
+		    }
+
+		    var notOperatorExpression = e as NotOperatorExpression;
+		    if (notOperatorExpression != null)
+		    {
+			    return new NRefactory.UnaryOperatorExpression(NRefactory.UnaryOperatorType.Not, ProcessExpression(notOperatorExpression.Expression));
+		    }
+
             if (e == null)
                 return new NRefactory.ObjectCreateExpression(JamListAstType);
 
-            throw new ParsingException("CSharpFor cannot deal with " + e);
+            throw new NotImplementedException("CSharpFor cannot deal with " + e);
         }
 
         private NRefactory.Expression ProcessVariableDereferenceExpression(VariableDereferenceExpression dereferenceExpression)

@@ -72,7 +72,7 @@ namespace jamconverter.AST
 
     public class IfStatement : Statement
     {
-        public Condition Condition
+        public Expression Condition
         {
             get { return GetChild(Roles.Condition); }
             set { SetChild(Roles.Condition, value); }
@@ -212,7 +212,17 @@ namespace jamconverter.AST
         public Operator Operator { get; set; }
     }
 
-    public enum Operator
+	public class NotOperatorExpression : Expression
+	{
+		public Expression Expression
+		{
+			get { return GetChild(Roles.Value); }
+			set { SetChild(Roles.Value, value); }
+		}
+	}
+
+
+	public enum Operator
     {
         Assignment,
         Append,
@@ -285,7 +295,7 @@ namespace jamconverter.AST
 
 	public class WhileStatement : Statement
     {
-        public Condition Condition
+        public Expression Condition
         {
             get { return GetChild(Roles.Condition); }
             set { SetChild(Roles.Condition, value); }
@@ -372,26 +382,7 @@ namespace jamconverter.AST
             set { SetChild(Roles.Targets, value); }
         }
     }
-
-    public class Condition : Node
-    {
-        public bool Negated { get; set; }
-
-        public Expression Left
-        {
-            get { return GetChild(Roles.Left); }
-            set { SetChild(Roles.Left, value); }
-        }
-
-        public Operator Operator { get; set; }
-
-        public NodeList<Expression> Right
-        {
-            get { return GetChild(Roles.Right); }
-            set { SetChild(Roles.Right, value); }
-        }
-    }
-
+	
     public static class ASTExtensions
     {
         public static T As<T>(this Expression expression) where T : Expression
@@ -426,7 +417,7 @@ namespace jamconverter.AST
     {
         public static readonly Role<BlockStatement> Body = new Role<BlockStatement>();
         public static readonly Role<Statement> Else = new Role<Statement>();
-        public static readonly Role<Condition> Condition = new Role<Condition>();
+        public static readonly Role<Expression> Condition = new Role<Expression>();
         public static readonly Role<NodeList<Statement>> Statements = new Role<NodeList<Statement>>();
         public static readonly Role<NodeList<Expression>> ReturnExpression = new Role<NodeList<Expression>>();
         public static readonly Role<Expression> Expression = new Role<Expression>();

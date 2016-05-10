@@ -87,11 +87,13 @@ Echo $(myreturnvalue) ;
 @"
 myvar = 123 ; 
 if $(myvar) { Echo msg1 ; } else { Echo msg1a ; }
+
 if ! $(myvar) { Echo msg2 ; } else { Echo msg2a ; }
 
 if $(myvar) = 123 { Echo msg3 ; }  else { Echo msg3a ; }
 
 if $(myvar) = 321 { Echo msg5 ; } else { Echo msg5a ; }
+#This doesnt work because jam is crazy: if ! $(myvar) = 321 { Echo msg5 ; } else { Echo msg5a ; }
 
 myemptyvar = ;
 if $(myemptyvar) { Echo msgA ; } else { Echo msg6a ; }
@@ -104,6 +106,7 @@ if $(myvar) = 3212 { Echo yes ; } else if $(myvar) = 123 { Echo no ; } else Echo
         Echo end ;
 ");
         }
+	
 
         [Test]
         public void EqualsConditional()
@@ -403,7 +406,6 @@ while $(myvar)
 			AssertConvertedProgramHasIdenticalOutput(
 @"
 one = 1 ;
-zero = 0 ;
 
 if $(one) && $(zero) { Echo Yes ; } else { Echo no ; }
 if $(one) && $(one) { Echo Yes ; } else { Echo no ; }
@@ -411,6 +413,13 @@ if $(zero) || $(one) { Echo Yes ; } else { Echo no ; }
 if $(zero) || $(zero) { Echo Yes ; } else { Echo no ; }
 if $(zero) != $(one) { Echo Yes ; } else { Echo no ; }
 if $(zero) != $(zero) { Echo Yes ; } else { Echo no ; }
+if $(zero) = $(one) { Echo Yes ; } else { Echo no ; }
+if $(zero) = $(zero) { Echo Yes ; } else { Echo no ; }
+
+if $(zero) { Echo with parenthesis ; }
+
+#if ($(zero)) || ! ($(one) && $(one)) { Echo with parenthesis 2 ; } else { Echo with parenthesis no 2 ; }
+
 
 ");
 		}
@@ -500,7 +509,7 @@ Echo $(mylist:I=$(patterninvar)) ;
 #make test for regex
 Echo $(mylist:I=hel+) ;
 
-Echo $(mylist:I=o$) ;
+#Echo $(mylist:I=o$) ;
 
 ");
 		}

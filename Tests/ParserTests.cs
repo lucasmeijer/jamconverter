@@ -162,36 +162,37 @@ namespace jamconverter.Tests
 
             Assert.AreEqual(ifStatement, ifStatement.Body.Parent);
         }
-
+		
 	    [Test]
 	    public void IfStatementWithAddOperator()
 	    {
 		    var ifStatement = ParseStatement<IfStatement>("if $(a) && $(b) {}");
-		    Assert.AreEqual(Operator.And, ifStatement.Condition.Operator);
+		    Assert.AreEqual(Operator.And, ifStatement.Condition.As<BinaryOperatorExpression>().Operator);
 		    AssertLeftIsA_And_RightIsB(ifStatement);
 	    }
 
 	    private static void AssertLeftIsA_And_RightIsB(IfStatement ifStatement)
 	    {
 		    Assert.AreEqual("a",
-			    ifStatement.Condition.Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+			    ifStatement.Condition.As<BinaryOperatorExpression>().Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
 		    Assert.AreEqual("b",
-			    ifStatement.Condition.Right[0].As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+			    ifStatement.Condition.As<BinaryOperatorExpression>().Right[0].As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
 	    }
 
 	    [Test]
 		public void IfStatementWithOrOperator()
 		{
 			var ifStatement = ParseStatement<IfStatement>("if $(a) || $(b) {}");
-			Assert.AreEqual(Operator.Or, ifStatement.Condition.Operator);
-			AssertLeftIsA_And_RightIsB(ifStatement);
+			Assert.AreEqual(Operator.Or, ifStatement.Condition.As<BinaryOperatorExpression>().Operator);
+		    Assert.AreEqual("a", ifStatement.Condition.As<BinaryOperatorExpression>().Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+		    Assert.AreEqual("b", ifStatement.Condition.As<BinaryOperatorExpression>().Right[0].As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
 		}
 
 		[Test]
 		public void IfStatementWithNotEqualOperator()
 		{
 			var ifStatement = ParseStatement<IfStatement>("if $(a) != $(b) {}");
-			Assert.AreEqual(Operator.NotEqual, ifStatement.Condition.Operator);
+			Assert.AreEqual(Operator.NotEqual, ifStatement.Condition.As<BinaryOperatorExpression>().Operator);
 			AssertLeftIsA_And_RightIsB(ifStatement);
 		}
 
@@ -199,8 +200,8 @@ namespace jamconverter.Tests
         public void IfStatementWithBinaryOperatorCondition()
         {
             var ifStatement = ParseStatement<IfStatement>("if $(somevar) = 3 {}");
-            Assert.AreEqual(Operator.Assignment, ifStatement.Condition.Operator);
-            Assert.AreEqual("3", ifStatement.Condition.Right[0].As<LiteralExpression>().Value);
+            Assert.AreEqual(Operator.Assignment, ifStatement.Condition.As<BinaryOperatorExpression>().Operator);
+            Assert.AreEqual("3", ifStatement.Condition.As<BinaryOperatorExpression>().Right[0].As<LiteralExpression>().Value);
 
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
         }
@@ -209,8 +210,7 @@ namespace jamconverter.Tests
         public void IfStatementWithNegatedCondition()
         {
             var ifStatement = ParseStatement<IfStatement>("if ! $(somevar) {}");
-            Assert.IsTrue(ifStatement.Condition.Left is VariableDereferenceExpression);
-            Assert.IsTrue(ifStatement.Condition.Negated);
+            Assert.IsTrue(ifStatement.Condition.As<NotOperatorExpression>().Expression is VariableDereferenceExpression);
         }
 
         [Test]
@@ -241,7 +241,15 @@ namespace jamconverter.Tests
             Assert.AreEqual("Echo", ifStatement.Else.As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
         }
 
-        [Test]
+		[Test]
+		public void BinaryOperatorExpression()
+		{
+			ParseCondition<BinaryOperatorExpression>("a = b");
+			ParseCondition<BinaryOperatorExpression>("a != b");
+			ParseCondition<BinaryOperatorExpression>("a in b");
+		}
+		
+		[Test]
         public void CombineExpression()
         {
             var combineExpression = ParseExpression<CombineExpression>("$(b)c$(d)");
@@ -397,50 +405,19 @@ actions response myactionname
             Assert.AreEqual("echo something", actionsDeclarationStatement.Actions[0].TrimStart());
             Assert.AreEqual("echo somethingelse", actionsDeclarationStatement.Actions[1].TrimStart());
         }
-
-        [Test]
-        public void SingleExpressionCondition()
-        {
-            var condition = ParseCondition("myliteral");
-
-            Assert.AreEqual("myliteral", condition.Left.As<LiteralExpression>().Value);
-            Assert.IsFalse(condition.Negated);
-            Assert.IsNull(condition.Right);
-        }
-
-        [Test]
-        public void EqualsCondition()
-        {
-            var condition = ParseCondition("myliteral = $(harry)");
-
-            Assert.AreEqual("myliteral", condition.Left.As<LiteralExpression>().Value);
-            Assert.IsFalse(condition.Negated);
-            Assert.IsTrue(condition.Right[0] is VariableDereferenceExpression);
-            Assert.AreEqual(Operator.Assignment, condition.Operator );
-        }
-
-        [Test]
-        public void NegatedCondition()
-        {
-            var condition = ParseCondition("! $(myvar)");
-
-            Assert.IsTrue(condition.Negated);
-            Assert.AreEqual("myvar", condition.Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
-        }
-
+		
+      
         [Test]
         public void InCondition()
         {
-            var condition = ParseCondition("$(myvar) in MAC PC WINDOWS");
+            var condition = ParseCondition<BinaryOperatorExpression>("$(myvar) in MAC PC WINDOWS");
 
-            Assert.IsFalse(condition.Negated);
             Assert.AreEqual("myvar", condition.Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
             Assert.AreEqual(Operator.In, condition.Operator);
             Assert.AreEqual(3, condition.Right.Length);
         }
 
-
-        [Test]
+	    [Test]
         public void SwitchStatement()
         {
             var switchStatement = ParseStatement<SwitchStatement>(
@@ -474,9 +451,9 @@ actions response myactionname
             Assert.AreEqual(ruleName, statement.As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
         }
 
-        private static Condition ParseCondition(string jamCode)
+        private static T ParseCondition<T>(string jamCode) where T : Expression
         {
-            return new Parser(jamCode).ParseCondition();
+	        return new Parser(jamCode).ParseCondition().As<T>();
         }
 
 
@@ -522,7 +499,7 @@ actions response myactionname
         public void WhileStatement()
         {
             var whileStatement = ParseStatement<WhileStatement>("while $(mylist) {} ");
-            Assert.IsTrue(whileStatement.Condition.Left is VariableDereferenceExpression);
+            Assert.IsTrue(whileStatement.Condition is VariableDereferenceExpression);
             Assert.AreEqual(0, whileStatement.Body.Statements.Length);            
         }
 
