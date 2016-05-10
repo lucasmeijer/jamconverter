@@ -170,6 +170,7 @@ namespace jamconverter
         private string ReadLiteral(bool allowColon)
         {
             int i;
+	        bool inQuote = false;
             for (i = nextChar; i < _input.Length; i++)
             {
 				//dont allow colons as the first character

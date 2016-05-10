@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using System.Runtime.CompilerServices;
 using NiceIO;
 using Unity.IL2CPP;
 
@@ -14,7 +16,8 @@ namespace jamconverter
             var jamFile = tempDir.Combine("Jambase.jam");
             jamFile.WriteAllText("NotFile all ; " + program);
 
-            var jamBinary = ConverterRoot.Combine("external/jamplus/win32/jam.exe");
+			var jamPath = Environment.OSVersion.Platform == PlatformID.Win32NT ? "external/jamplus/win32/jam.exe" : "external/jamplus/macosx64/jam";
+			var jamBinary = ConverterRoot.Combine(jamPath);
 
             var execute = Shell.Execute(jamBinary, "-f " + jamFile + " -C " + jamFile.Parent);
 
@@ -34,6 +37,11 @@ namespace jamconverter
             }
         }
 
-        public NPath ConverterRoot => new NPath("c:/jamconverter");
+		private static string GetConverterRoot([CallerFilePath] string sourceFilePath = "")
+		{
+			return Path.GetDirectoryName (sourceFilePath);
+		}
+
+		public static NPath ConverterRoot => new NPath(GetConverterRoot());
     }
 }
