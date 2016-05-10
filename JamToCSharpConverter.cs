@@ -184,7 +184,7 @@ namespace jamconverter
 
 		    var deref = left as VariableDereferenceExpression;
 		    if (deref != null)
-			    return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElementsNonFlat"), ProcessExpressionForLeftHandOfAssignment(deref.VariableExpression));
+			    return DereferenceElementsNonFlatInvocationFor(ProcessExpressionForLeftHandOfAssignment(deref.VariableExpression));
 
 		    var variableOnTargetExpression = left as VariableOnTargetExpression;
 		    if (variableOnTargetExpression != null)
@@ -194,7 +194,16 @@ namespace jamconverter
 				return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "GetOrCreateVariableOnTargetContext"), targetExpression, variableExpression);
 			}
 
-			throw new NotImplementedException();
+		    var combineExpression = left as CombineExpression;
+		    if (combineExpression != null)
+			    return DereferenceElementsNonFlatInvocationFor(ProcessExpression(combineExpression));
+
+		    throw new NotImplementedException();
+	    }
+
+	    private NRefactory.InvocationExpression DereferenceElementsNonFlatInvocationFor(NRefactory.Expression expression)
+	    {
+		    return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElementsNonFlat"), expression);
 	    }
 
 	    private NRefactory.Expression ProcessIdentifier(Expression parentExpression, string identifierName)

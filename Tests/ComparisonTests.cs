@@ -177,6 +177,10 @@ myarg = 5 ;
 MyRule 4 ;
 Echo $(myarg) ;
 
+myvar = harry johny ;
+$(myvar)_sally = 123 ;
+Echo $(harry_sally) _ $(johny_sally) ;
+
 ");
         }
 
