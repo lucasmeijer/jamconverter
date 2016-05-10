@@ -363,7 +363,7 @@ namespace jamconverter.AST
 
     public class InvocationExpression : Expression
     {
-        public LiteralExpression RuleExpression
+        public Expression RuleExpression
         {
             get { return GetChild(Roles.RuleName); }
             set { SetChild(Roles.RuleName, value); }
@@ -445,7 +445,7 @@ namespace jamconverter.AST
         public static readonly Role<Statement> SingleStatementBody = new Role<Statement>();
         public static readonly Role<LiteralExpression> LoopVariable = new Role<LiteralExpression>();
         public static readonly Role<NodeList<Expression>> List = new Role<NodeList<Expression>>();
-        public static readonly Role<LiteralExpression> RuleName = new Role<LiteralExpression>();
+        public static readonly Role<Expression> RuleName = new Role<Expression>();
         public static readonly Role<NodeList<NodeList<Expression>>> Arguments = new Role<NodeList<NodeList<Expression>>>();
     }
 }

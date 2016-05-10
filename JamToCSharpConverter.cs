@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using jamconverter.AST;
+using runtimelib;
 using NRefactory = ICSharpCode.NRefactory.CSharp;
 
 namespace jamconverter
@@ -18,7 +19,8 @@ namespace jamconverter
             _syntaxTree = new NRefactory.SyntaxTree();
             _syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System"));
             _syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System.Linq"));
-            _syntaxTree.Members.Add(new NRefactory.UsingDeclaration("static BuiltinFunctions"));
+			_syntaxTree.Members.Add(new NRefactory.UsingDeclaration("runtimelib"));
+			_syntaxTree.Members.Add(new NRefactory.UsingDeclaration("static BuiltinFunctions"));
             _dummyType = new NRefactory.TypeDeclaration {Name = "Dummy"};
             _syntaxTree.Members.Add(_dummyType);
 
@@ -27,7 +29,10 @@ namespace jamconverter
 
              _dummyType.Members.Add(new NRefactory.FieldDeclaration() {ReturnType = StaticGlobalsType, Modifiers = NRefactory.Modifiers.Static, Variables = {new NRefactory.VariableInitializer("Globals", new NRefactory.ObjectCreateExpression(StaticGlobalsType))}});
 
-            var parser = new Parser(simpleProgram);
+			var variable = new NRefactory.VariableInitializer("_dynamicRuleInvocationService", new NRefactory.ObjectCreateExpression(DynamicRuleInvocationServiceType, new NRefactory.TypeOfExpression(new NRefactory.SimpleType("Dummy"))));
+			_dummyType.Members.Add(new NRefactory.FieldDeclaration() { ReturnType = DynamicRuleInvocationServiceType, Modifiers = NRefactory.Modifiers.Static, Variables = {variable} });
+
+			var parser = new Parser(simpleProgram);
             var body = new NRefactory.BlockStatement();
             while (true)
             {
@@ -46,7 +51,12 @@ namespace jamconverter
             return _syntaxTree.ToString();
         }
 
-        private NRefactory.SimpleType StaticGlobalsType => new NRefactory.SimpleType(_staticGlobals.Name);
+	    private static NRefactory.SimpleType DynamicRuleInvocationServiceType
+	    {
+		    get { return new NRefactory.SimpleType(nameof(DynamicRuleInvocationService)); }
+	    }
+
+	    private NRefactory.SimpleType StaticGlobalsType => new NRefactory.SimpleType(_staticGlobals.Name);
 
         private NRefactory.Statement ProcessStatement(Statement statement)
         {
@@ -422,9 +432,7 @@ namespace jamconverter
             var invocationExpression = e as InvocationExpression;
             if (invocationExpression != null)
             {
-                var methodName = MethodNameFor(invocationExpression.RuleExpression.As<LiteralExpression>().Value);
-
-                return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(methodName), invocationExpression.Arguments.Select(a=>ProcessExpressionList(a)));
+	            return ProcessInvocationExpression(invocationExpression);
             }
 
 		    var binaryOperatorExpression = e as BinaryOperatorExpression;
@@ -448,7 +456,24 @@ namespace jamconverter
             throw new NotImplementedException("CSharpFor cannot deal with " + e);
         }
 
-        private NRefactory.Expression ProcessExpansionStyleExpression(ExpansionStyleExpression expansionStyleExpression)
+	    private NRefactory.Expression ProcessInvocationExpression(InvocationExpression invocationExpression)
+	    {
+		    var ruleExpression = invocationExpression.RuleExpression;
+
+		    var literalExpression = ruleExpression as LiteralExpression;
+		    if (literalExpression != null)
+		    {
+			    var methodName = MethodNameFor(invocationExpression.RuleExpression.As<LiteralExpression>().Value);
+
+			    return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(methodName),
+				    invocationExpression.Arguments.Select(a => ProcessExpressionList(a)));
+		    }
+
+		    var arguments = invocationExpression.Arguments.Select(a => ProcessExpressionList(a)).Prepend(ProcessExpression(ruleExpression));
+			return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("_dynamicRuleInvocationService"),"InvokeRule"),arguments);
+		}
+
+	    private NRefactory.Expression ProcessExpansionStyleExpression(ExpansionStyleExpression expansionStyleExpression)
         {
 			//righthandside:
 			//mads         ->   "mads"
@@ -516,6 +541,9 @@ namespace jamconverter
 		            return "Include";
 				case 'R':
 		            return "Rooted_TODO";
+				case 'P':
+		            return "PModifier_TODO";
+				
                 default:
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);
             }

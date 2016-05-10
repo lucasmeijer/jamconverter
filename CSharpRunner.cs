@@ -18,7 +18,7 @@ namespace jamconverter.Tests
 
             var executable = tmpDir.Combine("program.exe");
             if (additionalLibs == null) additionalLibs = new NPath[0];
-            Shell.Execute(csc, file + " "+additionalLibs.InQuotes().Select(l=>"-r:"+l).SeperateWithSpace()+ " -out:" + executable);
+            Shell.Execute(csc, file + " "+additionalLibs.InQuotes().Select(l=>"-r:"+l).SeperateWithSpace()+ " -debug -out:" + executable);
 
             foreach (var lib in additionalLibs)
                 lib.Copy(tmpDir);

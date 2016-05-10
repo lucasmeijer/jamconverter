@@ -160,7 +160,7 @@ namespace jamconverter
                 return new AssignmentStatement() { Left = leftSideOfAssignment, Right = right, Operator = OperatorFor(assignmentToken.tokenType) };
             }
             
-            var invocationExpression = new InvocationExpression {RuleExpression = ParseExpression().As<LiteralExpression>(), Arguments = ParseArgumentList()};
+            var invocationExpression = new InvocationExpression {RuleExpression = ParseExpression(), Arguments = ParseArgumentList()};
 
             _scanResult.Next().Is(TokenType.Terminator);
 
