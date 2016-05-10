@@ -148,7 +148,7 @@ namespace jamconverter
 						if (result == null)
 							result = modifierExpression;
 						else 
-							result = new NRefactory.BinaryOperatorExpression(result, NRefactory.BinaryOperatorType.BitwiseAnd, modifierExpression);
+							result = new NRefactory.BinaryOperatorExpression(result, NRefactory.BinaryOperatorType.BitwiseOr, modifierExpression);
 						break;
 					}
 				}
