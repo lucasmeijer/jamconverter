@@ -375,6 +375,22 @@ Echo d ;
 		}
 
 		[Test]
+		public void RuleInvocationWithImplicitParameters()
+		{
+			AssertConvertedProgramHasIdenticalOutput(@"
+				# Single implicit parameter
+				rule Hello1 { Echo $(1) ; } Hello1 a ;
+				# Two implicit parameter with only one being referenced
+				rule Hello2 { Echo $(2) ; } Hello2 a : b ;
+				# argument with explicit name being referenced using numeric reference
+				rule Hello3 explicitA : explicitB { Echo $(2) _ $(explicitB) ; } Hello3 a : b ;
+				# > < syntax
+				rule Hello4 { Echo $(<) _ $(>) ; } Hello4 a : b ;
+			"
+			);
+		}
+						
+		[Test]
         public void VariableDereferencingWithIndexer()
         {
             AssertConvertedProgramHasIdenticalOutput(
@@ -681,7 +697,7 @@ Echo @($(myvar)/somepath:S=.ini) ;
             try
             {
                 var csharp = new JamToCSharpConverter().Convert(simpleProgram);
-				csharpResult = new CSharpRunner().Run(csharp, new[] {JamRunner.ConverterRoot.Combine(new NPath("bin/runtimelib.dll"))}).Select(s => s.TrimEnd());
+                csharpResult = new CSharpRunner().Run(csharp, new[] {JamRunner.ConverterRoot.Combine(new NPath("bin/runtimelib.dll"))}).Select(s => s.TrimEnd());
 
                 Console.WriteLine("C#:");
                 foreach (var l in csharpResult)

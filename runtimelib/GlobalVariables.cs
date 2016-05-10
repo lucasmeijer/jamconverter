@@ -28,7 +28,11 @@ public class GlobalVariables
 	        }
 
 	        {
-			    var result = new JamList();
+				JamList result;
+				if (Jam.Interop.Enabled)
+					result = new JamList (Jam.Interop.GetVar (variableName));
+				else
+					result = new JamList ();
 				_values[variableName] = result;
 				return result;
 			}
@@ -114,6 +118,19 @@ public class GlobalVariables
 	public JamList DereferenceElements(JamList variableNames)
 	{
 		return new JamList(variableNames.Elements.SelectMany(v=>this[v]).ToArray());
+	}
+
+	public void SendVariablesToJam()
+	{
+		if (!Jam.Interop.Enabled)
+			return;
+		foreach (var targetVars in _onTargetVariables) 
+		{
+			foreach (var targetVar in targetVars.Value)
+			{
+				Jam.Interop.Setting (targetVar.Key, new[]{ targetVars.Key }, targetVar.Value.Elements.ToArray ());
+			}
+		}
 	}
 }
 

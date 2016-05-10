@@ -10,9 +10,9 @@ namespace jamconverter
         private readonly string _input;
         private int nextChar = 0;
         private bool _insideVariableExpansionModifierSpan;
-	    private int _insideVariableExpansionDepth = 0;
+        private int _insideVariableExpansionDepth = 0;
 
-	    readonly List<ScanToken> _previouslyScannedTokens = new List<ScanToken>();
+        List<ScanToken> _previouslyScannedTokens = new List<ScanToken>();
 
         public Scanner(string input)
         {
@@ -38,62 +38,62 @@ namespace jamconverter
 
         public ScanToken ScanToken()
         {
-	        var scanToken = ScanTokenImpl();
-	        this._previouslyScannedTokens.Add(scanToken);
-	        return scanToken;
+            var scanToken = ScanTokenImpl();
+            this._previouslyScannedTokens.Add(scanToken);
+            return scanToken;
         }
 
-	    private ScanToken ScanTokenImpl()
-	    {
-		    if (nextChar >= _input.Length)
-			    return new ScanToken() {literal = "", tokenType = TokenType.EOF};
+        private ScanToken ScanTokenImpl()
+        {
+            if (nextChar >= _input.Length)
+                return new ScanToken() {literal = "", tokenType = TokenType.EOF};
 
-		    var c = _input[nextChar];
+            var c = _input[nextChar];
 
 		    if (c == '(' && (_previouslyScannedTokens.Last().tokenType == TokenType.VariableDereferencer || _previouslyScannedTokens.Last().tokenType == TokenType.LiteralExpansion))
 				_insideVariableExpansionDepth++;
 
-		    if (c == ')' && _insideVariableExpansionDepth>0)
-			    _insideVariableExpansionDepth--;
+            if (c == ')' && _insideVariableExpansionDepth>0)
+                _insideVariableExpansionDepth--;
 
-			if (_insideVariableExpansionModifierSpan)
-		    {
-			    if (c == '=')
-			    {
-				    _insideVariableExpansionModifierSpan = false;
-				    nextChar++;
-				    var scanToken = new ScanToken() {tokenType = TokenType.Assignment, literal = c.ToString()};
-				    return scanToken;
-			    }
-			    if (char.IsLetter(c))
-			    {
-				    nextChar++;
-				    var scanToken = new ScanToken() {tokenType = TokenType.VariableExpansionModifier, literal = c.ToString()};
-				    return scanToken;
-			    }
-			    if (c == ')')
-				    _insideVariableExpansionModifierSpan = false;
-		    }
+            if (_insideVariableExpansionModifierSpan)
+            {
+                if (c == '=')
+                {
+                    _insideVariableExpansionModifierSpan = false;
+                    nextChar++;
+                    var scanToken = new ScanToken() {tokenType = TokenType.Assignment, literal = c.ToString()};
+                    return scanToken;
+                }
+                if (char.IsLetter(c))
+                {
+                    nextChar++;
+                    var scanToken = new ScanToken() {tokenType = TokenType.VariableExpansionModifier, literal = c.ToString()};
+                    return scanToken;
+                }
+                if (c == ')')
+                    _insideVariableExpansionModifierSpan = false;
+            }
 
-		    if (char.IsWhiteSpace(c))
-			    return new ScanToken() {tokenType = TokenType.WhiteSpace, literal = ReadWhiteSpace()};
+            if (char.IsWhiteSpace(c))
+                return new ScanToken() {tokenType = TokenType.WhiteSpace, literal = ReadWhiteSpace()};
 
-		    if (c == '#')
-		    {
-			    ReadUntilEndOfLine();
-			    return ScanToken();
-		    }
+            if (c == '#')
+            {
+                ReadUntilEndOfLine();
+                return ScanToken();
+            }
 
-		    var literal = ReadLiteral(allowColon: _insideVariableExpansionDepth==0);
+            var literal = ReadLiteral(allowColon: _insideVariableExpansionDepth==0);
 
-		    if (literal == ":")
-			    if (!char.IsWhiteSpace(_input[nextChar]))
-				    _insideVariableExpansionModifierSpan = true;
+            if (literal == ":")
+                if (!char.IsWhiteSpace(_input[nextChar]))
+                    _insideVariableExpansionModifierSpan = true;
 
-		    return new ScanToken() {tokenType = TokenTypeFor(literal), literal = literal};
-	    }
-		
-	    private TokenType TokenTypeFor(string literal)
+            return new ScanToken() {tokenType = TokenTypeFor(literal), literal = literal.Replace ("\\", "")};
+        }
+        
+        private TokenType TokenTypeFor(string literal)
         {
             switch (literal)
             {
@@ -139,8 +139,8 @@ namespace jamconverter
                     return TokenType.AppendOperator;
                 case "-=":
                     return TokenType.SubtractOperator;
-				case "?=":
-		            return TokenType.AssignmentIfEmpty;
+                case "?=":
+                    return TokenType.AssignmentIfEmpty;
                 case "for":
                     return TokenType.For;
                 case "in":
@@ -166,43 +166,41 @@ namespace jamconverter
                     return TokenType.Literal;
             }
         }
-
-		private StringBuilder _builder = new StringBuilder();
         
         private string ReadLiteral(bool allowColon)
         {
             int i;
-	        bool inQuote = false;
-            for (i = nextChar; i < _input.Length; i++)
+            bool isQuoteLiteral = _input[nextChar] == '"';
+
+            for (i = nextChar; i != _input.Length; i++)
             {
-				//dont allow colons as the first character
-	            bool reallyAllowCon = allowColon && nextChar != i;
-				char ch = _input[i];
-	            if (IsLiteral(ch, reallyAllowCon) || (ch == '$' && (i + 1) < _input.Length && _input[i + 1] != '(')) // Prevent single $ inside literal being treated as DereferenceVariable token.
-	            {
-		            if (ch == '\\' && (i + 1) < _input.Length)
-		            {
-			            ++i;
-			            _builder.Append(_input[i]);
-		            }
-		            else
-			            _builder.Append(ch);
-		            continue;
-	            }
-	            break;
+                //dont allow colons as the first character
+                bool reallyAllowCon = allowColon && nextChar != i;
+                if (isQuoteLiteral) 
+                {
+                    if (i == nextChar || _input [i] != '"' || _input [i-1] == '\\')
+                        continue;
+                    i++;
+                } 
+                else 
+                {
+                    if (IsLiteral (_input [i], reallyAllowCon))
+                        continue;
+                }
+                break;
             }
-			
-			// Return special characters recognized by TokenForLiteral from here
-			// even though that doesn't make any sense.
+
             if (i == nextChar)
             {
                 nextChar++;
                 return _input[i].ToString();
             }
 
-	        var result = _builder.ToString();
-	        _builder.Clear();
-
+            string result;
+            if (isQuoteLiteral)
+                result = _input.Substring(nextChar+1, i - nextChar -2);
+            else
+                result = _input.Substring(nextChar, Math.Max(1,i - nextChar));
             nextChar = i;
             return result;
         }

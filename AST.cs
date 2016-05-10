@@ -24,6 +24,20 @@ namespace jamconverter.AST
             _children.TryGetValue(role, out result);
             return (T)result;
         }
+
+		public virtual IEnumerable<T> GetAllChildrenOfType<T>() where T : Node
+		{
+			foreach (var child in MyChildren) {
+				if (child == null)
+					continue;
+				if (child is T)
+					yield return (T)child;
+				foreach(var c in child.GetAllChildrenOfType<T>())
+					yield return c;
+			}
+		}
+
+		public virtual IEnumerable<Node> MyChildren { get { return _children.Values; } }
     }
 
     public class NodeList<T> : Node, IEnumerable<T> where T : Node
@@ -58,6 +72,8 @@ namespace jamconverter.AST
         {
             return GetEnumerator();
         }
+
+		public override IEnumerable<Node> MyChildren { get { return _elements; } }
 
         public T this[int i] => _elements[i];
     }
