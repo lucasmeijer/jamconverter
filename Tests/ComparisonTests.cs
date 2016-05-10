@@ -151,8 +151,28 @@ Echo $(harry) ;
 harry ?= sailor ;
 Echo $(harry) ;
 
+myvar1 = a ;
+myvar2 = a b ;
+
+myvars = myvar1 myvar2 ;
+$(myvars) += c ;
+Echo $(myvar1) ;
+Echo $(myvar2) ;
+Echo $(myvars) ;
+
+rule MyRule myarg
+{
+   myarg = 2 ;
+   Echo myarg $(myarg) ;
+}
+myarg = 5 ;
+MyRule 4 ;
+Echo $(myarg) ;
+
 ");
         }
+
+
 
         [Test]
         public void CombineExpression()
@@ -404,6 +424,16 @@ for myvar in $(mylist) f g
   Echo $(myvar) ;
 }
 
+
+one = 1 ;
+two = 2 ;
+myvars = one two ; #evil bonus points: add myvar here
+for myvar in $(myvars)
+{
+   Echo $(myvar) $($(myvar)) ;
+}
+
+
 ");
         }
 
@@ -465,6 +495,91 @@ Echo $(mylist:I=$(patterninvar)) ;
 Echo $(mylist:I=hel+) ;
 
 ");
+		}
+
+		[Test]
+		public void OnTargetVariables()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar on harry = sally ;
+myvar = 3 ;
+myothervar = 5 ;
+Echo $(myvar) ;
+
+on harry { 
+  Echo $(myvar) ;
+  Echo $(myothervar) ;
+  
+  #today we have different semantics for writing to variable that exists on a target in an on block
+  #we think and hope that we do not rely on this semantic in our jam program anywhere.
+  #myvar = johny ;
+
+  myothervar = 8 ;
+}
+
+Echo marker $(myvar) ;
+Echo $(myothervar) ;
+
+on harry {
+  Echo $(myvar) ;
+}
+
+on doesNotExist {
+  Echo $(myvar) from doesNotExist ;
+}
+
+rule GreenGoblin
+{
+  Echo FromGreenGoblin ;
+  return greengoblin ;
+}
+
+Echo luca slucas lucas ;
+mytargets = superman spiderman ;
+myvar on $(mytargets) = [ GreenGoblin ] ;
+myvar on $(mytargets) += uh oh ;
+
+on superman {
+  Echo $(myvar) ;
+}
+on spiderman {
+  Echo $(myvar) ;
+}
+
+Echo valid ;
+myvar = 3 ;
+mads = myvar myvar2 ;
+$(mads) on mytarget = 2 ;
+containsmytarget = mytarget  ;
+on $(containsmytarget) { Echo $(myvar) ;  Echo $(myvar2) ; }
+
+");
+			/*
+			 * 
+			 * var value = GreenGoblin();
+			 * 
+			 * foreach(target in new JamList(Globals.mytargets, "harry", Globals.anotherone).Elements)			
+			 *   Globals.GetVariableForTargetContext(target, "myvar").Assign(value);
+			 * 
+			 * 
+			 * 
+			 *
+			 * 
+			 */
+
+			/*
+			 * VariablesOnTargets.Set("harry","myvar","sally");
+			 * Globals.myvar = 3;
+			 * Echo(Globals.myvar) ;
+			 * using (Globals.OnContext("harry"))
+			 * {
+			 *    Echo(Globals.myvar) ;
+			 *    Globals.myvar = "johny";
+			 * }
+			 * Echo(Globals.myvar);
+			 */
+
 		}
 
 		private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)

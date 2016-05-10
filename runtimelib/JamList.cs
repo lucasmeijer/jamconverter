@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-public class JamList : IEnumerable<JamList>
+public class JamList : IEnumerable<string>
 {
     string[] _elements;
 
@@ -16,7 +16,7 @@ public class JamList : IEnumerable<JamList>
 
     public JamList(params JamList[] values)
     {
-        _elements = values.SelectMany(v => v._elements).ToArray();
+	    _elements = ElementsOf(values);
     }
 
     public JamList()
@@ -24,9 +24,19 @@ public class JamList : IEnumerable<JamList>
         _elements = new string[0];
     }
 
-    public IEnumerable<string> Elements => _elements;
+	public JamList(IEnumerable<JamList> values)
+	{
+		_elements = ElementsOf(values.ToArray());
+	}
 
-    public override string ToString()
+	public IEnumerable<string> Elements => _elements;
+
+	public IEnumerable<JamList> ElementsAsJamLists
+	{
+		get { return _elements.Select(e => new JamList(e)); }
+	}
+
+	public override string ToString()
     {
         var sb = new StringBuilder();
         bool first = true;
@@ -160,12 +170,12 @@ public class JamList : IEnumerable<JamList>
         _elements = _elements.Where(e => !values.Elements.Contains(e)).ToArray();
     }
 
-    public IEnumerator<JamList> GetEnumerator()
+    public IEnumerator<string> GetEnumerator()
     {
         return new JamListEnumerator(this);
     }
 
-    public class JamListEnumerator : IEnumerator<JamList>
+    public class JamListEnumerator : IEnumerator<string>
     {
         private readonly JamList _jamList;
         private int _index = -1;
@@ -190,9 +200,9 @@ public class JamList : IEnumerable<JamList>
             throw new NotImplementedException();
         }
 
-        public JamList Current { get { return new JamList(_jamList._elements[_index]);} }
+        public string Current => _jamList._elements[_index];
 
-        object IEnumerator.Current => Current;
+	    object IEnumerator.Current => Current;
     }
 
     public bool IsIn(params JamList[] values) => Elements.All(e => values.SelectMany(l=>l._elements).Contains(e));
@@ -233,6 +243,27 @@ public class JamList : IEnumerable<JamList>
 	static string[] ElementsOf(JamList[] values)
 	{
 		return values.SelectMany(v => v.Elements).ToArray();
+	}
+}
+
+public static class JamListExtensions
+{
+	public static void Assign(this IEnumerable<JamList> jamlists, params JamList[] values)
+	{
+		foreach(var jamlist in jamlists)
+			jamlist.Assign(values);
+	}
+
+	public static void Append(this IEnumerable<JamList> jamlists, params JamList[] values)
+	{
+		foreach (var jamlist in jamlists)
+			jamlist.Append(values);
+	}
+
+	public static void AssignIfEmpty(this IEnumerable<JamList> jamlists, params JamList[] values)
+	{
+		foreach (var jamlist in jamlists)
+			jamlist.AssignIfEmpty(values);
 	}
 }
 

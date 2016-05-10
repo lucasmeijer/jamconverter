@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using NUnit.Framework;
 
 namespace runtimelib.tests
@@ -25,17 +26,7 @@ namespace runtimelib.tests
             var jamList = globals["myvar"];
             CollectionAssert.AreEqual(value.Elements, jamList.Elements);
         }
-
-        [Test]
-        public void DynamicLookup()
-        {
-            var globals = new GlobalVariables();
-            var value = new JamList("hello");
-            globals["myvar"].Append(value);
-
-            CollectionAssert.AreEqual(value.Elements, globals[new JamList("myvar")].Elements);
-        }
-
+		
 		[Test]
 		public void CanSetVariableOnTarget()
 	    {
@@ -48,7 +39,21 @@ namespace runtimelib.tests
 			}
 	    }
 
-	    [Test]
+		[Test]
+		public void FallsBackToGlobalVariableIfNotFoundOnTarget()
+		{
+			var globals = new GlobalVariables();
+			var hello = new JamList("hello");
+			globals["myglobal"] = hello;
+
+			globals.GetOrCreateVariableOnTargetContext("harry", "dummy").Assign();
+			using (globals.OnTargetContext("harry"))
+			{
+				Assert.That(globals["myglobal"].Elements, Is.EqualTo(hello.Elements));
+			}
+		}
+
+		[Test]
 	    public void IgnoresIfOnTargetDoesNotExist()
 	    {
 		    var globals = new GlobalVariables();
