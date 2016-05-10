@@ -19,7 +19,7 @@ public class GlobalVariables
             if (variables.TryGetValue(variableName, out result))
                 return result;
 
-            result = new JamList();
+			result = new JamList(Jam.Interop.GetVar (variableName));
             variables[variableName] = result;
             return result;
         }
