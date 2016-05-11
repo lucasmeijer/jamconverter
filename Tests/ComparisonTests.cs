@@ -397,6 +397,19 @@ Echo d ;
 		}
 
 		[Test]
+		public void AssignResultOfRuleInvocation()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+rule MyRule arg0 : arg1 { Echo $(arg0) $(arg1) ; return ""Hello"" ; }
+
+myvar = [ MyRule a : b ] ;
+Echo $(myvar) ;
+"
+			);
+		}
+
+		[Test]
 		public void RuleInvocationWithImplicitParameters()
 		{
 			AssertConvertedProgramHasIdenticalOutput(@"
