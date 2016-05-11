@@ -541,6 +541,17 @@ Echo $(mylist) ;
 ");
         }
 
+		[Test]
+		public void UpperLowerCaseModifiers()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+				@"
+mylist = hello there sailor.c ; 
+Echo $(mylist:U) ;
+Echo $(mylist:L) ;
+");
+		}
+
 
 		[Test]
 		public void IncludeModifier()

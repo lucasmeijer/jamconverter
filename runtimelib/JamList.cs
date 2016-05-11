@@ -153,7 +153,17 @@ public class JamList : IEnumerable<string>
         return new JamList(_elements.Select(UnGrist).ToArray());
     }
 
-    private string UnGrist(string s)
+	public JamList ToUpper(JamList value)
+	{
+		return new JamList(_elements.Select(e => e.ToUpperInvariant()).ToArray());
+	}
+
+	public JamList ToLower(JamList value)
+	{
+		return new JamList(_elements.Select(e => e.ToLowerInvariant()).ToArray());
+	}
+
+	private string UnGrist(string s)
     {
         if (!s.StartsWith("<"))
             return s;

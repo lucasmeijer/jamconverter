@@ -706,6 +706,10 @@ namespace jamconverter
 				case 'P':
 		            return "PModifier_TODO";
 				
+				case 'U':
+					return "ToUpper";
+				case 'L':
+					return "ToLower";	
                 default:
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);
             }
