@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -9,6 +10,7 @@ namespace jamconverter
     {
         private readonly string _input;
         private int nextChar = 0;
+		private bool isInsideQuote = false;
         private bool _insideVariableExpansionModifierSpan;
         private int _insideVariableExpansionDepth = 0;
 
@@ -50,12 +52,6 @@ namespace jamconverter
 
             var c = _input[nextChar];
 
-		    if (c == '(' && (_previouslyScannedTokens.Last().tokenType == TokenType.VariableDereferencer || _previouslyScannedTokens.Last().tokenType == TokenType.LiteralExpansion))
-				_insideVariableExpansionDepth++;
-
-            if (c == ')' && _insideVariableExpansionDepth>0)
-                _insideVariableExpansionDepth--;
-
             if (_insideVariableExpansionModifierSpan)
             {
                 if (c == '=')
@@ -77,6 +73,28 @@ namespace jamconverter
 
             if (char.IsWhiteSpace(c))
                 return new ScanToken() {tokenType = TokenType.WhiteSpace, literal = ReadWhiteSpace()};
+
+			bool hasMoreCharacters = (nextChar + 1) < _input.Length;
+			if (c == '$' && hasMoreCharacters && _input[nextChar + 1] == '(')
+			{
+				++_insideVariableExpansionDepth;
+				nextChar += 2;
+				return new ScanToken() { tokenType = TokenType.VariableDereferencerOpen, literal = "$(" };
+			}
+
+			if (c == '@' && hasMoreCharacters && _input[nextChar + 1] == '(')
+			{
+				++_insideVariableExpansionDepth;
+				nextChar += 2;
+				return new ScanToken() { tokenType = TokenType.LiteralExpansionOpen, literal = "@(" };
+			}
+
+			if (c == ')')
+			{
+				--_insideVariableExpansionDepth;
+				++nextChar;
+				return new ScanToken() { tokenType = TokenType.ParenthesisClose, literal = ")" };
+			}
 
             if (c == '#')
             {
@@ -113,14 +131,6 @@ namespace jamconverter
                     return TokenType.BracketClose;
                 case ":":
                     return TokenType.Colon;
-                case "$":
-                    return TokenType.VariableDereferencer;
-				case "@":
-		            return TokenType.LiteralExpansion;
-                case "(":
-                    return TokenType.ParenthesisOpen;
-                case ")":
-                    return TokenType.ParenthesisClose;
                 case "{":
                     return TokenType.AccoladeOpen;
                 case "}":
@@ -184,17 +194,27 @@ namespace jamconverter
         {
             int i;
 
-			bool isInsideQuote = false;
             for (i = nextChar; i != _input.Length; i++)
             {
 				//dont allow colons as the first character 
 				bool reallyAllowCon = allowColon && nextChar != i; 
+				bool hasMoreCharacters = (i + 1) < _input.Length;
 				char ch = _input[i]; 
-				if (ch == '\\' && (i + 1) < _input.Length) 
+				if (ch == '\\' && hasMoreCharacters)
 				{
 					++i; 
 					_builder.Append(_input[i]); 
 				} 
+				else if ((ch == '$' || ch == '@') && hasMoreCharacters && _input[i + 1] == '(')
+				{
+					Debug.Assert(i > nextChar);
+					break;
+				}
+				else if (ch == ')' && _insideVariableExpansionDepth > 0)
+				{
+					Debug.Assert(i > nextChar);
+					break;
+				}
                 else if (isInsideQuote)
                 {
                     if (ch == '"')
@@ -206,7 +226,7 @@ namespace jamconverter
 				{
 					isInsideQuote = true;
 				}
-				else if (IsLiteral(ch, reallyAllowCon) || (ch == '$' && (i + 1) < _input.Length && _input[i + 1] != '(')) // Prevent single $ inside literal being treated as DereferenceVariable token. 
+				else if (IsLiteral(ch, reallyAllowCon) || ((ch == '$' || ch == '@') && hasMoreCharacters && _input[i + 1] != '(')) // Prevent single $ inside literal being treated as DereferenceVariable token. 
 				{ 
 					_builder.Append(ch); 
 				} 
@@ -233,15 +253,9 @@ namespace jamconverter
 
         private bool IsLiteral(char c, bool treatColonAsLiteral)
         {
-            if (c == ')')
-                return false;
-            if (c == '(')
-                return false;
             if (c == '}')
                 return false;
             if (c == '{')
-                return false;
-            if (c == '$')
                 return false;
             if (c == ':')
                 return treatColonAsLiteral;
@@ -329,9 +343,9 @@ namespace jamconverter
         BracketClose,
         Colon,
         BracketOpen,
-        VariableDereferencer,
-        ParenthesisClose,
-        ParenthesisOpen,
+        VariableDereferencerOpen,
+	    LiteralExpansionOpen,
+		ParenthesisClose,
         Assignment,
         AccoladeOpen,
         AccoladeClose,
@@ -340,7 +354,6 @@ namespace jamconverter
         VariableExpansionModifier,
         Return,
         AppendOperator,
-        Comment,
         Actions,
         On,
         EOF,
@@ -359,7 +372,6 @@ namespace jamconverter
 	    And,
 	    Or,
 	    NotEqual,
-	    LiteralExpansion,
 	    Include
     }
 }
