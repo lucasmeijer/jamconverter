@@ -10,6 +10,13 @@ public class GlobalVariables
 	private Variables _currentOnContext;
 	private Dictionary<string, Variables> _onTargetVariables = new Dictionary<string, Variables>();
 
+	public static GlobalVariables Singleton = null;
+
+	public GlobalVariables()
+	{
+		Singleton = this;
+	}
+
     public JamList this[string variableName]
     {
         get
