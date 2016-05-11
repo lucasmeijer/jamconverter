@@ -459,7 +459,7 @@ if $(zero) = $(zero) { Echo Yes ; } else { Echo no ; }
 
 if $(zero) { Echo with parenthesis ; }
 
-#if ($(zero)) || ! ($(one) && $(one)) { Echo with parenthesis 2 ; } else { Echo with parenthesis no 2 ; }
+if $(zero) && $(one) = 1 { Echo Yes ; } else { Echo no ; }
 
 
 ");

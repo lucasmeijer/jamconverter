@@ -498,7 +498,8 @@ namespace jamconverter
 
 	        this._scanResult.Next();
 
-	        return new BinaryOperatorExpression() {Left = simpleExpression, Operator = OperatorFor(nextToken), Right = this.ParseExpressionList()};
+	        var right = (nextToken == TokenType.In) ? ParseExpressionList() : new NodeList<Expression>() {ParseCondition()};
+	        return new BinaryOperatorExpression() {Left = simpleExpression, Operator = OperatorFor(nextToken), Right = right};
 	        //if $(rene) in macosx32 macosx64 win32 {}
         }
     }
