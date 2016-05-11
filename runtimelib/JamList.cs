@@ -165,9 +165,9 @@ public class JamList : IEnumerable<string>
         return _elements.Length > 0;
     }
 
-    public void Subtract(JamList values)
+    public void Subtract(params JamList[] values)
     {
-        _elements = _elements.Where(e => !values.Elements.Contains(e)).ToArray();
+		_elements = _elements.Where(e => !ElementsOf(values).Contains(e)).ToArray();
     }
 
     public IEnumerator<string> GetEnumerator()
