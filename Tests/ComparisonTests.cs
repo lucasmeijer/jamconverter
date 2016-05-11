@@ -397,6 +397,8 @@ Echo d ;
 @"
 myvar = a b c d e ; 
 Echo $(myvar[2]) ;
+Echo $(myvar[2-3]) ;
+Echo $(myvar[2-]) ;
 
 myindex = 3 ;
 Echo $(myvar[$(myindex)]) ;
