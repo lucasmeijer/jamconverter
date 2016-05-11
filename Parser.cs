@@ -17,16 +17,30 @@ namespace jamconverter
 
 	    public TopLevel ParseTopLevel()
 	    {
-		    var result = new TopLevel() {Statements = new NodeList<Statement>()};
-			while (true)
-			{
-				var statement = ParseStatement();
+		    try
+		    {
+			    var result = new TopLevel() {Statements = new NodeList<Statement>()};
+			    while (true)
+			    {
+				    var statement = ParseStatement();
 
-				if (statement == null)
-					break;
-				result.Statements.Add(statement);
-			}
-		    return result;
+				    if (statement == null)
+					    break;
+				    result.Statements.Add(statement);
+			    }
+			    return result;
+		    }
+		    catch (ParsingException)
+		    {
+			    Console.WriteLine("Parsing failed. Previous 20 tokens:");
+			    var cursor = _scanResult.GetCursor();
+				_scanResult.SetCursor(Math.Max(0,cursor-20));
+			    for (int i = 0; i != 20; i++)
+			    {
+				    Console.WriteLine(_scanResult.Next().literal);
+			    }
+			    throw;
+		    }
 	    }
 
 		public NodeList<Expression> ParseExpressionList()
@@ -431,8 +445,10 @@ namespace jamconverter
 		    {TokenType.AssignmentIfEmpty, Operator.AssignmentIfEmpty},
 		    {TokenType.And, Operator.And},
 		    {TokenType.Or, Operator.Or},
-		    {TokenType.NotEqual, Operator.NotEqual}
-	    };
+		    {TokenType.NotEqual, Operator.NotEqual},
+			{TokenType.GreaterThan, Operator.GreaterThan},
+			{TokenType.LessThan, Operator.LessThan}
+		};
 		
 		static bool IsBinaryOperator(TokenType tokenType)
 		{

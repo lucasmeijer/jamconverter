@@ -248,8 +248,10 @@ namespace jamconverter.Tests
 			ParseCondition<BinaryOperatorExpression>("a = b");
 			ParseCondition<BinaryOperatorExpression>("a != b");
 			ParseCondition<BinaryOperatorExpression>("a in b");
+			ParseCondition<BinaryOperatorExpression>("a > b");
+			ParseCondition<BinaryOperatorExpression>("a < b");
 		}
-		
+
 		[Test]
         public void CombineExpression()
         {
@@ -561,6 +563,12 @@ actions response myactionname
 			var localStatement = ParseStatement<LocalStatement>("local a ;");
 			Assert.AreEqual("a", localStatement.Variable.Value);
 			Assert.AreEqual(0, localStatement.Value.Length);
+		}
+
+		[Test]
+		public void LocalVariableDeclaration2()
+		{
+			var localStatement = ParseStatement<IfStatement>(@"if [ GetListCount ] > 1 {}");
 		}
 		
 		[Test]

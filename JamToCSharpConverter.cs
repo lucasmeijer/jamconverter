@@ -26,6 +26,7 @@ namespace jamconverter
         {
 			foreach (var sourceFile in jamProgram)
 			{
+				Console.WriteLine("sourceFile: "+sourceFile.FileName);
 				_filesToTopLevel.Add(sourceFile, new Parser(sourceFile.Contents).ParseTopLevel());
 			}
 			_allActions = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<ActionsDeclarationStatement>());
@@ -666,6 +667,10 @@ namespace jamconverter
 		            return "Or";
 				case Operator.NotEqual:
 		            return "NotJamEquals";
+				case Operator.GreaterThan:
+		            return "GreaterThan";
+				case Operator.LessThan:
+		            return "LessThan";
                 default:
                     throw new NotSupportedException("Unknown conditional operator: "+@operator);
             }

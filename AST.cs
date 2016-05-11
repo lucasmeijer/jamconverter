@@ -273,7 +273,9 @@ namespace jamconverter.AST
 	    AssignmentIfEmpty,
 	    And,
 	    Or,
-	    NotEqual
+	    NotEqual,
+		LessThan,
+		GreaterThan
     }
 
     public class RuleDeclarationStatement : Statement

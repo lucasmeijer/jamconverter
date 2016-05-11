@@ -185,6 +185,23 @@ namespace runtimelib.tests
 			CollectionAssert.AreEqual(new[] { "1", "2" }, dereferenced);
 		}
 
+	    [Test]
+	    public void GreaterThan()
+	    {
+		    var left = new JamList("1");
+		    var right = new JamList("3");
+		    Assert.IsFalse(left.GreaterThan(right));
+			Assert.IsTrue(right.GreaterThan(left));
+		}
+
+		[Test]
+		public void LessThan()
+		{
+			var left = new JamList("1");
+			var right = new JamList("3");
+			Assert.IsTrue(left.LessThan(right));
+			Assert.IsFalse(right.LessThan(left));
+		}
 
 		[Test]
 	    public void ElementsAsJamList()
