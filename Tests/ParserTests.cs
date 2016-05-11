@@ -482,7 +482,15 @@ actions response myactionname
             Assert.AreEqual("mytarget", assignmentStatment.Targets[0].As<LiteralExpression>().Value);
         }
 
-        [Test]
+		[Test]
+		public void VariableOnTargetBeforeMaybeAssignment()
+		{
+			//the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
+			var variableOnTarget = ParseStatement<AssignmentStatement>("myvar on mytarget ?= 3 ;").Left.As<VariableOnTargetExpression>();
+			Assert.AreEqual("mytarget", variableOnTarget.Targets.Single().As<LiteralExpression>().Value);
+		}
+
+	    [Test]
         public void OnStatement()
         {
             //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"

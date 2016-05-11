@@ -509,7 +509,10 @@ namespace jamconverter
 
 			foreach (var v in variables) 
 			{
-				var variable = v.VariableExpression.As<LiteralExpression>();
+				var variable = v.VariableExpression as LiteralExpression;
+				if (variable == null)
+					continue;
+
 				var implicitIndex = GetImplicitVariableIndex (variable.Value);
 				if (implicitIndex != 0) 
 				{
@@ -548,7 +551,12 @@ namespace jamconverter
                 Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
                 Body = body
             };
-            processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a => new NRefactory.ParameterDeclaration(JamListAstType, ArgumentNameFor(a))));
+            processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a =>
+            {
+	            var parameterDeclaration = new NRefactory.ParameterDeclaration(JamListAstType, ArgumentNameFor(a));
+				parameterDeclaration.DefaultExpression = new NRefactory.NullReferenceExpression();
+	            return parameterDeclaration;
+            }));
 
 			if (IsActions(methodName))
 				body.Statements.Add (new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(ActionsNameFor(methodName)), arguments.Select(a => new NRefactory.IdentifierExpression(ArgumentNameFor(a)))));
