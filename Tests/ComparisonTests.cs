@@ -611,6 +611,9 @@ mylist = foo"" ""bar a\""b ""a b c"": ;
 for e in $(mylist) {
   Echo $(e) ;
 }
+
+local dollar = ""$"" ;
+Echo $(dollar) ;
 "
 			);
 	    }
@@ -710,6 +713,17 @@ if () {
 # This does not parse in Jam!
 #Echo ) ;
 "
+			);
+		}
+
+		[Test]
+		public void VariableExpansionInString()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = harry ;
+Echo ""bla$(myvar)bla"" ;
+Echo ""bla\\$\\(myvar\\)bla"" ; "
 			);
 		}
 
