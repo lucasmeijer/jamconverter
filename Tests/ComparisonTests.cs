@@ -582,7 +582,6 @@ for e in $(mylist) {
 	    }
 
 	    [Test]
-		[Ignore("broken")]
 		public void Quoting()
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(
