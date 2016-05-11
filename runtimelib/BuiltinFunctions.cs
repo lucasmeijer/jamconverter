@@ -21,12 +21,20 @@ public static class BuiltinFunctions
 
 	public static JamList InvokeRule (string rulename, params JamList[] values)
 	{
+#if EMBEDDED_MODE
 		return new JamList(Jam.Interop.InvokeRule(rulename, JamListArrayToLOL(values)));
+#else
+		throw new NotImplementedException();
+#endif
 	}
 
 	public static void MakeActions(string name,string actions,Jam.ActionsFlags flags = Jam.ActionsFlags.None, int maxTargets=0, int maxLines=0)
 	{
+#if EMBEDDED_MODE
 		Jam.Interop.MakeActions (name, actions, (int)flags, maxTargets, maxLines);
+#else
+		throw new NotImplementedException();
+#endif
 	}
 		
     public static JamList MD5(JamList input)

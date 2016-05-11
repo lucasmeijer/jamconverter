@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security;
 
 namespace Jam
 {
@@ -22,12 +24,33 @@ namespace Jam
 		RemoveEmptyDirs = 1 << 12
 	}
 
+	public class InteropHelper
+	{
+		static InteropHelper()
+		{
+			InteropHelper.Enabled = InteropHelper.GetHasInterop();
+		}
+
+		public static bool Enabled { get; set; }
+
+		private static bool GetHasInterop()
+		{
+#if EMBEDDED_MODE
+			return true;
+#else
+			return false;
+#endif
+		}
+
+#if EMBEDDED_MODE
 	public class Interop
 	{
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public static extern string[] InvokeRule(string rulename, string[][] param);
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		[DllImport("__Internal")]
+
 		public static extern void MakeActions(string name,string actions,int flags, int maxTargets, int maxLines);
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -38,23 +61,7 @@ namespace Jam
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public static extern void Setting(string name, string[] targets, string[] values);
-					
-		public static bool Enabled { get; set; }	
-
-		static bool GetHasInterop()
-		{
-			try {
-				GetVar("OS");
-			}
-			catch (MissingMethodException) 
-			{
-				return false;
-			}
-			return true;
-		}
-		static Interop()
-		{
-			Enabled = GetHasInterop();
-		}
+	}
+#endif
 	}
 }

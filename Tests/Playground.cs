@@ -12,7 +12,7 @@ namespace jamconverter.Tests
 	class Playground
 	{
 		[Test]
-		//[Ignore("asd")]
+		[Ignore("asd")]
 		public void A()
 		{
 			var converter = new JamToCSharpConverter();

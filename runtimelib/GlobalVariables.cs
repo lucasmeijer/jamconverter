@@ -29,10 +29,11 @@ public class GlobalVariables
 
 	        {
 				JamList result;
-				if (Jam.Interop.Enabled)
-					result = new JamList (Jam.Interop.GetVar (variableName));
-				else
-					result = new JamList ();
+#if EMBEDDED_MODE
+				result = new JamList (Jam.Interop.GetVar (variableName));
+#else
+				result = new JamList ();
+#endif
 				_values[variableName] = result;
 				return result;
 			}
@@ -122,8 +123,7 @@ public class GlobalVariables
 
 	public void SendVariablesToJam()
 	{
-		if (!Jam.Interop.Enabled)
-			return;
+#if EMBEDDED_MODE
 		foreach (var targetVars in _onTargetVariables) 
 		{
 			foreach (var targetVar in targetVars.Value)
@@ -131,6 +131,7 @@ public class GlobalVariables
 				Jam.Interop.Setting (targetVar.Key, new[]{ targetVars.Key }, targetVar.Value.Elements.ToArray ());
 			}
 		}
+#endif
 	}
 }
 
