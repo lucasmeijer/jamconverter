@@ -645,6 +645,10 @@ namespace jamconverter
 	        if (condition is BinaryOperatorExpression)
 		        return processExpression;
 
+			var literalExpression = condition as LiteralExpression;
+			if (literalExpression != null)
+				return new NRefactory.PrimitiveExpression(literalExpression.Value.Length != 0);
+
 	        return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(processExpression,"AsBool"));
         }
 
