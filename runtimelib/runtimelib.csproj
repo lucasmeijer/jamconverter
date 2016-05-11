@@ -35,9 +35,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuiltinFunctions.cs" />
+    <Compile Include="ConverterLogic.cs" />
     <Compile Include="DynamicRuleInvocationService.cs" />
     <Compile Include="GlobalVariables.cs" />
     <Compile Include="JamList.cs" />
+    <Compile Include="NiceIO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Jam.cs" />
   </ItemGroup>

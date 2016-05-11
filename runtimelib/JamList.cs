@@ -292,9 +292,19 @@ public class JamList : IEnumerable<string>
 		return AsBool() && value.AsBool();
 	}
 
+	public bool And(bool value)
+	{
+		return AsBool() && value;
+	}
+
 	public bool Or(JamList value)
 	{
 		return AsBool() || value.AsBool();
+	}
+
+	public bool Or(bool value)
+	{
+		return AsBool() || value;
 	}
 
 	public bool NotJamEquals(JamList value)

@@ -85,9 +85,9 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="JamRunnerTests.cs" />
     <Compile Include="JamToCSharpConverter.cs" />
-    <Compile Include="NiceIO.cs" />
     <Compile Include="ParseMode.cs" />
     <Compile Include="Parser.cs" />
+    <Compile Include="Tests\SourceFileDescription.cs" />
     <Compile Include="Tests\ParserTests.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -14,13 +14,14 @@ namespace jamconverter.Tests
 local a = harry sally ;
 Echo $(a)$(a) ;
 ";
-
             var jamRunner = new JamRunner();
-            var output = jamRunner.Run(program);
+            var output = jamRunner.Run(new [] { new SourceFileDescription() { Contents = program, FileName = "Jamfile.jam"}});
             CollectionAssert.AreEqual(new[] {"harryharry harrysally sallyharry sallysally "}, output);
         }
 
-        [Test]
+
+
+		[Test]
     //    [Ignore("PlayGround")]
         public void PlayGround()
         {
@@ -35,8 +36,8 @@ Echo $(hallo)john$(b) ;
 ";
 
             var jamRunner = new JamRunner();
-            var output = jamRunner.Run(program);
-            foreach (var line in output)
+			var output = jamRunner.Run(new[] { new SourceFileDescription() { Contents = program, FileName = "Jamfile.jam" } });
+			foreach (var line in output)
                 Console.WriteLine(line);
 
             

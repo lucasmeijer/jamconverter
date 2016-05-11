@@ -15,6 +15,11 @@ namespace jamconverter
                 yield return e;
         }
 
+		public static IEnumerable<T> Append<T>(this IEnumerable<T> collection, T element)
+		{
+			return collection.Concat(new[] {element});
+		}
+
 		public static IEnumerable<TSource> DistinctBy<TSource, TKey>
 		(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
 		{

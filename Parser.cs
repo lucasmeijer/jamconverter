@@ -15,7 +15,21 @@ namespace jamconverter
             _scanResult = new Scanner(input).Scan();
         }
 
-        public NodeList<Expression> ParseExpressionList()
+	    public TopLevel ParseTopLevel()
+	    {
+		    var result = new TopLevel() {Statements = new NodeList<Statement>()};
+			while (true)
+			{
+				var statement = ParseStatement();
+
+				if (statement == null)
+					break;
+				result.Statements.Add(statement);
+			}
+		    return result;
+	    }
+
+		public NodeList<Expression> ParseExpressionList()
         {
             var expressions = new List<Expression>();
             while (true)
@@ -55,6 +69,8 @@ namespace jamconverter
                     return ParseOnStatement();
                 case TokenType.While:
                     return ParseWhileStatement();
+				case TokenType.Include:
+		            return ParseIncludeStatement();
                 case TokenType.For:
                     return ParseForStatement();
                 case TokenType.Break:
@@ -73,6 +89,15 @@ namespace jamconverter
                     throw new ParsingException("Unexpected token: "+scanToken.tokenType);
             }
         }
+
+	    private IncludeStatement ParseIncludeStatement()
+	    {
+		    _scanResult.Next().Is(TokenType.Include);
+		    var expression = ParseExpression();
+
+		    _scanResult.Next().Is(TokenType.Terminator);
+		    return new IncludeStatement() {Expression = expression};
+	    }
 
 	    private LocalStatement ParseLocalStatement()
 	    {
@@ -473,7 +498,8 @@ namespace jamconverter
 
 	        this._scanResult.Next();
 
-	        return new BinaryOperatorExpression() {Left = simpleExpression, Operator = OperatorFor(nextToken), Right = this.ParseExpressionList()};
+	        var right = (nextToken == TokenType.In) ? ParseExpressionList() : new NodeList<Expression>() {ParseCondition()};
+	        return new BinaryOperatorExpression() {Left = simpleExpression, Operator = OperatorFor(nextToken), Right = right};
 	        //if $(rene) in macosx32 macosx64 win32 {}
         }
     }
