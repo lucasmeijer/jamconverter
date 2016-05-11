@@ -320,16 +320,17 @@ namespace jamconverter
 
 	    public Expression ParseExpression()
 	    {
-		    switch (_scanResult.Peek().tokenType)
+		    var tokenType = _scanResult.Peek().tokenType;
+		    if (IsBinaryOperator(tokenType))
+			    return null;
+
+		    switch (tokenType)
 		    {
 			    case TokenType.EOF:
 			    case TokenType.Colon:
 			    case TokenType.Terminator:
 			    case TokenType.ParenthesisClose:
 			    case TokenType.BracketClose:
-				case TokenType.Assignment:
-				case TokenType.AppendOperator:
-				case TokenType.SubtractOperator:
 				    return null;
 			    case TokenType.VariableDereferencer:
 				case TokenType.LiteralExpansion:

@@ -16,13 +16,13 @@ namespace runtimelib.tests
 			CollectionAssert.AreEqual(new[] { "helloReturn", "thereReturn" }, result);
 		}
 
-		static JamList Hello()
+		public static JamList Hello()
 		{
 			_calls.Add("hello");
 			return new JamList("helloReturn");
 		}
 
-		static JamList There()
+		public static JamList There()
 		{
 			_calls.Add("there");
 			return new JamList("thereReturn");
