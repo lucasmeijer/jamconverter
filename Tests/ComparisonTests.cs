@@ -688,9 +688,11 @@ Echo @($(myvar)/somepath:S=.ini) ;
 			);
 		}
 
-		private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
-        {
-            var jamResult = new JamRunner().Run(simpleProgram).Select(s => s.TrimEnd());
+	    private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
+		{
+			var program = new[] {new JamFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}};
+
+            var jamResult = new JamRunner().Run(program).Select(s => s.TrimEnd());
             Console.WriteLine("Jam:");
             foreach (var l in jamResult)
                 Console.WriteLine(l);

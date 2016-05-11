@@ -88,6 +88,7 @@
     <Compile Include="NiceIO.cs" />
     <Compile Include="ParseMode.cs" />
     <Compile Include="Parser.cs" />
+    <Compile Include="Tests\JamFileDescription.cs" />
     <Compile Include="Tests\ParserTests.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

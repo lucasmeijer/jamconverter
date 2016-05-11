@@ -14,13 +14,37 @@ namespace jamconverter.Tests
 local a = harry sally ;
 Echo $(a)$(a) ;
 ";
-
             var jamRunner = new JamRunner();
-            var output = jamRunner.Run(program);
+            var output = jamRunner.Run(new [] { new JamFileDescription() { Contents = program, FileName = "Jamfile.jam"}});
             CollectionAssert.AreEqual(new[] {"harryharry harrysally sallyharry sallysally "}, output);
         }
 
-        [Test]
+		[Test]
+		public void CanRunMultifileProgram()
+		{
+			var jam1 =
+@"
+Echo jam1 ;
+include file2.jam ;
+Echo jam1 post ;
+";
+			var jam2 =
+@"
+Echo Jam2 ;
+";
+
+			var jamRunner = new JamRunner();
+			var output = jamRunner.Run(new[]
+			{
+				new JamFileDescription() { Contents = jam1, FileName = "Jamfile.jam" },
+				new JamFileDescription() { Contents = jam2, FileName = "file2.jam" }
+			});
+			CollectionAssert.AreEqual(new[] { "jam1 ","Jam2 ","jam1 post " }, output);
+		}
+
+
+
+		[Test]
     //    [Ignore("PlayGround")]
         public void PlayGround()
         {
@@ -35,8 +59,8 @@ Echo $(hallo)john$(b) ;
 ";
 
             var jamRunner = new JamRunner();
-            var output = jamRunner.Run(program);
-            foreach (var line in output)
+			var output = jamRunner.Run(new[] { new JamFileDescription() { Contents = program, FileName = "Jamfile.jam" } });
+			foreach (var line in output)
                 Console.WriteLine(line);
 
             
