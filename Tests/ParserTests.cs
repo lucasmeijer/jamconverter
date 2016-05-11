@@ -589,20 +589,24 @@ actions response myactionname
 	    }
 
 		[Test]
-		public void asdasd()
+		[Ignore("not working")]
+		public void for_rene()
 		{
-			var notExpression = ParseExpression<NotOperatorExpression>("! $($(<)-mkdir)");
-
-
-			var result = notExpression.Expression.As<VariableDereferenceExpression>();
-
-			var combineExpression = result.VariableExpression.As<CombineExpression>();
-
-			Assert.AreEqual(2, combineExpression.Elements.Length);
-
-			Assert.AreEqual("<", combineExpression.Elements[0].As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
-			Assert.AreEqual("-mkdir", combineExpression.Elements[1].As<LiteralExpression>().Value);
+			//var notExpression = ParseExpression<NotOperatorExpression>(
+			var jam = @"editorIncludesText += ""if (!strcmp(\""$(platform)\"", platformDefine))$(NEWLINE){$(NEWLINE)"" ; ";
+			ParseStatement<AssignmentStatement>(jam);
 		}
+
+		[Test]
+		[Ignore("not working")]
+		public void for_rene2()
+		{
+			//var notExpression = ParseExpression<NotOperatorExpression>(
+			var jam = @"$(winRTLegacyDll:\\\\:C) ;";
+			ParseExpression<VariableDereferenceExpression>(jam);
+		}
+		
+
 
 		static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
