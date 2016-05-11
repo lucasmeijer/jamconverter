@@ -159,7 +159,6 @@ on_new_line");
         }
 
 	    [Test]
-		[Ignore("broken")]
 	    public void LiteralContainingBackslash()
 	    {
 		    var scanner = new Scanner(@"a\ b   a\\b    a\bb   a\n\r\t\bc");
