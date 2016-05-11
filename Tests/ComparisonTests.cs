@@ -589,7 +589,6 @@ Echo $(mylist:I=\\.c\$) ;
 		}
 
 	    [Test]
-		[Ignore("broken")]
 	    public void Escaping()
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(
