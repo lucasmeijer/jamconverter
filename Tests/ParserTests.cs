@@ -597,6 +597,17 @@ actions response myactionname
 			ParseStatement<AssignmentStatement>(jam);
 		}
 
+		[Test]
+		[Ignore("not working")]
+		public void for_rene2()
+		{
+			//var notExpression = ParseExpression<NotOperatorExpression>(
+			var jam = @"$(winRTLegacyDll:\\\\:C) ;";
+			ParseExpression<VariableDereferenceExpression>(jam);
+		}
+		
+
+
 		static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);
