@@ -12,19 +12,21 @@ namespace jamconverter.Tests
 	class Playground
 	{
 		[Test]
-		[Ignore("asd")]
 		public void A()
 		{
 			var converter = new JamToCSharpConverter();
-			var sourceFile = "c:/unity/External/Jamplus/builds/bin/Jambase.jam";
-			var output = converter.Convert(new NPath(sourceFile).ReadAllText());
-			var file = NiceIO.NPath.SystemTemp.Combine("PlayGround.cs");
-
+			var inputFile = "c:/unity/External/Jamplus/builds/bin/Jambase.jam";
+			var program = new[] {new SourceFileDescription() { Contents = new NPath(inputFile).ReadAllText(), FileName = "Main.cs"} };
+			var output = converter.Convert(program);
+		
 			new CSharpRunner().Run(output, new[] { new NPath("c:/jamconverter/bin/runtimelib.dll") }).Select(s => s.TrimEnd());
 
-
-			file.WriteAllText(output);
-			Console.WriteLine(file);
+			foreach (var sourceFile in output)
+			{
+				var file = NPath.SystemTemp.Combine(sourceFile.FileName);
+				file.WriteAllText(sourceFile.Contents);
+				Console.WriteLine(file);
+			}
 		}
 	}
 }
