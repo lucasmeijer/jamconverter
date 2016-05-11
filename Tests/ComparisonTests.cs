@@ -398,6 +398,7 @@ Echo d ;
 myvar = a b c d e ; 
 Echo $(myvar[2]) ;
 Echo $(myvar[2-3]) ;
+Echo $(myvar[4-2]) ;
 Echo $(myvar[2-]) ;
 
 myindex = 3 ;
@@ -411,6 +412,9 @@ Echo $(myvar[$(myindices)]:S=.mysuffix) ;
 #index out of range:
 myvar = a b c ;
 Echo $(myvar[4]) ;
+Echo $(myvar[0]) ;
+Echo $(myvar[0-4]) ;
+
 
 myvar = a b c ;
 myindices = 1 5 3 ;  #note 5 is out of range

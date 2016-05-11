@@ -115,9 +115,18 @@ public class JamList : IEnumerable<string>
 				throw nsException;
 		}
 
-		if (lowerBound < 1 || higherBound > elements.Length)
+		if (lowerBound > elements.Length)
 			return null;
 
+		if (higherBound < lowerBound)
+			higherBound = lowerBound;
+		if (lowerBound < 1)
+			lowerBound = 1;
+		if (higherBound < 1)
+			higherBound = 1;
+		if (higherBound > elements.Length)
+			higherBound = elements.Length;
+		
         //jam list indexing starts counting at 1.       
 		return elements.Skip(lowerBound-1).Take(higherBound-lowerBound+1).ToArray();
     }
