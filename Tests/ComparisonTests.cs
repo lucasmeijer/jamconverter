@@ -689,32 +689,36 @@ Echo @($(myvar)/somepath:S=.ini) ;
 		}
 
 	    private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
-		{
-			var program = new[] {new JamFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}};
+	    {
+		    AssertConvertedProgramHasIdenticalOutput(new[] {new SourceFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}});
+	    }
 
-            var jamResult = new JamRunner().Run(program).Select(s => s.TrimEnd());
-            Console.WriteLine("Jam:");
-            foreach (var l in jamResult)
-                Console.WriteLine(l);
+	    private static void AssertConvertedProgramHasIdenticalOutput(SourceFileDescription[] program)
+	    {
+		    var jamResult = new JamRunner().Run(program).Select(s => s.TrimEnd());
+		    Console.WriteLine("Jam:");
+		    foreach (var l in jamResult)
+			    Console.WriteLine(l);
 
-            IEnumerable<string> csharpResult = null;
+		    IEnumerable<string> csharpResult = null;
 
-            try
-            {
-                var csharp = new JamToCSharpConverter().Convert(simpleProgram);
-                csharpResult = new CSharpRunner().Run(csharp, new[] {JamRunner.ConverterRoot.Combine(new NPath("bin/runtimelib.dll"))}).Select(s => s.TrimEnd());
+		    try
+		    {
+			    var csharp = new JamToCSharpConverter().Convert(program);
+			    csharpResult =
+				    new CSharpRunner().Run(csharp, new[] {JamRunner.ConverterRoot.Combine(new NPath("bin/runtimelib.dll"))})
+					    .Select(s => s.TrimEnd());
 
-                Console.WriteLine("C#:");
-                foreach (var l in csharpResult)
-                    Console.WriteLine(l);
-                Console.WriteLine();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Failed converting/running to c#: "+e);
-            }
-            CollectionAssert.AreEqual(jamResult, csharpResult);
-
-        }
+			    Console.WriteLine("C#:");
+			    foreach (var l in csharpResult)
+				    Console.WriteLine(l);
+			    Console.WriteLine();
+		    }
+		    catch (Exception e)
+		    {
+			    Console.WriteLine("Failed converting/running to c#: " + e);
+		    }
+		    CollectionAssert.AreEqual(jamResult, csharpResult);
+	    }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using jamconverter.AST;
+using jamconverter.Tests;
 using runtimelib;
 using NRefactory = ICSharpCode.NRefactory.CSharp;
 
@@ -17,7 +18,12 @@ namespace jamconverter
 		private IEnumerable<ActionsDeclarationStatement> _actions;
 		private IEnumerable<RuleDeclarationStatement> _rules;
 
-        public string Convert(string simpleProgram)
+	    public string Convert(string simpleProgram)
+	    {
+		    return Convert(new[] {new SourceFileDescription() {Contents = simpleProgram, FileName = "Jamfile.jam"}})[0].Contents;
+	    }
+
+		public SourceFileDescription[] Convert(SourceFileDescription[] jamProgram)
         {
             _syntaxTree = new NRefactory.SyntaxTree();
             _syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System"));
@@ -32,7 +38,7 @@ namespace jamconverter
 
              _dummyType.Members.Add(new NRefactory.FieldDeclaration() {ReturnType = StaticGlobalsType, Modifiers = NRefactory.Modifiers.Static, Variables = {new NRefactory.VariableInitializer("Globals", new NRefactory.ObjectCreateExpression(StaticGlobalsType))}});
 
-            var parser = new Parser(simpleProgram);
+            var parser = new Parser(jamProgram[0].Contents);
 			_topLevel = new NodeList<Statement> ();
 			while (true)
 			{
@@ -80,7 +86,7 @@ namespace jamconverter
 			}
 			_dummyType.Members.Add(actions);
 
-            return _syntaxTree.ToString();
+			return new[] {new SourceFileDescription() {FileName = "Dummy.cs", Contents = _syntaxTree.ToString()}};
         }
 
 	    private static NRefactory.SimpleType DynamicRuleInvocationServiceType

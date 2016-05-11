@@ -1,6 +1,6 @@
 ﻿namespace jamconverter.Tests
 {
-	internal class JamFileDescription
+	internal class SourceFileDescription
 	{
 		public string FileName;
 		public string Contents;

@@ -11,7 +11,7 @@ namespace jamconverter
 {
     internal class JamRunner
     {
-        public string[] Run(JamFileDescription[] program)
+        public string[] Run(SourceFileDescription[] program)
         {
             var tempDir = NPath.CreateTempDirectory("jam");
 

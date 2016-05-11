@@ -15,7 +15,7 @@ local a = harry sally ;
 Echo $(a)$(a) ;
 ";
             var jamRunner = new JamRunner();
-            var output = jamRunner.Run(new [] { new JamFileDescription() { Contents = program, FileName = "Jamfile.jam"}});
+            var output = jamRunner.Run(new [] { new SourceFileDescription() { Contents = program, FileName = "Jamfile.jam"}});
             CollectionAssert.AreEqual(new[] {"harryharry harrysally sallyharry sallysally "}, output);
         }
 
@@ -36,8 +36,8 @@ Echo Jam2 ;
 			var jamRunner = new JamRunner();
 			var output = jamRunner.Run(new[]
 			{
-				new JamFileDescription() { Contents = jam1, FileName = "Jamfile.jam" },
-				new JamFileDescription() { Contents = jam2, FileName = "file2.jam" }
+				new SourceFileDescription() { Contents = jam1, FileName = "Jamfile.jam" },
+				new SourceFileDescription() { Contents = jam2, FileName = "file2.jam" }
 			});
 			CollectionAssert.AreEqual(new[] { "jam1 ","Jam2 ","jam1 post " }, output);
 		}
@@ -59,7 +59,7 @@ Echo $(hallo)john$(b) ;
 ";
 
             var jamRunner = new JamRunner();
-			var output = jamRunner.Run(new[] { new JamFileDescription() { Contents = program, FileName = "Jamfile.jam" } });
+			var output = jamRunner.Run(new[] { new SourceFileDescription() { Contents = program, FileName = "Jamfile.jam" } });
 			foreach (var line in output)
                 Console.WriteLine(line);
 
