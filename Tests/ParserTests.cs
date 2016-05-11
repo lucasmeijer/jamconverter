@@ -589,24 +589,18 @@ actions response myactionname
 	    }
 
 		[Test]
-		[Ignore("not working")]
 		public void for_rene()
 		{
-			//var notExpression = ParseExpression<NotOperatorExpression>(
 			var jam = @"editorIncludesText += ""if (!strcmp(\""$(platform)\"", platformDefine))$(NEWLINE){$(NEWLINE)"" ; ";
 			ParseStatement<AssignmentStatement>(jam);
 		}
 
 		[Test]
-		[Ignore("not working")]
-		public void for_rene2()
+		public void ForwardToBackslashExpansionModifier()
 		{
-			//var notExpression = ParseExpression<NotOperatorExpression>(
 			var jam = @"$(winRTLegacyDll:\\\\:C) ;";
 			ParseExpression<VariableDereferenceExpression>(jam);
 		}
-		
-
 
 		static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {

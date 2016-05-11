@@ -67,6 +67,11 @@ namespace jamconverter
                     var scanToken = new ScanToken() {tokenType = TokenType.VariableExpansionModifier, literal = c.ToString()};
                     return scanToken;
                 }
+				if (c == '\\' && _input.Substring(nextChar, 4) == "\\\\\\\\")
+				{
+					nextChar += 4;
+					return new ScanToken { tokenType = TokenType.VariableExpansionModifier, literal = "\\\\\\\\" };
+				}
                 if (c == ')')
                     _insideVariableExpansionModifierSpan = false;
             }
