@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using jamconverter.AST;
 using jamconverter.Tests;
+using NiceIO;
 using runtimelib;
 using NRefactory = ICSharpCode.NRefactory.CSharp;
 
@@ -10,13 +11,11 @@ namespace jamconverter
 {
     class JamToCSharpConverter
     {
-        private NRefactory.SyntaxTree _syntaxTree;
-        private NRefactory.TypeDeclaration _dummyType;
-        private NRefactory.MethodDeclaration _mainMethod;
+        private NRefactory.TypeDeclaration typeForJamFile;
         private NRefactory.TypeDeclaration _staticGlobals;
-		private NodeList<Statement> _topLevel;
-		private IEnumerable<ActionsDeclarationStatement> _actions;
-		private IEnumerable<RuleDeclarationStatement> _rules;
+		private IEnumerable<ActionsDeclarationStatement> _allActions;
+		private IEnumerable<RuleDeclarationStatement> _allRules;
+	    private readonly Dictionary<SourceFileDescription, TopLevel> _filesToTopLevel = new Dictionary<SourceFileDescription, TopLevel>();
 
 	    public string Convert(string simpleProgram)
 	    {
@@ -25,69 +24,160 @@ namespace jamconverter
 
 		public SourceFileDescription[] Convert(SourceFileDescription[] jamProgram)
         {
-            _syntaxTree = new NRefactory.SyntaxTree();
-            _syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System"));
-            _syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System.Linq"));
-			_syntaxTree.Members.Add(new NRefactory.UsingDeclaration("runtimelib"));
-			_syntaxTree.Members.Add(new NRefactory.UsingDeclaration("static BuiltinFunctions"));
-            _dummyType = new NRefactory.TypeDeclaration {Name = "Dummy"};
-            _syntaxTree.Members.Add(_dummyType);
-
-            _staticGlobals = new NRefactory.TypeDeclaration {Name = "StaticGlobals", BaseTypes = { new NRefactory.SimpleType("GlobalVariables") }};
-            _syntaxTree.Members.Add(_staticGlobals);
-
-             _dummyType.Members.Add(new NRefactory.FieldDeclaration() {ReturnType = StaticGlobalsType, Modifiers = NRefactory.Modifiers.Static, Variables = {new NRefactory.VariableInitializer("Globals", new NRefactory.ObjectCreateExpression(StaticGlobalsType))}});
-
-            var parser = new Parser(jamProgram[0].Contents);
-			_topLevel = new NodeList<Statement> ();
-			while (true)
+			foreach (var sourceFile in jamProgram)
 			{
-				var statement = parser.ParseStatement();
-				if (statement == null)
-					break;
-
-				_topLevel.Add (statement);
+				_filesToTopLevel.Add(sourceFile, new Parser(sourceFile.Contents).ParseTopLevel());
 			}
-			_actions = _topLevel.GetAllChildrenOfType<ActionsDeclarationStatement> ();
-			_rules = _topLevel.GetAllChildrenOfType<RuleDeclarationStatement> ();
+			_allActions = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<ActionsDeclarationStatement>());
+			_allRules = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<RuleDeclarationStatement>());
 
-			var variable = new NRefactory.VariableInitializer("_dynamicRuleInvocationService", new NRefactory.ObjectCreateExpression(DynamicRuleInvocationServiceType, new NRefactory.TypeOfExpression(new NRefactory.SimpleType("Dummy"))));
-			_dummyType.Members.Add(new NRefactory.FieldDeclaration() { ReturnType = DynamicRuleInvocationServiceType, Modifiers = NRefactory.Modifiers.Static, Variables = {variable} });
+			var globalsFile = NewSyntaxTree();
+			_staticGlobals = new NRefactory.TypeDeclaration { Name = "StaticGlobals", BaseTypes = { new NRefactory.SimpleType("GlobalVariables") } };
+			var staticGlobalsSingleton = new NRefactory.TypeDeclaration { Name = "StaticGlobalsSingleton" };
+			var staticGlobalsType = new NRefactory.SimpleType(_staticGlobals.Name);
+			staticGlobalsSingleton.Members.Add(new NRefactory.FieldDeclaration()
+			{
+				ReturnType = staticGlobalsType.Clone(),
+				Modifiers = NRefactory.Modifiers.Static,
+				Variables = { new NRefactory.VariableInitializer("Globals", new NRefactory.ObjectCreateExpression(staticGlobalsType.Clone()))}
+			});
+			
 
-            var body = new NRefactory.BlockStatement();
-			foreach (var statement in _topLevel)
-            {
-                var nStatement = ProcessStatement(statement);
-                if (nStatement != null)
-                    body.Statements.Add(nStatement);
+			globalsFile.Members.Add(staticGlobalsSingleton);
+
+			globalsFile.Members.Add(_staticGlobals);
+			
+
+			
+			var result = new List<SourceFileDescription>();
+			
+			foreach (var kvp in _filesToTopLevel)
+			{
+				var file = kvp.Key;
+				var topLevel = kvp.Value;
+
+				var syntaxTree = NewSyntaxTree();
+				typeForJamFile = new NRefactory.TypeDeclaration { Name = ConverterLogic.ClassNameForJamFile(file.FileName) };
+				syntaxTree.Members.Add(typeForJamFile);
+
+				
+
+				typeForJamFile.Members.Add(new NRefactory.FieldDeclaration() { ReturnType = StaticGlobalsType, Modifiers = NRefactory.Modifiers.Static, Variables = { new NRefactory.VariableInitializer("Globals", new NRefactory.ObjectCreateExpression(StaticGlobalsType)) } });
+
+				var body = new NRefactory.BlockStatement();
+				foreach (var statement in topLevel.Statements)
+				{
+					var nStatement = ProcessStatement(statement);
+					if (nStatement != null)
+						body.Statements.Add(nStatement);
+				}
+				body.Statements.Add(
+					new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("Globals.SendVariablesToJam")));
+
+				typeForJamFile.Members.Add(new NRefactory.MethodDeclaration
+				{
+					Name = "TopLevel",
+					ReturnType = new NRefactory.PrimitiveType("void"),
+					Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
+					Body = body
+				});
+				result.Add(new SourceFileDescription() { FileName = typeForJamFile.Name+".cs", Contents = syntaxTree.ToString()});
 			}
-			body.Statements.Add (new NRefactory.InvocationExpression (new NRefactory.IdentifierExpression ("Globals.SendVariablesToJam")));
-            
-            _mainMethod = new NRefactory.MethodDeclaration { Name = "Main", ReturnType = new NRefactory.PrimitiveType("void"), Modifiers = NRefactory.Modifiers.Static, Body = body};
-            _dummyType.Members.Add(_mainMethod);
 
-			var actions = new NRefactory.TypeDeclaration {
-				ClassType = NRefactory.ClassType.Class,
-				Name = "Actions",
+		
+			result.Add(BuildActionsType());
+			result.Add(BuildEntryPoint(_filesToTopLevel.First().Key));
+
+			var globalsFileDescription = new SourceFileDescription()
+			{
+				FileName = "StaticGlobals.cs",
+				Contents = globalsFile.ToString()
 			};
-			foreach (var action in _actions.DistinctBy(a => a.Name)) 
-			{
-				var actionWrapperBody = new NRefactory.BlockStatement();
-
-				actionWrapperBody.Statements.Add (new NRefactory.ReturnStatement (
-					new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("InvokeRule"), new NRefactory.Expression[]{
-						new NRefactory.PrimitiveExpression(action.Name),
-						new NRefactory.IdentifierExpression("values"),
-					})
-				));
-				var actionMethod = new NRefactory.MethodDeclaration { Name = action.Name, ReturnType = JamListAstType, Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public, Body = actionWrapperBody };
-				actionMethod.Parameters.Add (new NRefactory.ParameterDeclaration( new NRefactory.PrimitiveType("JamList[]"), "values", NRefactory.ParameterModifier.Params));
-				actions.Members.Add(actionMethod);
-			}
-			_dummyType.Members.Add(actions);
-
-			return new[] {new SourceFileDescription() {FileName = "Dummy.cs", Contents = _syntaxTree.ToString()}};
+			result.Add(globalsFileDescription);
+			return result.ToArray();
         }
+
+	    private SourceFileDescription BuildEntryPoint(SourceFileDescription firstJamFile)
+	    {		
+		    var syntaxTree = NewSyntaxTree();
+		    var entrypointType = new NRefactory.TypeDeclaration() {Name = "EntryPoint"};
+		    var mainMethod = new NRefactory.MethodDeclaration
+		    {
+			    Name = "Main",
+			    Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
+			    Body = new NRefactory.BlockStatement(),
+				ReturnType = new NRefactory.PrimitiveType("void")
+		    };
+
+		    var types =
+			    _filesToTopLevel.Keys.Select(file => ConverterLogic.ClassNameForJamFile(file.FileName))
+				    .Select(name => new NRefactory.SimpleType(name))
+				    .Prepend(new NRefactory.SimpleType("Actions")).Select(st => new NRefactory.TypeOfExpression(st));
+
+		    var objectCreateExpression = new NRefactory.ObjectCreateExpression(new NRefactory.SimpleType(nameof(DynamicRuleInvocationService)), types);
+		    var assignment =
+			    new NRefactory.AssignmentExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(nameof(DynamicRuleInvocationService)),"Instance"), objectCreateExpression);
+
+			mainMethod.Body.Statements.Add(assignment);
+
+			var topLevelMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(firstJamFile.FileName)), "TopLevel");
+		    mainMethod.Body.Statements.Add(new NRefactory.ExpressionStatement() {Expression = new NRefactory.InvocationExpression(topLevelMethod)});
+			
+			syntaxTree.Members.Add(entrypointType);
+			entrypointType.Members.Add(mainMethod);
+
+			return new SourceFileDescription()
+		    {
+			    FileName = "EntryPoint.cs",
+			    Contents = syntaxTree.ToString()
+			};
+	    }
+
+	    private SourceFileDescription BuildActionsType()
+	    {
+		    var actions = new NRefactory.TypeDeclaration
+		    {
+			    ClassType = NRefactory.ClassType.Class,
+			    Name = "Actions",
+		    };
+		    foreach (var action in _allActions.DistinctBy(a => a.Name))
+		    {
+			    var actionWrapperBody = new NRefactory.BlockStatement();
+
+			    actionWrapperBody.Statements.Add(new NRefactory.ReturnStatement(
+				    new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("InvokeRule"), new NRefactory.Expression[]
+				    {
+					    new NRefactory.PrimitiveExpression(action.Name),
+					    new NRefactory.IdentifierExpression("values"),
+				    })
+				    ));
+			    var actionMethod = new NRefactory.MethodDeclaration
+			    {
+				    Name = action.Name,
+				    ReturnType = JamListAstType,
+				    Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
+				    Body = actionWrapperBody
+			    };
+			    actionMethod.Parameters.Add(new NRefactory.ParameterDeclaration(new NRefactory.PrimitiveType("JamList[]"), "values",
+				    NRefactory.ParameterModifier.Params));
+			    actions.Members.Add(actionMethod);
+		    }
+		    var syntaxtree = NewSyntaxTree();
+		    syntaxtree.Members.Add(actions);
+		    var sourceFileDescription = new SourceFileDescription() {FileName = "Actions.cs", Contents = syntaxtree.ToString()};
+		    return sourceFileDescription;
+	    }
+
+	    private static NRefactory.SyntaxTree NewSyntaxTree()
+	    {
+		    var syntaxTree = new NRefactory.SyntaxTree();
+		    syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System"));
+		    syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System.Linq"));
+		    syntaxTree.Members.Add(new NRefactory.UsingDeclaration("runtimelib"));
+		    syntaxTree.Members.Add(new NRefactory.UsingDeclaration("static BuiltinFunctions"));
+			syntaxTree.Members.Add(new NRefactory.UsingDeclaration("static StaticGlobalsSingleton"));
+			return syntaxTree;
+	    }
 
 	    private static NRefactory.SimpleType DynamicRuleInvocationServiceType
 	    {
@@ -146,8 +236,25 @@ namespace jamconverter
 	        if (statement is OnStatement)
 		        return ProcessOnStatement((OnStatement) statement);
 
+	        if (statement is IncludeStatement)
+		        return ProcessIncludeStatement((IncludeStatement) statement);
+
 	        return ProcessExpressionStatement((ExpressionStatement) statement);
         }
+
+	    private NRefactory.Statement ProcessIncludeStatement(IncludeStatement statement)
+	    {
+		    var literal = statement.Expression as LiteralExpression;
+		    if (literal != null)
+		    {
+			    var memberReferenceExpression = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(literal.Value)), "TopLevel");
+
+			    return new NRefactory.ExpressionStatement(new NRefactory.InvocationExpression(memberReferenceExpression));
+		    }
+
+			var memberReferenceExpression2 = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(nameof(DynamicRuleInvocationService)),"Instance.DynamicInclude");
+			return new NRefactory.ExpressionStatement(new NRefactory.InvocationExpression(memberReferenceExpression2, ProcessExpression(statement.Expression)));
+		}
 
 		private NRefactory.Expression GetActionModifiers (ActionsDeclarationStatement statement)
 		{
@@ -438,7 +545,7 @@ namespace jamconverter
             {
 				Name = methodName,
                 ReturnType = JamListAstType,
-                Modifiers = NRefactory.Modifiers.Static,
+                Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
                 Body = body
             };
             processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a => new NRefactory.ParameterDeclaration(JamListAstType, ArgumentNameFor(a))));
@@ -459,7 +566,7 @@ namespace jamconverter
             if (!DoesBodyEndWithReturnStatement(ruleDeclaration))
                 body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.NullReferenceExpression()));
             
-            _dummyType.Members.Add(processRuleDeclarationStatement);
+            typeForJamFile.Members.Add(processRuleDeclarationStatement);
         }
 
 	    private static bool DoesBodyEndWithReturnStatement(RuleDeclarationStatement ruleDeclaration)
@@ -496,12 +603,12 @@ namespace jamconverter
 
 		private bool IsActions(string name)
 		{
-			return _actions.Any(x => x.Name == name);
+			return _allActions.Any(x => x.Name == name);
 		}
 
 		private bool IsRule(string name)
 		{
-			return _rules.Any(x => x.Name == name);
+			return _allRules.Any(x => x.Name == name);
 		}
 			
         private static string MethodNameFor(string ruleName)
@@ -638,7 +745,7 @@ namespace jamconverter
 		    }
 
 		    var arguments = invocationExpression.Arguments.Select(a => ProcessExpressionList(a)).Prepend(ProcessExpression(ruleExpression));
-			return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("_dynamicRuleInvocationService"),"InvokeRule"),arguments);
+			return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(nameof(DynamicRuleInvocationService)+".Instance"),"InvokeRule"),arguments);
 		}
 
 	    private NRefactory.Expression ProcessExpansionStyleExpression(ExpansionStyleExpression expansionStyleExpression)

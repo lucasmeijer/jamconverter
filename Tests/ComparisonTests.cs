@@ -681,14 +681,46 @@ Echo @(harry:S=.exe) ;
 
 myvar = hello there ;
 Echo @($(myvar)/somepath:S=.ini) ;
-
-
-
 "
 			);
 		}
 
-	    private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
+
+		[Test]
+		public void Include()
+		{
+			var jam1 =
+@"
+Echo jam1 ;
+myvar = hello ;
+include file2.jam ;
+mydynamicfiles = file3.jam myfile2.jam ;
+include $(mydynamicfile) ;
+Echo jam1 post ;
+";
+			var jam2 =
+@"
+Echo hello $(hello) ;
+Echo Jam2 ;
+";
+
+			var jam3 =
+@"
+Echo hello $(hello) ;
+Echo Jam3 ;
+";
+
+			var jamProgram = new[]
+			{
+				new SourceFileDescription() { Contents = jam1, FileName = "Jamfile.jam" },
+				new SourceFileDescription() { Contents = jam2, FileName = "file2.jam" },
+				new SourceFileDescription() { Contents = jam3, FileName = "file3.jam" }
+			};
+			
+			AssertConvertedProgramHasIdenticalOutput(jamProgram);
+		}
+
+		private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(new[] {new SourceFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}});
 	    }

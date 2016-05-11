@@ -19,29 +19,6 @@ Echo $(a)$(a) ;
             CollectionAssert.AreEqual(new[] {"harryharry harrysally sallyharry sallysally "}, output);
         }
 
-		[Test]
-		public void CanRunMultifileProgram()
-		{
-			var jam1 =
-@"
-Echo jam1 ;
-include file2.jam ;
-Echo jam1 post ;
-";
-			var jam2 =
-@"
-Echo Jam2 ;
-";
-
-			var jamRunner = new JamRunner();
-			var output = jamRunner.Run(new[]
-			{
-				new SourceFileDescription() { Contents = jam1, FileName = "Jamfile.jam" },
-				new SourceFileDescription() { Contents = jam2, FileName = "file2.jam" }
-			});
-			CollectionAssert.AreEqual(new[] { "jam1 ","Jam2 ","jam1 post " }, output);
-		}
-
 
 
 		[Test]

@@ -78,7 +78,16 @@ namespace jamconverter.AST
         public T this[int i] => _elements[i];
     }
 
-    public class Expression : Node
+	public class TopLevel : Node
+	{
+		public NodeList<Statement> Statements
+		{
+			get { return GetChild(Roles.Statements); }
+			set { SetChild(Roles.Statements, value); }
+		}
+	}
+
+	public class Expression : Node
     {
     }
 
@@ -106,6 +115,15 @@ namespace jamconverter.AST
             set { SetChild(Roles.Else, value); }
         }
     }
+
+	public class IncludeStatement : Statement
+	{
+		public Expression Expression
+		{
+			get { return GetChild(Roles.Expression); }
+			set { SetChild(Roles.Expression, value); }
+		}
+	}
 
     public class BlockStatement : Statement
     {

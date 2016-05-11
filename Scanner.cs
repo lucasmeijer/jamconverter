@@ -127,6 +127,9 @@ namespace jamconverter
                     return TokenType.Return;
                 case "actions":
                     return TokenType.Actions;
+				case "include":
+				case "Include":
+		            return TokenType.Include;
                 case "on":
                     return TokenType.On;
                 case "!":
@@ -333,6 +336,7 @@ namespace jamconverter
 	    And,
 	    Or,
 	    NotEqual,
-	    LiteralExpansion
+	    LiteralExpansion,
+	    Include
     }
 }
