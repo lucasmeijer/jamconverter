@@ -572,7 +572,7 @@ namespace jamconverter
                 body.Statements.Add(ProcessStatement(subStatement));
 
             if (!DoesBodyEndWithReturnStatement(ruleDeclaration))
-                body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.NullReferenceExpression()));
+                body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.ObjectCreateExpression(JamListAstType)));
             
             typeForJamFile.Members.Add(processRuleDeclarationStatement);
         }
