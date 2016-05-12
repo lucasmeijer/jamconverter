@@ -334,7 +334,7 @@ namespace jamconverter
         public ScanToken Is(TokenType tokenType)
         {
             if (this.tokenType != tokenType)
-                throw new ParsingException();
+				throw new ParsingException(string.Format("Expected token {0}, but got {1}", tokenType, this.tokenType));
             return this;
         }
 

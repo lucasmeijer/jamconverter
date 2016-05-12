@@ -28,9 +28,7 @@ namespace jamconverter
                 return Next();
             }
 
-            var result = _scanTokens[_cursor++];
-			//Console.Write(result.literal);
-			return result;
+            return _scanTokens[_cursor++];
         }
 
         public ScanToken Peek(bool skipWhiteSpace = true)
