@@ -30,7 +30,7 @@ namespace jamconverter
 			    }
 			    return result;
 		    }
-		    catch (ParsingException)
+		    catch (Exception)
 		    {
 			    Console.WriteLine("Parsing failed. Previous 20 tokens:");
 			    var cursor = _scanResult.GetCursor();
