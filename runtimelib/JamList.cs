@@ -262,9 +262,11 @@ public class JamList : IEnumerable<string>
 		return AsBool() || value;
 	}
 
-	public JamList PModifier_TODO(params JamList[] value)
+	public JamList ParentDirectory(params JamList[] value)
 	{
-		throw new NotImplementedException();
+		return new JamList(
+			Elements.Select(e => new NPath(e).Parent.ToString(SlashMode.Forward)).ToArray()
+		);
 	}
 
 	public JamList Rooted(params JamList[] value)

@@ -845,7 +845,7 @@ namespace jamconverter
 				case 'R':
 		            return "Rooted";
 				case 'P':
-		            return "PModifier_TODO";
+		            return "ParentDirectory";
 				
                 default:
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);

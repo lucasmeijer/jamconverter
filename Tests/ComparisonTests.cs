@@ -29,6 +29,20 @@ namespace jamconverter.Tests
             AssertConvertedProgramHasIdenticalOutput("Echo Hello There Sailor ;");
         }
 
+		[Test]
+		public void EchoEdgeCases()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+list = """" ;
+Echo $(list) ; # No output.
+
+list = """" foo ;
+Echo $(list) ;
+"
+			);
+		}
+
         [Test]
         public void VariableExpansion()
         {
@@ -283,6 +297,26 @@ multipleRoots = /foo /phumt ;
 Echo $(rooted:R=/foo) ;
 Echo $(notRooted:R=/foo) ;
 Echo $(notRooted:R=$(multipleRoots)) ;
+"
+			);
+		}
+
+		[Test]
+		public void ParentDirectoryModifier()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+path = /foo/bar ;
+Echo 1 $(path:P) ;
+
+nonpath = bar foo ;
+Echo 2 $(nonpath:P) ;
+
+multipleElements = foo bar foo/bar ;
+Echo 3 $(multipleElements:P) ;
+
+empty = ;
+Echo 4 $(empty:P) ;
 "
 			);
 		}
@@ -690,6 +724,26 @@ Echo 1 $(mylist:I=$(x)) ;
 "
 			);
 	    }
+
+		[Test]
+		public void BinaryOperatorPrecedence()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+#if 1 && 1 { echo 2 ; }
+#if 1 && 1 && 1 { echo 3 ; }
+#if 1 && 1 && 1 && 1 { echo 4 ; }
+#if ( 1 ) && ( 1 ) { }
+
+false = ;
+
+if ( $(false) && $(false) ) { Echo true ; }
+
+if 1 || $(false) && $(false) { Echo true ; }
+#if ( 1 || $(false) ) && $(false) { Echo false ; }
+"
+			);
+		}
 
 		[Test]
 		public void Parenthesis()
