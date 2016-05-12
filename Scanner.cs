@@ -167,6 +167,10 @@ namespace jamconverter
                     return TokenType.SubtractOperator;
                 case "?=":
                     return TokenType.AssignmentIfEmpty;
+				case "<":
+		            return TokenType.LessThan;
+				case ">":
+		            return TokenType.GreaterThan;
                 case "for":
                     return TokenType.For;
                 case "in":
@@ -377,6 +381,8 @@ namespace jamconverter
 	    And,
 	    Or,
 	    NotEqual,
-	    Include
-    }
+	    Include,
+	    GreaterThan,
+		LessThan
+	}
 }

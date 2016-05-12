@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -260,9 +261,33 @@ public class JamList : IEnumerable<string>
 		return AsBool() || value;
 	}
 
+	public JamList PModifier_TODO(params JamList[] value)
+	{
+		throw new NotImplementedException();
+	}
+
+	public JamList Rooted_TODO(params JamList[] value)
+	{
+		throw new NotImplementedException();
+	}
+
 	public bool NotJamEquals(JamList value)
 	{
 		return !JamEquals(value);
+	}
+
+	public bool GreaterThan(JamList right)
+	{
+		int leftInt = int.Parse(Elements.Single());
+		int rightInt = int.Parse(right.Elements.Single());
+		return leftInt > rightInt;
+	}
+
+	public bool LessThan(JamList right)
+	{
+		int leftInt = int.Parse(Elements.Single());
+		int rightInt = int.Parse(right.Elements.Single());
+		return leftInt < rightInt;
 	}
 }
 

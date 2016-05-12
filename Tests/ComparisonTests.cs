@@ -321,6 +321,21 @@ Echo $(myvar) ;
 ");
         }
 
+	    [Test]
+	    public void GreaterThanOperator()
+	    {
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+rule Return3 { return 3 ; }
+rule Return0 { return 0 ; }
+if [ Return3 ] > 1 { Echo Yes ; } else { Echo no ; }
+if [ Return0 ] > 1 { Echo Yes ; } else { Echo no ; }
+
+if [ Return3 ] < 3 { Echo Yes ; } else { Echo no ; }
+if [ Return0 ] < 3 { Echo Yes ; } else { Echo no ; }
+
+");
+		}
 
         [Test]
         public void GristVariableExpansion()
