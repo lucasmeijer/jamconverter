@@ -34,10 +34,12 @@ namespace jamconverter
 		    {
 			    Console.WriteLine("Parsing failed. Previous 20 tokens:");
 			    var cursor = _scanResult.GetCursor();
-				_scanResult.SetCursor(Math.Max(0,cursor-20));
-			    for (int i = 0; i != 20 && !_scanResult.IsAtEnd; i++)
+				var firstToken = Math.Max(0, cursor - 20);
+				_scanResult.SetCursor(firstToken);
+			    for (int i = firstToken; i != cursor; i++)
 			    {
-				    Console.WriteLine(_scanResult.Next().literal);
+					var token = _scanResult.Next();
+				    Console.WriteLine(string.Format("cursor={0} type={1} literal='{2}'", i, token.tokenType, token.literal));
 			    }
 			    throw;
 		    }
