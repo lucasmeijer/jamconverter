@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.AccessControl;
 using System.Text;
 using System.Text.RegularExpressions;
+using NiceIO;
 
 public class JamList : IEnumerable<string>
 {
@@ -266,9 +267,14 @@ public class JamList : IEnumerable<string>
 		throw new NotImplementedException();
 	}
 
-	public JamList Rooted_TODO(params JamList[] value)
+	public JamList Rooted(params JamList[] value)
 	{
-		throw new NotImplementedException();
+		var roots = ElementsOf(value);
+		return new JamList(
+			Elements.SelectMany(
+				path => roots.Select(root => path.StartsWith(root) ? path : new NPath(root).Combine(path).ToString(SlashMode.Forward))
+			).ToArray()
+		);
 	}
 
 	public bool NotJamEquals(JamList value)

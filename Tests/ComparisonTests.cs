@@ -272,6 +272,22 @@ Echo $(myvar:S=) ;
         }
 
 		[Test]
+		public void RootedModifier()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+rooted = /foo/bar ;
+notRooted = bar ;
+multipleRoots = /foo /phumt ;
+
+Echo $(rooted:R=/foo) ;
+Echo $(notRooted:R=/foo) ;
+Echo $(notRooted:R=$(multipleRoots)) ;
+"
+			);
+		}
+
+		[Test]
 		[Ignore("Need to investigate jam behaviour")]
 		public void MultipleDifferentModifiers()
 		{
