@@ -15,9 +15,10 @@ namespace jamconverter
 				throw new System.ArgumentException ();
 			var inputPath = args [0];
 			var inputContents = File.ReadAllText (inputPath);
-			var csharp = new JamToCSharpConverter().Convert(inputContents);
-			File.WriteAllText (Path.GetFileNameWithoutExtension (inputPath) + ".cs", csharp);
-
+			var input = new[] { new jamconverter.Tests.SourceFileDescription { FileName = inputPath, Contents = inputContents } };
+			var csharp = new JamToCSharpConverter().Convert(input);
+			foreach (var convertedFile in csharp)
+				File.WriteAllText (convertedFile.FileName, convertedFile.Contents);
         }
     }
 }

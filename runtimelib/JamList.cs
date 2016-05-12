@@ -81,23 +81,55 @@ public class JamList : IEnumerable<string>
 
     public JamList IndexedBy(JamList indices)
     {
-        return new JamList(indices._elements.Select(i => DoIndex(_elements,i)).Where(e => e != null).ToArray());
-    }
+		var result = new JamList();
+		foreach (var index in indices) {
+			var indexJamList = DoIndex (_elements, index);
+			if (indexJamList != null)
+				result._elements = result._elements.Concat (indexJamList).ToArray ();
+		}
+		
+		return result;
+	}
 
-    private string DoIndex(string[] elements, string indexString)
+	private string[] DoIndex(string[] elements, string indexString)
     {
-        int jamIndex = 0;
-        if (!int.TryParse(indexString, out jamIndex))
-            throw new NotSupportedException("Cannot index by non-integer: " + indexString);
+		int lowerBound = 1;
+		var higherBound = elements.Length;
+		var dashIndex = indexString.IndexOf("-");
+		var nsException = new NotSupportedException ("Cannot index by non-integer: " + indexString);
+		if (dashIndex == -1) {
+			if (!int.TryParse (indexString, out higherBound))
+				throw nsException;
+			lowerBound = higherBound;
+		} else if (dashIndex == 0) {
+			
+			if (!int.TryParse (indexString.Substring (1), out higherBound))
+				throw nsException;
+		} else if (dashIndex == indexString.Length - 1) {
+			if (!int.TryParse (indexString.Substring (0, indexString.Length - 1), out lowerBound))
+				throw nsException;
+		} else {
+			var split = indexString.Split(new[]{'-'});
+			if (!int.TryParse (split[0], out lowerBound))
+				throw nsException;
+			if (!int.TryParse (split[1], out higherBound))
+				throw nsException;
+		}
 
+		if (lowerBound > elements.Length)
+			return null;
 
-        if (jamIndex < 1 || jamIndex > elements.Length)
-            return null;
-
-        //jam list indexing starts counting at 1.
-        var csharpIndex = jamIndex - 1;
-        
-        return elements[csharpIndex];
+		if (higherBound < lowerBound)
+			higherBound = lowerBound;
+		if (lowerBound < 1)
+			lowerBound = 1;
+		if (higherBound < 1)
+			higherBound = 1;
+		if (higherBound > elements.Length)
+			higherBound = elements.Length;
+		
+        //jam list indexing starts counting at 1.       
+		return elements.Skip(lowerBound-1).Take(higherBound-lowerBound+1).ToArray();
     }
 
     public bool JamEquals(JamList other)
@@ -122,7 +154,17 @@ public class JamList : IEnumerable<string>
         return new JamList(_elements.Select(UnGrist).ToArray());
     }
 
-    private string UnGrist(string s)
+	public JamList ToUpper(JamList value)
+	{
+		return new JamList(_elements.Select(e => e.ToUpperInvariant()).ToArray());
+	}
+
+	public JamList ToLower(JamList value)
+	{
+		return new JamList(_elements.Select(e => e.ToLowerInvariant()).ToArray());
+	}
+
+	private string UnGrist(string s)
     {
         if (!s.StartsWith("<"))
             return s;
@@ -166,9 +208,9 @@ public class JamList : IEnumerable<string>
         return _elements.Length > 0;
     }
 
-    public void Subtract(JamList values)
+    public void Subtract(params JamList[] values)
     {
-        _elements = _elements.Where(e => !values.Elements.Contains(e)).ToArray();
+		_elements = _elements.Where(e => !ElementsOf(values).Contains(e)).ToArray();
     }
 
     public IEnumerator<string> GetEnumerator()

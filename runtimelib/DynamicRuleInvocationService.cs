@@ -16,6 +16,10 @@ namespace runtimelib
 
 		public JamList InvokeRule(JamList jamList, params JamList[] arguments)
 		{
+			#if EMBEDDED_MODE
+			// Todo: Invoke multiple rules?
+			return BuiltinFunctions.InvokeRule(jamList.First(), arguments);
+			#else
 			var results = new JamList();
 			foreach (var value in jamList.Elements)
 			{
@@ -23,9 +27,22 @@ namespace runtimelib
 				if (method == null)
 					throw new ArgumentException("Unable to find dynamically invoked rule: " + value);
 
-				results.Append((JamList) method.Invoke(null, arguments));
+				results.Append (InvokeMethod (method, arguments));
 			}
 			return results;
+			#endif
+		}
+
+		static JamList InvokeMethod (MethodInfo method, JamList[] arguments)
+		{
+			bool isParamsMethod = method.GetParameters ().Any () && method.GetParameters () [0].ParameterType.IsArray;
+
+			var targetArguments = isParamsMethod ? new object[] { arguments } : arguments;
+
+			object result = method.Invoke (null, targetArguments);
+			if (result == null)
+				return new JamList ();
+			return (JamList)result;
 		}
 
 		public void DynamicInclude(JamList value)
@@ -39,7 +56,7 @@ namespace runtimelib
 
 		private MethodInfo FindMethod(string methodName)
 		{
-			return _types.SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static)).FirstOrDefault(m => m.Name == methodName);
+			return _types.SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static)).FirstOrDefault(m => m.Name == ConverterLogic.CleanIllegalCharacters(methodName));
 		}
 	}
 }

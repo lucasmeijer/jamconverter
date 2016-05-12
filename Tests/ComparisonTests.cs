@@ -400,6 +400,7 @@ Echo d ;
         }
 
         [Test]
+		[Ignore("only works on pc")]
         public void BuiltinMD5()
         {
             AssertConvertedProgramHasIdenticalOutput("Echo [ MD5 harry ] ;");
@@ -447,6 +448,8 @@ Echo $(myvar) ;
 @"
 myvar = a b c d e ; 
 Echo $(myvar[2]) ;
+Echo $(myvar[2-3]) ;
+Echo $(myvar[2-]) ;
 
 myindex = 3 ;
 Echo $(myvar[$(myindex)]) ;
@@ -459,6 +462,9 @@ Echo $(myvar[$(myindices)]:S=.mysuffix) ;
 #index out of range:
 myvar = a b c ;
 Echo $(myvar[4]) ;
+Echo $(myvar[0]) ;
+Echo $(myvar[0-4]) ;
+
 
 myvar = a b c ;
 myindices = 1 5 3 ;  #note 5 is out of range
@@ -596,6 +602,17 @@ Echo $(mylist) ;
 
 ");
         }
+
+		[Test]
+		public void UpperLowerCaseModifiers()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+				@"
+mylist = hello there sailor.c ; 
+Echo $(mylist:U) ;
+Echo $(mylist:L) ;
+");
+		}
 
 
 		[Test]
