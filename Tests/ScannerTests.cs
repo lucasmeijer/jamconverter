@@ -120,6 +120,20 @@ namespace jamconverter.Tests
             Assert.AreEqual("v", result[6].literal);
         }
 
+		[Test]
+		public void VariableExpansionWithComparisonOperators()
+		{
+			var a = new Scanner("$(<) $(>)");
+			var result = a.ScanAllTokens().ToArray();
+
+			Assert.That(result.Length, Is.EqualTo(8));
+			Assert.That(result[0].tokenType, Is.EqualTo(TokenType.VariableDereferencerOpen));
+			Assert.That(result[0].literal, Is.EqualTo("$("));
+			Assert.That(result[1].tokenType, Is.EqualTo(TokenType.Literal));
+			Assert.That(result[1].literal, Is.EqualTo("<"));
+			Assert.That(result[5].literal, Is.EqualTo(">"));
+		}
+
         [Test]
         public void DontCombineNewLineAndWhiteSpaceInSingleToken()
         {

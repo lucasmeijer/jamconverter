@@ -119,29 +119,44 @@ namespace jamconverter
 
             var tokenType = TokenType.Literal;
             if (isUnquotedLiteral)
-                tokenType = TokenTypeFor(literal);
+			{
+				bool hasWhitespaceBefore = (oldPosition == 0 || char.IsWhiteSpace(_input[oldPosition - 1]));
+				bool hasWhitespaceAfter = (nextChar == _input.Length || char.IsWhiteSpace(_input[nextChar]));
+
+				tokenType = TokenTypeFor(literal, hasWhitespaceAfter && hasWhitespaceBefore);
+			}
 
             return new ScanToken() {tokenType = tokenType, literal = literal};
         }
         
-        private TokenType TokenTypeFor(string literal)
+        private TokenType TokenTypeFor(string literal, bool hasWhitespaceAround)
         {
             switch (literal)
             {
                 case ";":
-                    return TokenType.Terminator;
+					if (hasWhitespaceAround)
+						return TokenType.Terminator;
+					break;
                 case "[":
                     return TokenType.BracketOpen;
                 case "]":
                     return TokenType.BracketClose;
                 case ":":
-                    return TokenType.Colon;
+					if (_insideVariableExpansionDepth > 0 || hasWhitespaceAround)
+						return TokenType.Colon;
+					break;
                 case "{":
-                    return TokenType.AccoladeOpen;
+					if (hasWhitespaceAround)
+						return TokenType.AccoladeOpen;
+					break;
                 case "}":
-                    return TokenType.AccoladeClose;
+					if (hasWhitespaceAround)
+						return TokenType.AccoladeClose;
+					break;
                 case "=":
-                    return TokenType.Assignment;
+					if (_insideVariableExpansionModifierSpan || hasWhitespaceAround)
+						return TokenType.Assignment;
+					break;
                 case "if":
                     return TokenType.If;
                 case "rule":
@@ -168,9 +183,13 @@ namespace jamconverter
                 case "?=":
                     return TokenType.AssignmentIfEmpty;
 				case "<":
-		            return TokenType.LessThan;
+					if (hasWhitespaceAround)
+						return TokenType.LessThan;
+					break;
 				case ">":
-		            return TokenType.GreaterThan;
+					if (hasWhitespaceAround)
+						return TokenType.GreaterThan;
+					break;
                 case "for":
                     return TokenType.For;
                 case "in":
@@ -191,10 +210,8 @@ namespace jamconverter
 		            return TokenType.Or;
 				case "!=":
 		            return TokenType.NotEqual;
-                    
-                default:
-                    return TokenType.Literal;
             }
+            return TokenType.Literal;
         }
 
         private StringBuilder _builder = new StringBuilder();

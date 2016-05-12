@@ -597,13 +597,6 @@ actions response myactionname
 	    }
 
 		[Test]
-		public void for_rene()
-		{
-			var jam = @"editorIncludesText += ""if (!strcmp(\""$(platform)\"", platformDefine))$(NEWLINE){$(NEWLINE)"" ; ";
-			ParseStatement<AssignmentStatement>(jam);
-		}
-
-		[Test]
 		public void ForwardToBackslashExpansionModifier()
 		{
 			var jam = @"$(winRTLegacyDll:\\\\:C) ;";
