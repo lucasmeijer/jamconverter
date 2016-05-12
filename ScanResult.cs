@@ -17,10 +17,15 @@ namespace jamconverter
             _scanTokens = scanTokens;
         }
 
+		public bool IsAtEnd
+		{
+			get { return _cursor >= _scanTokens.Length; }
+		}
+
         public ScanToken Next(bool skipWhiteSpace=true)
         {
-            if (_cursor >= _scanTokens.Length)
-                throw new InvalidOperationException();
+            if (IsAtEnd)
+                throw new InvalidOperationException("Reached end of stream while expecting more tokens");
 
             if (_scanTokens[_cursor].tokenType == TokenType.WhiteSpace && skipWhiteSpace)
             {
@@ -28,14 +33,12 @@ namespace jamconverter
                 return Next();
             }
 
-            var result = _scanTokens[_cursor++];
-			//Console.Write(result.literal);
-			return result;
+            return _scanTokens[_cursor++];
         }
 
         public ScanToken Peek(bool skipWhiteSpace = true)
         {
-            if (_cursor >= _scanTokens.Length)
+            if (IsAtEnd)
                 throw new InvalidOperationException();
 
             int tempCursor = _cursor;

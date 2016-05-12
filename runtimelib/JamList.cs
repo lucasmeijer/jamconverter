@@ -213,11 +213,6 @@ public class JamList : IEnumerable<string>
 		return new JamList(input);
 	}
 
-	public JamList Clone()
-	{
-		return new JamList(_elements);
-	}
-
 	public JamList Include(JamList pattern)
 	{
 		if (pattern.Elements.Count() != 1)
@@ -314,6 +309,14 @@ public static class JamListExtensions
 	{
 		foreach (var jamlist in jamlists)
 			jamlist.AssignIfEmpty(values);
+	}
+
+	public static JamList Clone(this JamList list)
+	{
+		if (list == null)
+			return new JamList();
+
+		return new JamList(list.Elements.ToArray());
 	}
 }
 

@@ -37,12 +37,12 @@ namespace jamconverter.Tests
 myvar = 123 ;
 Echo $(myvar) ;
 
-#foo = FOO ;
-#for x in $(foo) { Echo $(x) ; }
-#for x in ""$(foo)"" { Echo $(x) ; }
-#for x in $(""foo)"" { Echo $(x) ; }
+foo = FOO ;
+for x in $(foo) { Echo $(x) ; }
+for x in ""$(foo)"" { Echo $(x) ; }
+for x in $(""foo)"" { Echo $(x) ; }
 #for x in $\(foo) { Echo $(x) ; }
-#for x in \$(foo) { Echo $(x) ; }
+for x in \$(foo) { Echo $(x) ; }
 "
 			);
         }
@@ -412,6 +412,19 @@ Echo d ;
 		}
 
 		[Test]
+		public void AssignResultOfRuleInvocation()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+rule MyRule arg0 : arg1 { Echo $(arg0) $(arg1) ; return ""Hello"" ; }
+
+myvar = [ MyRule a : b ] ;
+Echo $(myvar) ;
+"
+			);
+		}
+
+		[Test]
 		public void RuleInvocationWithImplicitParameters()
 		{
 			AssertConvertedProgramHasIdenticalOutput(@"
@@ -453,6 +466,18 @@ Echo $(myvar[$(myindices)]) ;
 
 ");
         }
+
+		[Test]
+		public void Braces()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+if x { }
+# if x {} # Syntax error in Jam.
+Echo end of test ;
+"
+			);
+		}
 
         [Test]
         public void AppendOperator()
@@ -605,7 +630,6 @@ Echo $(mylist:I=\\.c\$) ;
 		}
 
 	    [Test]
-		[Ignore("broken")]
 	    public void Escaping()
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(
@@ -627,23 +651,26 @@ mylist = foo"" ""bar a\""b ""a b c"": ;
 for e in $(mylist) {
   Echo $(e) ;
 }
+
+local dollar = ""$"" ;
+Echo $(dollar) ;
 "
 			);
 	    }
 
 	    [Test]
-		[Ignore("WIP")]
 	    public void Regex()
 	    {
 			AssertConvertedProgramHasIdenticalOutput(
 @"
 x = x ;
 mylist = x ab) ;
-Echo $(mylist:I=$(x)) ;
-Echo $(mylist:I=$\(x)) ;
-Echo $(mylist:I=\$(x)) ;
-Echo $(mylist:I=b($$)) ;
-Echo $$\(x) ;
+Echo 1 $(mylist:I=$(x)) ;
+#Echo 2 $(mylist:I=$\(x\)) ;
+#Echo 3 $(mylist:I=\$(x)) ;
+#Echo 4 $(mylist:I=\\$(x)) ;
+#Echo 5 $(mylist:I=b($$)) ;
+#Echo 6 $$\(x) ;
 "
 			);
 	    }
@@ -726,6 +753,17 @@ if () {
 # This does not parse in Jam!
 #Echo ) ;
 "
+			);
+		}
+
+		[Test]
+		public void VariableExpansionInString()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = harry ;
+Echo ""bla$(myvar)bla"" ;
+Echo ""bla\\$\\(myvar\\)bla"" ; "
 			);
 		}
 

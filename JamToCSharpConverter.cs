@@ -110,6 +110,17 @@ namespace jamconverter
 				ReturnType = new NRefactory.PrimitiveType("void")
 		    };
 
+			var filesRegistration =
+				new NRefactory.ExpressionStatement(
+					new NRefactory.InvocationExpression(
+						new NRefactory.MemberReferenceExpression(
+							new NRefactory.IdentifierExpression("BuiltinFunctions"),
+							"RegisterJamFiles"),
+						_filesToTopLevel.Keys.Select(file => new NRefactory.PrimitiveExpression(file.FileName))
+					)
+				);
+			mainMethod.Body.Statements.Add(filesRegistration);
+
 		    var types =
 			    _filesToTopLevel.Keys.Select(file => ConverterLogic.ClassNameForJamFile(file.FileName))
 				    .Select(name => new NRefactory.SimpleType(name))
@@ -573,7 +584,7 @@ namespace jamconverter
                 body.Statements.Add(ProcessStatement(subStatement));
 
             if (!DoesBodyEndWithReturnStatement(ruleDeclaration))
-                body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.NullReferenceExpression()));
+                body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.ObjectCreateExpression(JamListAstType)));
             
             typeForJamFile.Members.Add(processRuleDeclarationStatement);
         }
