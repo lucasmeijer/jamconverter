@@ -35,7 +35,7 @@ namespace jamconverter
 			    Console.WriteLine("Parsing failed. Previous 20 tokens:");
 			    var cursor = _scanResult.GetCursor();
 				_scanResult.SetCursor(Math.Max(0,cursor-20));
-			    for (int i = 0; i != 20; i++)
+			    for (int i = 0; i != 20 && !_scanResult.IsAtEnd; i++)
 			    {
 				    Console.WriteLine(_scanResult.Next().literal);
 			    }
