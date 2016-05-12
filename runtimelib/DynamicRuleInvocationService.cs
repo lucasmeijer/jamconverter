@@ -17,7 +17,8 @@ namespace runtimelib
 		public JamList InvokeRule(JamList jamList, params JamList[] arguments)
 		{
 			#if EMBEDDED_MODE
-
+			// Todo: Invoke multiple rules?
+			return BuiltinFunctions.InvokeRule(jamList.First(), arguments);
 			#else
 			var results = new JamList();
 			foreach (var value in jamList.Elements)
