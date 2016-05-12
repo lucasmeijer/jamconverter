@@ -20,12 +20,19 @@ public static class BuiltinFunctions
 
     public static void Echo(params JamList[] values)
     {
+		var allEmpty = true;
 		foreach (var value in values)
 		{
-			Console.Write(value.ToString());
-			Console.Write(" ");
+			var text = value.ToString();
+			if (text.Length > 0)
+			{
+				Console.Write(text);
+				Console.Write(" ");
+				allEmpty = false;
+			}
 		}
-		Console.WriteLine();
+		if (!allEmpty)
+			Console.WriteLine();
     }
 
 	public static JamList InvokeRule (string rulename, params JamList[] values)
