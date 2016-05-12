@@ -68,12 +68,13 @@ namespace jamconverter.Tests
         [Test]
         public void TwoAccolades()
         {
-            var a = new Scanner("{}");
+            var a = new Scanner("{ }");
             var result = a.ScanAllTokens().ToArray();
-            Assert.AreEqual(3, result.Length);
+            Assert.AreEqual(4, result.Length);
             Assert.AreEqual(TokenType.AccoladeOpen, result[0].tokenType);
-            Assert.AreEqual(TokenType.AccoladeClose, result[1].tokenType);
-            Assert.AreEqual(TokenType.EOF, result[2].tokenType);
+            Assert.AreEqual(TokenType.AccoladeClose, result[2].tokenType);
+			Assert.AreEqual(TokenType.WhiteSpace, result[1].tokenType);
+            Assert.AreEqual(TokenType.EOF, result[3].tokenType);
         }
 
         [Test]

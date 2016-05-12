@@ -467,6 +467,18 @@ Echo $(myvar[$(myindices)]) ;
 ");
         }
 
+		[Test]
+		public void Braces()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+if x { }
+# if x {} # Syntax error in Jam.
+Echo end of test ;
+"
+			);
+		}
+
         [Test]
         public void AppendOperator()
         {
