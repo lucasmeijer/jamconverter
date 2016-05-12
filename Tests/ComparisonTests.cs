@@ -37,12 +37,12 @@ namespace jamconverter.Tests
 myvar = 123 ;
 Echo $(myvar) ;
 
-#foo = FOO ;
-#for x in $(foo) { Echo $(x) ; }
-#for x in ""$(foo)"" { Echo $(x) ; }
-#for x in $(""foo)"" { Echo $(x) ; }
+foo = FOO ;
+for x in $(foo) { Echo $(x) ; }
+for x in ""$(foo)"" { Echo $(x) ; }
+for x in $(""foo)"" { Echo $(x) ; }
 #for x in $\(foo) { Echo $(x) ; }
-#for x in \$(foo) { Echo $(x) ; }
+for x in \$(foo) { Echo $(x) ; }
 "
 			);
         }
@@ -659,18 +659,18 @@ Echo $(dollar) ;
 	    }
 
 	    [Test]
-		[Ignore("WIP")]
 	    public void Regex()
 	    {
 			AssertConvertedProgramHasIdenticalOutput(
 @"
 x = x ;
 mylist = x ab) ;
-Echo $(mylist:I=$(x)) ;
-Echo $(mylist:I=$\(x)) ;
-Echo $(mylist:I=\$(x)) ;
-Echo $(mylist:I=b($$)) ;
-Echo $$\(x) ;
+Echo 1 $(mylist:I=$(x)) ;
+#Echo 2 $(mylist:I=$\(x\)) ;
+#Echo 3 $(mylist:I=\$(x)) ;
+#Echo 4 $(mylist:I=\\$(x)) ;
+#Echo 5 $(mylist:I=b($$)) ;
+#Echo 6 $$\(x) ;
 "
 			);
 	    }
