@@ -412,6 +412,19 @@ Echo d ;
 		}
 
 		[Test]
+		public void AssignResultOfRuleInvocation()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+rule MyRule arg0 : arg1 { Echo $(arg0) $(arg1) ; return ""Hello"" ; }
+
+myvar = [ MyRule a : b ] ;
+Echo $(myvar) ;
+"
+			);
+		}
+
+		[Test]
 		public void RuleInvocationWithImplicitParameters()
 		{
 			AssertConvertedProgramHasIdenticalOutput(@"
@@ -453,6 +466,18 @@ Echo $(myvar[$(myindices)]) ;
 
 ");
         }
+
+		[Test]
+		public void Braces()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+if x { }
+# if x {} # Syntax error in Jam.
+Echo end of test ;
+"
+			);
+		}
 
         [Test]
         public void AppendOperator()
@@ -605,7 +630,6 @@ Echo $(mylist:I=\\.c\$) ;
 		}
 
 	    [Test]
-		[Ignore("broken")]
 	    public void Escaping()
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(
@@ -627,6 +651,9 @@ mylist = foo"" ""bar a\""b ""a b c"": ;
 for e in $(mylist) {
   Echo $(e) ;
 }
+
+local dollar = ""$"" ;
+Echo $(dollar) ;
 "
 			);
 	    }
@@ -726,6 +753,17 @@ if () {
 # This does not parse in Jam!
 #Echo ) ;
 "
+			);
+		}
+
+		[Test]
+		public void VariableExpansionInString()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = harry ;
+Echo ""bla$(myvar)bla"" ;
+Echo ""bla\\$\\(myvar\\)bla"" ; "
 			);
 		}
 

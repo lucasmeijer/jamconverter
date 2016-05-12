@@ -68,12 +68,13 @@ namespace jamconverter.Tests
         [Test]
         public void TwoAccolades()
         {
-            var a = new Scanner("{}");
+            var a = new Scanner("{ }");
             var result = a.ScanAllTokens().ToArray();
-            Assert.AreEqual(3, result.Length);
+            Assert.AreEqual(4, result.Length);
             Assert.AreEqual(TokenType.AccoladeOpen, result[0].tokenType);
-            Assert.AreEqual(TokenType.AccoladeClose, result[1].tokenType);
-            Assert.AreEqual(TokenType.EOF, result[2].tokenType);
+            Assert.AreEqual(TokenType.AccoladeClose, result[2].tokenType);
+			Assert.AreEqual(TokenType.WhiteSpace, result[1].tokenType);
+            Assert.AreEqual(TokenType.EOF, result[3].tokenType);
         }
 
         [Test]
@@ -119,6 +120,20 @@ namespace jamconverter.Tests
             
             Assert.AreEqual("v", result[6].literal);
         }
+
+		[Test]
+		public void VariableExpansionWithComparisonOperators()
+		{
+			var a = new Scanner("$(<) $(>)");
+			var result = a.ScanAllTokens().ToArray();
+
+			Assert.That(result.Length, Is.EqualTo(8));
+			Assert.That(result[0].tokenType, Is.EqualTo(TokenType.VariableDereferencerOpen));
+			Assert.That(result[0].literal, Is.EqualTo("$("));
+			Assert.That(result[1].tokenType, Is.EqualTo(TokenType.Literal));
+			Assert.That(result[1].literal, Is.EqualTo("<"));
+			Assert.That(result[5].literal, Is.EqualTo(">"));
+		}
 
         [Test]
         public void DontCombineNewLineAndWhiteSpaceInSingleToken()
