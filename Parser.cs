@@ -502,18 +502,25 @@ namespace jamconverter
 		
         public Expression ParseCondition()
         {
-	        var simpleExpression = this.ParseExpression();
+	        var left = this.ParseExpression();
 
 	        var nextToken = this._scanResult.Peek().tokenType;
-			
 	        if (!IsBinaryOperator(nextToken))
-		        return simpleExpression;
+		        return left;
 
 	        this._scanResult.Next();
-
-	        var right = (nextToken == TokenType.In) ? ParseExpressionList() : new NodeList<Expression>() {ParseCondition()};
-	        return new BinaryOperatorExpression() {Left = simpleExpression, Operator = OperatorFor(nextToken), Right = right};
-	        //if $(rene) in macosx32 macosx64 win32 {}
+			
+			if (nextToken == TokenType.In)
+			{
+				left = new BinaryOperatorExpression { Left = left, Operator = Operator.In, Right = ParseExpressionList() };
+				nextToken = this._scanResult.Peek().tokenType;
+				if (!IsBinaryOperator(nextToken))
+					return left;
+				this._scanResult.Next();
+			}
+			
+	        var right = ParseCondition();
+	        return new BinaryOperatorExpression() {Left = left, Operator = OperatorFor(nextToken), Right = new NodeList<Expression> { right } };
         }
     }
 
