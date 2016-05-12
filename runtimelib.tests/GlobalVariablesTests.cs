@@ -7,11 +7,12 @@ namespace runtimelib.tests
     [TestFixture]
     class GlobalVariablesTests
     {
+		/*
         [Test]
         public void CanRetrieve()
         {
             var globals = new GlobalVariables();
-            var value = new JamList("hello");
+            var value = new LocalJamList("hello");
             globals["myvar"] = value;
             Assert.AreEqual(value, globals["myvar"]);
         }
@@ -20,7 +21,7 @@ namespace runtimelib.tests
         public void GettingNonExistingVariableAndChangingItIsPersistent()
         {
             var globals = new GlobalVariables();
-            var value = new JamList("hello");
+            var value = new LocalJamList("hello");
             globals["myvar"].Append(value);
             
             var jamList = globals["myvar"];
@@ -31,7 +32,7 @@ namespace runtimelib.tests
 		public void CanSetVariableOnTarget()
 	    {
 			var globals = new GlobalVariables();
-			var value = new JamList("hello");
+			var value = new LocalJamList("hello");
 			globals.GetOrCreateVariableOnTargetContext("harry", "myvar").Assign(value);
 			using (globals.OnTargetContext("harry"))
 			{
@@ -43,7 +44,7 @@ namespace runtimelib.tests
 		public void FallsBackToGlobalVariableIfNotFoundOnTarget()
 		{
 			var globals = new GlobalVariables();
-			var hello = new JamList("hello");
+			var hello = new LocalJamList("hello");
 			globals["myglobal"] = hello;
 
 			globals.GetOrCreateVariableOnTargetContext("harry", "dummy").Assign();
@@ -57,7 +58,7 @@ namespace runtimelib.tests
 	    public void IgnoresIfOnTargetDoesNotExist()
 	    {
 		    var globals = new GlobalVariables();
-			var value = new JamList("sally");
+			var value = new LocalJamList("sally");
 		    globals["harry"] = value;
 		    using (globals.OnTargetContext("doesNotExist"))
 		    {
@@ -78,6 +79,25 @@ namespace runtimelib.tests
 				    globals.OnTargetContext("inner");
 			    }, Throws.InstanceOf<NotSupportedException>());
 		    }
+	    }*/
+
+	    [Test]
+	    public void AssignIfEmpty()
+	    {
+		    var g = new GlobalVariables();
+		    var harry = g["harry"];
+		    harry.AssignIfEmpty("sally");
+			CollectionAssert.AreEqual(new[] { "sally"}, harry.Elements);
+	    }
+
+	    [Test]
+	    public void Seiasdioaj()
+	    {
+		    var g = new GlobalVariables();
+		    RemoteJamList[] jamLists = g.RemoteJamListsForVariableOnTargets("myvar", new LocalJamList("target1", "target2"));
+		    jamLists.Assign("c");
+
+			MockJamStorage.Instance.GetValue("myvar")
 	    }
 	}
 }

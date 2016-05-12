@@ -168,11 +168,11 @@ namespace jamconverter
 			    var actionMethod = new NRefactory.MethodDeclaration
 			    {
 				    Name = action.Name,
-				    ReturnType = JamListAstType,
+				    ReturnType = LocalJamListAstType,
 				    Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
 				    Body = actionWrapperBody
 			    };
-			    actionMethod.Parameters.Add(new NRefactory.ParameterDeclaration(new NRefactory.PrimitiveType("JamList[]"), "values",
+			    actionMethod.Parameters.Add(new NRefactory.ParameterDeclaration(new NRefactory.PrimitiveType("LocalJamList[]"), "values",
 				    NRefactory.ParameterModifier.Params));
 			    actions.Members.Add(actionMethod);
 		    }
@@ -357,7 +357,7 @@ namespace jamconverter
         {
             return new NRefactory.ForeachStatement
             {
-                VariableType = JamListAstType,
+                VariableType = LocalJamListAstType,
                 VariableName = statement.LoopVariable.Value,
                 InExpression = new NRefactory.MemberReferenceExpression(ProcessExpressionList(statement.List),"ElementsAsJamLists"),
                 EmbeddedStatement = ProcessStatement(statement.Body)
@@ -456,10 +456,9 @@ namespace jamconverter
                 _staticGlobals.Members.Add(new NRefactory.PropertyDeclaration()
                 {
                     Name = cleanName,
-                    ReturnType = JamListAstType,
+                    ReturnType = JamListBaseAstType,
                     Modifiers = NRefactory.Modifiers.Public,
                     Getter = new NRefactory.Accessor() {Body = new NRefactory.BlockStatement() {Statements = {new NRefactory.ReturnStatement(indexerExpression.Clone())}}},
-                    Setter = new NRefactory.Accessor() {Body = new NRefactory.BlockStatement() { Statements = {new NRefactory.AssignmentExpression(indexerExpression.Clone(), new NRefactory.IdentifierExpression("value"))}} }
                 });
             }
             return new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), cleanName);
@@ -561,13 +560,13 @@ namespace jamconverter
             var processRuleDeclarationStatement = new NRefactory.MethodDeclaration()
             {
 				Name = methodName,
-                ReturnType = JamListAstType,
+                ReturnType = JamListBaseAstType,
                 Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
                 Body = body
             };
             processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a =>
             {
-	            var parameterDeclaration = new NRefactory.ParameterDeclaration(JamListAstType, ArgumentNameFor(a));
+	            var parameterDeclaration = new NRefactory.ParameterDeclaration(JamListBaseAstType, ArgumentNameFor(a));
 				parameterDeclaration.DefaultExpression = new NRefactory.NullReferenceExpression();
 	            return parameterDeclaration;
             }));
@@ -586,7 +585,7 @@ namespace jamconverter
                 body.Statements.Add(ProcessStatement(subStatement));
 
             if (!DoesBodyEndWithReturnStatement(ruleDeclaration))
-                body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.ObjectCreateExpression(JamListAstType)));
+                body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.ObjectCreateExpression(LocalJamListAstType)));
             
             typeForJamFile.Members.Add(processRuleDeclarationStatement);
 
@@ -606,9 +605,10 @@ namespace jamconverter
 		    return statements.Last() is ReturnStatement;
 	    }
 
-	    public static NRefactory.AstType JamListAstType => new NRefactory.SimpleType("JamList");
+	    public static NRefactory.AstType LocalJamListAstType => new NRefactory.SimpleType(nameof(LocalJamList));
+		public static NRefactory.AstType JamListBaseAstType => new NRefactory.SimpleType(nameof(JamListBase));
 
-        private NRefactory.IfElseStatement ProcessIfStatement(IfStatement ifStatement)
+		private NRefactory.IfElseStatement ProcessIfStatement(IfStatement ifStatement)
         {
             return new NRefactory.IfElseStatement(ProcessCondition(ifStatement.Condition), ProcessStatement(ifStatement.Body), ProcessStatement(ifStatement.Else));
         }
@@ -704,7 +704,7 @@ namespace jamconverter
 	        if (expressionsForJamListConstruction.Length == 1)
 		        return expressionsForJamListConstruction[0];
 
-	        return new NRefactory.ObjectCreateExpression(JamListAstType, expressionsForJamListConstruction);
+	        return new NRefactory.ObjectCreateExpression(LocalJamListAstType, expressionsForJamListConstruction);
         }
 
 	    IEnumerable<NRefactory.Expression> ExpressionsForJamListConstruction(NodeList<Expression> expressionList)
@@ -729,7 +729,7 @@ namespace jamconverter
             var combineExpression = e as CombineExpression;
             if (combineExpression != null)
             {
-                var combineMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("JamList"), "Combine");
+                var combineMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("LocalJamList"), "Combine");
                 return new NRefactory.InvocationExpression(combineMethod, combineExpression.Elements.Select(ProcessExpression));
             }
 
@@ -755,7 +755,7 @@ namespace jamconverter
 		    }
 
             if (e == null)
-                return new NRefactory.ObjectCreateExpression(JamListAstType);
+                return new NRefactory.ObjectCreateExpression(LocalJamListAstType);
 
             throw new NotImplementedException("CSharpFor cannot deal with " + e);
         }
@@ -790,8 +790,8 @@ namespace jamconverter
 			//$($(mads));  ->   Globals.DereferenceElements(Globals.mads)
 			//$($($(mads)));  ->   Globals.DereferenceElements(Globals.DereferenceElements(Globals.mads))
 			//
-			//@(mads)      ->   new JamList("mads")
-			//@(mads:S=.exe) -> new JamList("mads").WithSuffix(".exe");
+			//@(mads)      ->   new LocalJamList("mads")
+			//@(mads:S=.exe) -> new LocalJamList("mads").WithSuffix(".exe");
 
 			var resultExpression = ProcessExpansionStyleExpressionVariablePreModifiers(expansionStyleExpression);
 
@@ -816,7 +816,7 @@ namespace jamconverter
 	    private NRefactory.Expression ProcessExpansionStyleExpressionVariablePreModifiers(ExpansionStyleExpression expansionStyleExpression)
 	    {
 			if (expansionStyleExpression is LiteralExpansionExpression)
-				return new NRefactory.ObjectCreateExpression(JamListAstType, ProcessExpression(expansionStyleExpression.VariableExpression));
+				return new NRefactory.ObjectCreateExpression(LocalJamListAstType, ProcessExpression(expansionStyleExpression.VariableExpression));
 			
 			//we know we are a variabledereferenceexpression now
 		    expansionStyleExpression.As<VariableDereferenceExpression>();

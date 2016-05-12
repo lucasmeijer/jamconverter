@@ -14,12 +14,12 @@ public static class BuiltinFunctions
 #endif
 	}
 
-	static string[][] JamListArrayToLOL(JamList[] values)
+	static string[][] JamListArrayToLOL(JamListBase[] values)
 	{
 		return Array.ConvertAll (values, i => i.Elements.ToArray ());
 	}
 
-	public static JamList Echo(params JamList[] values)
+	public static LocalJamList Echo(params JamListBase[] values)
     {
 		foreach (var value in values)
 		{
@@ -31,21 +31,21 @@ public static class BuiltinFunctions
 		//return InvokeRule(nameof(Echo), values);
     }
 
-	public static JamList echo(params JamList[] values)
+	public static LocalJamList echo(params JamListBase[] values)
 	{
 		return Echo (values);
 	}
 
-	public static JamList ECHO(params JamList[] values)
+	public static LocalJamList ECHO(params JamListBase[] values)
 	{
 		return Echo (values);
 	}
 
-	public static JamList InvokeRule (string rulename, params JamList[] values)
+	public static LocalJamList InvokeRule (string rulename, params JamListBase[] values)
 	{
 #if EMBEDDED_MODE
 		GlobalVariables.Singleton.SendVariablesToJam ();
-		return new JamList(Jam.Interop.InvokeRule(rulename, JamListArrayToLOL(values)));
+		return new LocalJamList(Jam.Interop.InvokeRule(rulename, JamListArrayToLOL(values)));
 #else
 		throw new NotImplementedException();
 #endif
@@ -67,244 +67,244 @@ public static class BuiltinFunctions
 			var targetArguments = new object[callback.GetParameters().Length];
 			for (int i=0; i!=targetArguments.Length; i++)
 			{
-				targetArguments[i] = jamLists.Length > i ? new JamList(jamLists[i]) : new JamList();
+				targetArguments[i] = jamLists.Length > i ? new LocalJamList(jamLists[i]) : new LocalJamList();
 			}
 			object result = callback.Invoke(null,targetArguments);
 			if (result == null)
 				return new string[0];
-			return ((JamList)result).Elements.ToArray();
+			return ((LocalJamList)result).Elements.ToArray();
 		};
 		#if EMBEDDED_MODE
 		Jam.Interop.RegisterRule(rulename, d);
 		#endif
 	}
 
-    public static string SwitchTokenFor(JamList input)
+    public static string SwitchTokenFor(JamListBase input)
     {
         return input.Elements.First();
     }
 
-	public static JamList Always (params JamList[] values)
+	public static LocalJamList Always (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Always), values);
 	}
-	public static JamList ALWAYS (params JamList[] values)
+	public static LocalJamList ALWAYS (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(ALWAYS), values);
 	}
-	public static JamList Depends (params JamList[] values)
+	public static LocalJamList Depends (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Depends), values);
 	}
-	public static JamList DEPENDS (params JamList[] values)
+	public static LocalJamList DEPENDS (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(DEPENDS), values);
 	}
-	/*public static JamList echo (params JamList[] values)
+	/*public static LocalJamList echo (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(echo), values);
 	}
-	public static JamList Echo (params JamList[] values)
+	public static LocalJamList Echo (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Echo), values);
 	}
-	public static JamList ECHO (params JamList[] values)
+	public static LocalJamList ECHO (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(ECHO), values);
 	}*/
-	public static JamList exit (params JamList[] values)
+	public static LocalJamList exit (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(exit), values);
 	}
-	public static JamList Exit (params JamList[] values)
+	public static LocalJamList Exit (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Exit), values);
 	}
-	public static JamList EXIT (params JamList[] values)
+	public static LocalJamList EXIT (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(EXIT), values);
 	}
-	public static JamList Glob (params JamList[] values)
+	public static LocalJamList Glob (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Glob), values);
 	}
-	public static JamList GLOB (params JamList[] values)
+	public static LocalJamList GLOB (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(GLOB), values);
 	}
-	public static JamList Includes (params JamList[] values)
+	public static LocalJamList Includes (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Includes), values);
 	}
-	public static JamList INCLUDES (params JamList[] values)
+	public static LocalJamList INCLUDES (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(INCLUDES), values);
 	}
-	public static JamList Leaves (params JamList[] values)
+	public static LocalJamList Leaves (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Leaves), values);
 	}
-	public static JamList LEAVES (params JamList[] values)
+	public static LocalJamList LEAVES (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(LEAVES), values);
 	}
-	public static JamList Match (params JamList[] values)
+	public static LocalJamList Match (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Match), values);
 	}
-	public static JamList MATCH (params JamList[] values)
+	public static LocalJamList MATCH (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(MATCH), values);
 	}
-	public static JamList ForceCare (params JamList[] values)
+	public static LocalJamList ForceCare (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(ForceCare), values);
 	}
-	public static JamList NoCare (params JamList[] values)
+	public static LocalJamList NoCare (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(NoCare), values);
 	}
-	public static JamList NOCARE (params JamList[] values)
+	public static LocalJamList NOCARE (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(NOCARE), values);
 	}
-	public static JamList NOTIME (params JamList[] values)
+	public static LocalJamList NOTIME (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(NOTIME), values);
 	}
-	public static JamList NotFile (params JamList[] values)
+	public static LocalJamList NotFile (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(NotFile), values);
 	}
-	public static JamList NOTFILE (params JamList[] values)
+	public static LocalJamList NOTFILE (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(NOTFILE), values);
 	}
-	public static JamList NoUpdate (params JamList[] values)
+	public static LocalJamList NoUpdate (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(NoUpdate), values);
 	}
-	public static JamList NOUPDATE (params JamList[] values)
+	public static LocalJamList NOUPDATE (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(NOUPDATE), values);
 	}
-	public static JamList Subst (params JamList[] values)
+	public static LocalJamList Subst (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Subst), values);
 	}
-	public static JamList SubstLiteralize (params JamList[] values)
+	public static LocalJamList SubstLiteralize (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(SubstLiteralize), values);
 	}
-	public static JamList Temporary (params JamList[] values)
+	public static LocalJamList Temporary (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Temporary), values);
 	}
-	public static JamList TEMPORARY (params JamList[] values)
+	public static LocalJamList TEMPORARY (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(TEMPORARY), values);
 	}
-	public static JamList QueueJamfile (params JamList[] values)
+	public static LocalJamList QueueJamfile (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(QueueJamfile), values);
 	}
-	public static JamList MD5 (params JamList[] values)
+	public static LocalJamList MD5 (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(MD5), values);
 	}
-	public static JamList MD5File (params JamList[] values)
+	public static LocalJamList MD5File (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(MD5File), values);
 	}
-	public static JamList Math (params JamList[] values)
+	public static LocalJamList Math (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Math), values);
 	}
-	public static JamList W32_GETREG (params JamList[] values)
+	public static LocalJamList W32_GETREG (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(W32_GETREG), values);
 	}
-	public static JamList W32_GETREG64 (params JamList[] values)
+	public static LocalJamList W32_GETREG64 (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(W32_GETREG64), values);
 	}
-	public static JamList W32_SHORTNAME (params JamList[] values)
+	public static LocalJamList W32_SHORTNAME (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(W32_SHORTNAME), values);
 	}
-	public static JamList UseDepCache (params JamList[] values)
+	public static LocalJamList UseDepCache (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(UseDepCache), values);
 	}
-	public static JamList UseFileCache (params JamList[] values)
+	public static LocalJamList UseFileCache (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(UseFileCache), values);
 	}
-	public static JamList OptionalFileCache (params JamList[] values)
+	public static LocalJamList OptionalFileCache (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(OptionalFileCache), values);
 	}
-	public static JamList UseCommandLine (params JamList[] values)
+	public static LocalJamList UseCommandLine (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(UseCommandLine), values);
 	}
-	public static JamList ScanContents (params JamList[] values)
+	public static LocalJamList ScanContents (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(ScanContents), values);
 	}
-	public static JamList SCANCONTENTS (params JamList[] values)
+	public static LocalJamList SCANCONTENTS (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(SCANCONTENTS), values);
 	}
-	public static JamList MightNotUpdate (params JamList[] values)
+	public static LocalJamList MightNotUpdate (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(MightNotUpdate), values);
 	}
-	public static JamList Needs (params JamList[] values)
+	public static LocalJamList Needs (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Needs), values);
 	}
-	public static JamList NEEDS (params JamList[] values)
+	public static LocalJamList NEEDS (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(NEEDS), values);
 	}
-	public static JamList LuaString (params JamList[] values)
+	public static LocalJamList LuaString (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(LuaString), values);
 	}
-	public static JamList LuaFile (params JamList[] values)
+	public static LocalJamList LuaFile (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(LuaFile), values);
 	}
-	public static JamList UseMD5Callback (params JamList[] values)
+	public static LocalJamList UseMD5Callback (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(UseMD5Callback), values);
 	}
-	public static JamList Shell (params JamList[] values)
+	public static LocalJamList Shell (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Shell), values);
 	}
-	public static JamList GroupByVar (params JamList[] values)
+	public static LocalJamList GroupByVar (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(GroupByVar), values);
 	}
-	public static JamList Split (params JamList[] values)
+	public static LocalJamList Split (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(Split), values);
 	}
-	public static JamList ExpandFileList (params JamList[] values)
+	public static LocalJamList ExpandFileList (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(ExpandFileList), values);
 	}
-	public static JamList ListSort (params JamList[] values)
+	public static LocalJamList ListSort (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(ListSort), values);
 	}
-	public static JamList DependsList (params JamList[] values)
+	public static LocalJamList DependsList (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(DependsList), values);
 	}
-	public static JamList RuleExists (params JamList[] values)
+	public static LocalJamList RuleExists (params JamListBase[] values)
 	{
 		return InvokeRule(nameof(RuleExists), values);
 	}

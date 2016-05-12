@@ -172,10 +172,13 @@ if $(myvar) in d e { Echo Yes ; } else { Echo No ; }
         {
             AssertConvertedProgramHasIdenticalOutput(
 @"myvar = a b ; 
-Echo $(myvar) ; 
+#Echo $(myvar) ; 
 
+Echo check1 ;
 harry ?= sally ;
 Echo $(harry) ;
+Echo check2 ;
+
 
 harry ?= sailor ;
 Echo $(harry) ;
