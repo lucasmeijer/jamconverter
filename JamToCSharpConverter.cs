@@ -110,10 +110,12 @@ namespace jamconverter
 				ReturnType = new NRefactory.PrimitiveType("void")
 		    };
 
-		    var types =
-			    _filesToTopLevel.Keys.Select(file => ConverterLogic.ClassNameForJamFile(file.FileName))
-				    .Select(name => new NRefactory.SimpleType(name))
-				    .Prepend(new NRefactory.SimpleType("Actions")).Select(st => new NRefactory.TypeOfExpression(st));
+			var types =
+				_filesToTopLevel.Keys.Select (file => ConverterLogic.ClassNameForJamFile (file.FileName))
+				    .Select (name => new NRefactory.SimpleType (name))
+					.Prepend (new NRefactory.SimpleType ("Actions"))
+					.Prepend (new NRefactory.SimpleType ("BuiltinFunctions"))
+					.Select (st => new NRefactory.TypeOfExpression (st));
 
 		    var objectCreateExpression = new NRefactory.ObjectCreateExpression(new NRefactory.SimpleType(nameof(DynamicRuleInvocationService)), types);
 		    var assignment =
@@ -172,7 +174,8 @@ namespace jamconverter
 	    private static NRefactory.SyntaxTree NewSyntaxTree()
 	    {
 		    var syntaxTree = new NRefactory.SyntaxTree();
-		    syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System"));
+			syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System"));
+			syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System.Reflection"));
 		    syntaxTree.Members.Add(new NRefactory.UsingDeclaration("System.Linq"));
 		    syntaxTree.Members.Add(new NRefactory.UsingDeclaration("runtimelib"));
 		    syntaxTree.Members.Add(new NRefactory.UsingDeclaration("static BuiltinFunctions"));
@@ -200,8 +203,7 @@ namespace jamconverter
 
             if (statement is RuleDeclarationStatement)
             {
-                ProcessRuleDeclarationStatement((RuleDeclarationStatement) statement);
-                return null;
+                return ProcessRuleDeclarationStatement((RuleDeclarationStatement) statement);
             }
 
             if (statement is ReturnStatement)
@@ -408,7 +410,7 @@ namespace jamconverter
 
 	    private NRefactory.Expression ProcessIdentifier(Expression parentExpression, string identifierName)
 	    {
-		    var cleanName = CleanIllegalCharacters(identifierName);
+		    var cleanName = ConverterLogic.CleanIllegalCharacters(identifierName);
 
 		    if (parentExpression != null)
 		    {
@@ -537,7 +539,7 @@ namespace jamconverter
 			return arguments;
 		}
 
-        private void ProcessRuleDeclarationStatement(RuleDeclarationStatement ruleDeclaration)
+        private NRefactory.ExpressionStatement ProcessRuleDeclarationStatement(RuleDeclarationStatement ruleDeclaration)
         {
 			var arguments = SetupArgumentsFor (ruleDeclaration);
 
@@ -576,6 +578,13 @@ namespace jamconverter
                 body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.ObjectCreateExpression(JamListAstType)));
             
             typeForJamFile.Members.Add(processRuleDeclarationStatement);
+
+
+			//do the registration
+
+			var methodInfo = new NRefactory.IdentifierExpression ($"MethodBase.GetCurrentMethod().DeclaringType.GetMethod(nameof({methodName}))");
+
+			return new NRefactory.ExpressionStatement(new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("RegisterRule"), new NRefactory.PrimitiveExpression(ruleDeclaration.Name), methodInfo));
         }
 
 	    private static bool DoesBodyEndWithReturnStatement(RuleDeclarationStatement ruleDeclaration)
@@ -607,7 +616,7 @@ namespace jamconverter
 
         private string ArgumentNameFor(string argumentName)
         {
-            return CleanIllegalCharacters(argumentName);
+            return ConverterLogic.CleanIllegalCharacters(argumentName);
         }
 
 		private bool IsActions(string name)
@@ -622,7 +631,7 @@ namespace jamconverter
 			
         private static string MethodNameFor(string ruleName)
         {
-            return CleanIllegalCharacters(ruleName);
+			return ConverterLogic.CleanIllegalCharacters(ruleName);
         }
 
 		private static string ActionsNameFor(string name)
@@ -633,11 +642,6 @@ namespace jamconverter
         private static string MethodNameFor(RuleDeclarationStatement ruleDeclarationStatement)
         {
             return MethodNameFor(ruleDeclarationStatement.Name);
-        }
-
-        static string CleanIllegalCharacters(string input)
-        {
-	        return input.Replace(".", "_").Replace("+", "Plus");
         }
     
         NRefactory.Expression ProcessCondition(Expression condition)
@@ -749,6 +753,7 @@ namespace jamconverter
 	    {
 		    var ruleExpression = invocationExpression.RuleExpression;
 
+			/*
 		    var literalExpression = ruleExpression as LiteralExpression;
 		    if (literalExpression != null)
 		    {
@@ -759,7 +764,7 @@ namespace jamconverter
 
 			    return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(methodName),
 				    invocationExpression.Arguments.Select(a => ProcessExpressionList(a)));
-		    }
+		    }*/
 
 		    var arguments = invocationExpression.Arguments.Select(a => ProcessExpressionList(a)).Prepend(ProcessExpression(ruleExpression));
 			return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(nameof(DynamicRuleInvocationService)+".Instance"),"InvokeRule"),arguments);

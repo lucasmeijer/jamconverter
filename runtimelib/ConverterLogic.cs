@@ -13,5 +13,10 @@ namespace runtimelib
 		{
 			return "Gen_"+new NPath(fileName).FileNameWithoutExtension;
 		}
+
+		public static string CleanIllegalCharacters(string input)
+		{
+			return input.Replace(".", "_").Replace("+", "Plus");
+		}
 	}
 }

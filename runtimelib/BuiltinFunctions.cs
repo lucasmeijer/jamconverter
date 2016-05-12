@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 
 public static class BuiltinFunctions
 {
@@ -48,6 +49,25 @@ public static class BuiltinFunctions
 #else
 		throw new NotImplementedException();
 #endif
+	}
+
+	public static void RegisterRule(string rulename, MethodInfo callback)
+	{
+		System.Func<string[][], string[]> d = jamLists => 
+		{
+			var targetArguments = new object[callback.GetParameters().Length];
+			for (int i=0; i!=targetArguments.Length; i++)
+			{
+				targetArguments[i] = jamLists.Length > i ? new JamList(jamLists[i]) : new JamList();
+			}
+			object result = callback.Invoke(null,targetArguments);
+			if (result == null)
+				return new string[0];
+			return ((JamList)result).Elements.ToArray();
+		};
+		#if EMBEDDED_MODE
+		Jam.Interop.RegisterRule(rulename, d);
+		#endif
 	}
 
     public static string SwitchTokenFor(JamList input)

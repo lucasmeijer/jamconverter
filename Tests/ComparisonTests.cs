@@ -400,6 +400,7 @@ Echo d ;
         }
 
         [Test]
+		[Ignore("only works on pc")]
         public void BuiltinMD5()
         {
             AssertConvertedProgramHasIdenticalOutput("Echo [ MD5 harry ] ;");
