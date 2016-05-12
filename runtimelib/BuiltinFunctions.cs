@@ -5,6 +5,15 @@ using System.Reflection;
 
 public static class BuiltinFunctions
 {
+	public static void RegisterJamFiles(params string[] paths)
+	{
+#if EMBEDDED_MODE
+		// Nothing to do.
+#else
+		////TODO
+#endif
+	}
+
 	static string[][] JamListArrayToLOL(JamList[] values)
 	{
 		return Array.ConvertAll (values, i => i.Elements.ToArray ());

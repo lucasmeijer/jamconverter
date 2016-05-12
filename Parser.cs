@@ -30,14 +30,16 @@ namespace jamconverter
 			    }
 			    return result;
 		    }
-		    catch (ParsingException)
+		    catch (Exception)
 		    {
 			    Console.WriteLine("Parsing failed. Previous 20 tokens:");
 			    var cursor = _scanResult.GetCursor();
-				_scanResult.SetCursor(Math.Max(0,cursor-20));
-			    for (int i = 0; i != 20; i++)
+				var firstToken = Math.Max(0, cursor - 20);
+				_scanResult.SetCursor(firstToken);
+			    for (int i = firstToken; i != cursor; i++)
 			    {
-				    Console.WriteLine(_scanResult.Next().literal);
+					var token = _scanResult.Next();
+				    Console.WriteLine(string.Format("cursor={0} type={1} literal='{2}'", i, token.tokenType, token.literal));
 			    }
 			    throw;
 		    }
@@ -502,18 +504,25 @@ namespace jamconverter
 		
         public Expression ParseCondition()
         {
-	        var simpleExpression = this.ParseExpression();
+	        var left = this.ParseExpression();
 
 	        var nextToken = this._scanResult.Peek().tokenType;
-			
 	        if (!IsBinaryOperator(nextToken))
-		        return simpleExpression;
+		        return left;
 
 	        this._scanResult.Next();
-
-	        var right = (nextToken == TokenType.In) ? ParseExpressionList() : new NodeList<Expression>() {ParseCondition()};
-	        return new BinaryOperatorExpression() {Left = simpleExpression, Operator = OperatorFor(nextToken), Right = right};
-	        //if $(rene) in macosx32 macosx64 win32 {}
+			
+			if (nextToken == TokenType.In)
+			{
+				left = new BinaryOperatorExpression { Left = left, Operator = Operator.In, Right = ParseExpressionList() };
+				nextToken = this._scanResult.Peek().tokenType;
+				if (!IsBinaryOperator(nextToken))
+					return left;
+				this._scanResult.Next();
+			}
+			
+	        var right = ParseCondition();
+	        return new BinaryOperatorExpression() {Left = left, Operator = OperatorFor(nextToken), Right = new NodeList<Expression> { right } };
         }
     }
 
