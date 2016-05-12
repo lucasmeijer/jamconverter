@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -254,11 +255,6 @@ public class JamList : IEnumerable<string>
 		return new JamList(input);
 	}
 
-	public JamList Clone()
-	{
-		return new JamList(_elements);
-	}
-
 	public JamList Include(JamList pattern)
 	{
 		if (pattern.Elements.Count() != 1)
@@ -307,9 +303,33 @@ public class JamList : IEnumerable<string>
 		return AsBool() || value;
 	}
 
+	public JamList PModifier_TODO(params JamList[] value)
+	{
+		throw new NotImplementedException();
+	}
+
+	public JamList Rooted_TODO(params JamList[] value)
+	{
+		throw new NotImplementedException();
+	}
+
 	public bool NotJamEquals(JamList value)
 	{
 		return !JamEquals(value);
+	}
+
+	public bool GreaterThan(JamList right)
+	{
+		int leftInt = int.Parse(Elements.Single());
+		int rightInt = int.Parse(right.Elements.Single());
+		return leftInt > rightInt;
+	}
+
+	public bool LessThan(JamList right)
+	{
+		int leftInt = int.Parse(Elements.Single());
+		int rightInt = int.Parse(right.Elements.Single());
+		return leftInt < rightInt;
 	}
 }
 
@@ -331,6 +351,14 @@ public static class JamListExtensions
 	{
 		foreach (var jamlist in jamlists)
 			jamlist.AssignIfEmpty(values);
+	}
+
+	public static JamList Clone(this JamList list)
+	{
+		if (list == null)
+			return new JamList();
+
+		return new JamList(list.Elements.ToArray());
 	}
 }
 

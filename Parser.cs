@@ -17,16 +17,30 @@ namespace jamconverter
 
 	    public TopLevel ParseTopLevel()
 	    {
-		    var result = new TopLevel() {Statements = new NodeList<Statement>()};
-			while (true)
-			{
-				var statement = ParseStatement();
+		    try
+		    {
+			    var result = new TopLevel() {Statements = new NodeList<Statement>()};
+			    while (true)
+			    {
+				    var statement = ParseStatement();
 
-				if (statement == null)
-					break;
-				result.Statements.Add(statement);
-			}
-		    return result;
+				    if (statement == null)
+					    break;
+				    result.Statements.Add(statement);
+			    }
+			    return result;
+		    }
+		    catch (ParsingException)
+		    {
+			    Console.WriteLine("Parsing failed. Previous 20 tokens:");
+			    var cursor = _scanResult.GetCursor();
+				_scanResult.SetCursor(Math.Max(0,cursor-20));
+			    for (int i = 0; i != 20; i++)
+			    {
+				    Console.WriteLine(_scanResult.Next().literal);
+			    }
+			    throw;
+		    }
 	    }
 
 		public NodeList<Expression> ParseExpressionList()
@@ -63,7 +77,7 @@ namespace jamconverter
                 case TokenType.Return:
                     return ParseReturnStatement();
                 case TokenType.Literal:
-                case TokenType.VariableDereferencer:
+				case TokenType.VariableDereferencerOpen:
                     return ParseAssignmentOrExpressionStatement();
                 case TokenType.On:
                     return ParseOnStatement();
@@ -320,20 +334,21 @@ namespace jamconverter
 
 	    public Expression ParseExpression()
 	    {
-		    switch (_scanResult.Peek().tokenType)
+		    var tokenType = _scanResult.Peek().tokenType;
+		    if (IsBinaryOperator(tokenType))
+			    return null;
+
+		    switch (tokenType)
 		    {
 			    case TokenType.EOF:
 			    case TokenType.Colon:
 			    case TokenType.Terminator:
 			    case TokenType.ParenthesisClose:
 			    case TokenType.BracketClose:
-				case TokenType.Assignment:
-				case TokenType.AppendOperator:
-				case TokenType.SubtractOperator:
 				    return null;
-			    case TokenType.VariableDereferencer:
-				case TokenType.LiteralExpansion:
-				    return ParseVariableDereferenceExpression();
+				case TokenType.VariableDereferencerOpen:
+				case TokenType.LiteralExpansionOpen:
+				    return ParseExpansionStyleExpression();
 			    case TokenType.AccoladeOpen:
 				    return null;
 			    case TokenType.BracketOpen:
@@ -364,18 +379,14 @@ namespace jamconverter
             return new InvocationExpression {RuleExpression = ruleExpression.As<LiteralExpression>(), Arguments = arguments};
         }
 
-        private Expression ParseVariableDereferenceExpression()
+        private Expression ParseExpansionStyleExpression()
         {
             var token = _scanResult.Next();
 
 	        var result = 
-				token.tokenType == TokenType.VariableDereferencer
+				token.tokenType == TokenType.VariableDereferencerOpen
 		        ? (ExpansionStyleExpression) new VariableDereferenceExpression()
 		        : new LiteralExpansionExpression();
-			
-            var open = _scanResult.Next();
-            if (open.tokenType != TokenType.ParenthesisOpen)
-                throw new ParsingException($"All {token.literal} should be followed by ( but got: " + open.tokenType);
 
             result.VariableExpression = ParseExpression();
 
@@ -434,8 +445,10 @@ namespace jamconverter
 		    {TokenType.AssignmentIfEmpty, Operator.AssignmentIfEmpty},
 		    {TokenType.And, Operator.And},
 		    {TokenType.Or, Operator.Or},
-		    {TokenType.NotEqual, Operator.NotEqual}
-	    };
+		    {TokenType.NotEqual, Operator.NotEqual},
+			{TokenType.GreaterThan, Operator.GreaterThan},
+			{TokenType.LessThan, Operator.LessThan}
+		};
 		
 		static bool IsBinaryOperator(TokenType tokenType)
 		{
@@ -451,7 +464,7 @@ namespace jamconverter
         {
             var peek = _scanResult.Peek(false);
             
-            if (peek.tokenType == TokenType.EOF || (peek.tokenType != TokenType.Literal && peek.tokenType != TokenType.VariableDereferencer))
+            if (peek.tokenType == TokenType.EOF || (peek.tokenType != TokenType.Literal && peek.tokenType != TokenType.VariableDereferencerOpen && peek.tokenType != TokenType.LiteralExpansionOpen))
                 return firstExpression;
 
             var tail = ParseExpression();

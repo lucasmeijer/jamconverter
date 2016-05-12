@@ -55,28 +55,26 @@ namespace jamconverter.Tests
             var a = new Scanner("$(myvar)");
 
             var scanResult1 = a.ScanToken();
-            Assert.AreEqual(TokenType.VariableDereferencer, scanResult1.tokenType);
+            Assert.AreEqual(TokenType.VariableDereferencerOpen, scanResult1.tokenType);
 
-            var scanResult2 = a.ScanToken();
-            Assert.AreEqual(TokenType.ParenthesisOpen, scanResult2.tokenType);
+			var scanResult2 = a.ScanToken();
+            Assert.AreEqual(TokenType.Literal, scanResult2.tokenType);
+            Assert.AreEqual("myvar", scanResult2.literal);
 
-            var scanResult3 = a.ScanToken();
-            Assert.AreEqual(TokenType.Literal, scanResult3.tokenType);
-            Assert.AreEqual("myvar", scanResult3.literal);
-
-            var scanResult4 = a.ScanToken();
-            Assert.AreEqual(TokenType.ParenthesisClose, scanResult4.tokenType);
+			var scanResult3 = a.ScanToken();
+            Assert.AreEqual(TokenType.ParenthesisClose, scanResult3.tokenType);
         }
 
         [Test]
         public void TwoAccolades()
         {
-            var a = new Scanner("{}");
+            var a = new Scanner("{ }");
             var result = a.ScanAllTokens().ToArray();
-            Assert.AreEqual(3, result.Length);
+            Assert.AreEqual(4, result.Length);
             Assert.AreEqual(TokenType.AccoladeOpen, result[0].tokenType);
-            Assert.AreEqual(TokenType.AccoladeClose, result[1].tokenType);
-            Assert.AreEqual(TokenType.EOF, result[2].tokenType);
+            Assert.AreEqual(TokenType.AccoladeClose, result[2].tokenType);
+			Assert.AreEqual(TokenType.WhiteSpace, result[1].tokenType);
+            Assert.AreEqual(TokenType.EOF, result[3].tokenType);
         }
 
         [Test]
@@ -95,7 +93,8 @@ namespace jamconverter.Tests
             var a = new Scanner("a$");
             var result = a.ScanAllTokens().ToArray();
 
-            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.VariableDereferencer, TokenType.EOF }, result.Select(r => r.tokenType));
+            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+			Assert.That(result[0].literal, Is.EqualTo("a$"));
         }
 
 
@@ -105,10 +104,10 @@ namespace jamconverter.Tests
             var a = new Scanner("$(harry:BS");
             var result = a.ScanAllTokens().ToArray();
 
-            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencer, TokenType.ParenthesisOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.VariableExpansionModifier, TokenType.EOF }, result.Select(r => r.tokenType));
+            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencerOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.VariableExpansionModifier, TokenType.EOF }, result.Select(r => r.tokenType));
 
-            Assert.AreEqual("B", result[4].literal);
-            Assert.AreEqual("S", result[5].literal);
+            Assert.AreEqual("B", result[3].literal);
+            Assert.AreEqual("S", result[4].literal);
         }
 
         [Test]
@@ -117,10 +116,24 @@ namespace jamconverter.Tests
             var a = new Scanner("$(harry:BS=v");
             var result = a.ScanAllTokens().ToArray();
 
-            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencer, TokenType.ParenthesisOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.VariableExpansionModifier, TokenType.Assignment, TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencerOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.VariableExpansionModifier, TokenType.Assignment, TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
             
-            Assert.AreEqual("v", result[7].literal);
+            Assert.AreEqual("v", result[6].literal);
         }
+
+		[Test]
+		public void VariableExpansionWithComparisonOperators()
+		{
+			var a = new Scanner("$(<) $(>)");
+			var result = a.ScanAllTokens().ToArray();
+
+			Assert.That(result.Length, Is.EqualTo(8));
+			Assert.That(result[0].tokenType, Is.EqualTo(TokenType.VariableDereferencerOpen));
+			Assert.That(result[0].literal, Is.EqualTo("$("));
+			Assert.That(result[1].tokenType, Is.EqualTo(TokenType.Literal));
+			Assert.That(result[1].literal, Is.EqualTo("<"));
+			Assert.That(result[5].literal, Is.EqualTo(">"));
+		}
 
         [Test]
         public void DontCombineNewLineAndWhiteSpaceInSingleToken()
@@ -225,6 +238,28 @@ on_new_line");
 			CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
 
 			Assert.AreEqual("<you<can>do>this>", result[0].literal);
+		}
+
+		[Test]
+		public void ParenthesisIsNotSpecial()
+		{
+			var a = new Scanner("(aa)");
+			var result = a.ScanAllTokens().ToArray();
+
+			Assert.That(result.Length, Is.EqualTo(2));
+			Assert.That(result[0].literal, Is.EqualTo("(aa)"));
+		}
+
+		[Test]
+		public void LiteralExpansion()
+		{
+			var a = new Scanner("@(abc)");
+			var result = a.ScanAllTokens().ToArray();
+
+			Assert.That(result.Length, Is.EqualTo(4));
+			Assert.That(result[0].literal, Is.EqualTo("@("));
+			Assert.That(result[1].literal, Is.EqualTo("abc"));
+			Assert.That(result[2].literal, Is.EqualTo(")"));
 		}
 	}
 }

@@ -26,6 +26,7 @@ namespace jamconverter
         {
 			foreach (var sourceFile in jamProgram)
 			{
+				Console.WriteLine("sourceFile: "+sourceFile.FileName);
 				_filesToTopLevel.Add(sourceFile, new Parser(sourceFile.Contents).ParseTopLevel());
 			}
 			_allActions = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<ActionsDeclarationStatement>());
@@ -509,7 +510,10 @@ namespace jamconverter
 
 			foreach (var v in variables) 
 			{
-				var variable = v.VariableExpression.As<LiteralExpression>();
+				var variable = v.VariableExpression as LiteralExpression;
+				if (variable == null)
+					continue;
+
 				var implicitIndex = GetImplicitVariableIndex (variable.Value);
 				if (implicitIndex != 0) 
 				{
@@ -548,7 +552,12 @@ namespace jamconverter
                 Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
                 Body = body
             };
-            processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a => new NRefactory.ParameterDeclaration(JamListAstType, ArgumentNameFor(a))));
+            processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a =>
+            {
+	            var parameterDeclaration = new NRefactory.ParameterDeclaration(JamListAstType, ArgumentNameFor(a));
+				parameterDeclaration.DefaultExpression = new NRefactory.NullReferenceExpression();
+	            return parameterDeclaration;
+            }));
 
 			if (IsActions(methodName))
 				body.Statements.Add (new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(ActionsNameFor(methodName)), arguments.Select(a => new NRefactory.IdentifierExpression(ArgumentNameFor(a)))));
@@ -564,7 +573,7 @@ namespace jamconverter
                 body.Statements.Add(ProcessStatement(subStatement));
 
             if (!DoesBodyEndWithReturnStatement(ruleDeclaration))
-                body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.NullReferenceExpression()));
+                body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.ObjectCreateExpression(JamListAstType)));
             
             typeForJamFile.Members.Add(processRuleDeclarationStatement);
         }
@@ -637,6 +646,10 @@ namespace jamconverter
 	        if (condition is BinaryOperatorExpression)
 		        return processExpression;
 
+			var literalExpression = condition as LiteralExpression;
+			if (literalExpression != null)
+				return new NRefactory.PrimitiveExpression(literalExpression.Value.Length != 0);
+
 	        return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(processExpression,"AsBool"));
         }
 
@@ -654,6 +667,10 @@ namespace jamconverter
 		            return "Or";
 				case Operator.NotEqual:
 		            return "NotJamEquals";
+				case Operator.GreaterThan:
+		            return "GreaterThan";
+				case Operator.LessThan:
+		            return "LessThan";
                 default:
                     throw new NotSupportedException("Unknown conditional operator: "+@operator);
             }

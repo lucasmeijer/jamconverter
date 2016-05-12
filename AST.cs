@@ -273,7 +273,9 @@ namespace jamconverter.AST
 	    AssignmentIfEmpty,
 	    And,
 	    Or,
-	    NotEqual
+	    NotEqual,
+		LessThan,
+		GreaterThan
     }
 
     public class RuleDeclarationStatement : Statement
@@ -429,6 +431,8 @@ namespace jamconverter.AST
     {
         public static T As<T>(this Expression expression) where T : Expression
         {
+			if (expression == null)
+				throw new ArgumentNullException();
             if (!(expression is T))
                 throw new ArgumentException($"Expected expression type {typeof(T).Name} but got: {expression.GetType().Name}");
             return (T) expression;
@@ -436,6 +440,8 @@ namespace jamconverter.AST
 
         public static T As<T>(this Statement statement) where T : Statement
         {
+			if (statement == null)
+				throw new ArgumentNullException();
             if (!(statement is T))
                 throw new ArgumentException($"Expected statement type {typeof(T).Name} but got: {statement.GetType().Name}");
             return (T)statement;

@@ -157,7 +157,7 @@ namespace jamconverter.Tests
         [Test]
         public void IfStatement()
         {
-            var ifStatement = ParseStatement<IfStatement>("if $(somevar) {}");
+            var ifStatement = ParseStatement<IfStatement>("if $(somevar) { }");
             Assert.AreEqual(0, ifStatement.Body.Statements.Length);
 
             Assert.AreEqual(ifStatement, ifStatement.Body.Parent);
@@ -166,7 +166,7 @@ namespace jamconverter.Tests
 	    [Test]
 	    public void IfStatementWithAddOperator()
 	    {
-		    var ifStatement = ParseStatement<IfStatement>("if $(a) && $(b) {}");
+		    var ifStatement = ParseStatement<IfStatement>("if $(a) && $(b) { }");
 		    Assert.AreEqual(Operator.And, ifStatement.Condition.As<BinaryOperatorExpression>().Operator);
 		    AssertLeftIsA_And_RightIsB(ifStatement);
 	    }
@@ -182,7 +182,7 @@ namespace jamconverter.Tests
 	    [Test]
 		public void IfStatementWithOrOperator()
 		{
-			var ifStatement = ParseStatement<IfStatement>("if $(a) || $(b) {}");
+			var ifStatement = ParseStatement<IfStatement>("if $(a) || $(b) { }");
 			Assert.AreEqual(Operator.Or, ifStatement.Condition.As<BinaryOperatorExpression>().Operator);
 		    Assert.AreEqual("a", ifStatement.Condition.As<BinaryOperatorExpression>().Left.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
 		    Assert.AreEqual("b", ifStatement.Condition.As<BinaryOperatorExpression>().Right[0].As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
@@ -191,7 +191,7 @@ namespace jamconverter.Tests
 		[Test]
 		public void IfStatementWithNotEqualOperator()
 		{
-			var ifStatement = ParseStatement<IfStatement>("if $(a) != $(b) {}");
+			var ifStatement = ParseStatement<IfStatement>("if $(a) != $(b) { }");
 			Assert.AreEqual(Operator.NotEqual, ifStatement.Condition.As<BinaryOperatorExpression>().Operator);
 			AssertLeftIsA_And_RightIsB(ifStatement);
 		}
@@ -199,7 +199,7 @@ namespace jamconverter.Tests
 		[Test]
         public void IfStatementWithBinaryOperatorCondition()
         {
-            var ifStatement = ParseStatement<IfStatement>("if $(somevar) = 3 {}");
+            var ifStatement = ParseStatement<IfStatement>("if $(somevar) = 3 { }");
             Assert.AreEqual(Operator.Assignment, ifStatement.Condition.As<BinaryOperatorExpression>().Operator);
             Assert.AreEqual("3", ifStatement.Condition.As<BinaryOperatorExpression>().Right[0].As<LiteralExpression>().Value);
 
@@ -209,7 +209,7 @@ namespace jamconverter.Tests
 	    [Test]
         public void IfStatementWithNegatedCondition()
         {
-            var ifStatement = ParseStatement<IfStatement>("if ! $(somevar) {}");
+            var ifStatement = ParseStatement<IfStatement>("if ! $(somevar) { }");
             Assert.IsTrue(ifStatement.Condition.As<NotOperatorExpression>().Expression is VariableDereferenceExpression);
         }
 
@@ -220,25 +220,25 @@ namespace jamconverter.Tests
             //jam is crazy.  if you do:
             //
             //myvar = 123 ;
-            //if ! $(myvar) = 321 {}
+            //if ! $(myvar) = 321 { }
             //
             //that condition is not considered true. the ! does not apply to the equals expression somehow.  for now we're just going to make the parser throw on any case
             //where ! is used with a non trivial condition, and hope our jam program doesn't actually use this construct.
 
-            Assert.Throws<ParsingException>(()=>ParseStatement<IfStatement>("if ! $(somevar) = 321 {}"));
+            Assert.Throws<ParsingException>(()=>ParseStatement<IfStatement>("if ! $(somevar) = 321 { }"));
         }
 
         [Test]
         public void IfWithElseStatement()
         {
-            var ifStatement = ParseStatement<IfStatement>("if $(somevar) {} else { Echo ; }");
+            var ifStatement = ParseStatement<IfStatement>("if $(somevar) { } else { Echo ; }");
             Assert.AreEqual("Echo", ifStatement.Else.As<BlockStatement>().Statements[0].As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
         }
 
         [Test]
         public void IfWithElseStatementThatsNotBlockStatement()
         {
-            var ifStatement = ParseStatement<IfStatement>("if $(somevar) {} else Echo ;");
+            var ifStatement = ParseStatement<IfStatement>("if $(somevar) { } else Echo ;");
             Assert.AreEqual("Echo", ifStatement.Else.As<ExpressionStatement>().Expression.As<InvocationExpression>().RuleExpression.As<LiteralExpression>().Value);
         }
 
@@ -248,8 +248,10 @@ namespace jamconverter.Tests
 			ParseCondition<BinaryOperatorExpression>("a = b");
 			ParseCondition<BinaryOperatorExpression>("a != b");
 			ParseCondition<BinaryOperatorExpression>("a in b");
+			ParseCondition<BinaryOperatorExpression>("a > b");
+			ParseCondition<BinaryOperatorExpression>("a < b");
 		}
-		
+
 		[Test]
         public void CombineExpression()
         {
@@ -482,11 +484,19 @@ actions response myactionname
             Assert.AreEqual("mytarget", assignmentStatment.Targets[0].As<LiteralExpression>().Value);
         }
 
-        [Test]
+		[Test]
+		public void VariableOnTargetBeforeMaybeAssignment()
+		{
+			//the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
+			var variableOnTarget = ParseStatement<AssignmentStatement>("myvar on mytarget ?= 3 ;").Left.As<VariableOnTargetExpression>();
+			Assert.AreEqual("mytarget", variableOnTarget.Targets.Single().As<LiteralExpression>().Value);
+		}
+
+	    [Test]
         public void OnStatement()
         {
             //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
-            var onStatement = ParseStatement<OnStatement>("on a {} ");
+            var onStatement = ParseStatement<OnStatement>("on a { } ");
             
             Assert.AreEqual("a", onStatement.Target.As<LiteralExpression>().Value);
             
@@ -506,7 +516,7 @@ actions response myactionname
         [Test]
         public void WhileStatement()
         {
-            var whileStatement = ParseStatement<WhileStatement>("while $(mylist) {} ");
+            var whileStatement = ParseStatement<WhileStatement>("while $(mylist) { } ");
             Assert.IsTrue(whileStatement.Condition is VariableDereferenceExpression);
             Assert.AreEqual(0, whileStatement.Body.Statements.Length);            
         }
@@ -514,7 +524,7 @@ actions response myactionname
         [Test]
         public void ForLoop()
         {
-            var forStatement = ParseStatement<ForStatement>("for myvar in $(mylist) {} ");
+            var forStatement = ParseStatement<ForStatement>("for myvar in $(mylist) { } ");
             Assert.AreEqual("myvar",forStatement.LoopVariable.As<LiteralExpression>().Value);
             Assert.IsTrue(forStatement.List[0] is VariableDereferenceExpression);
             Assert.AreEqual(0, forStatement.Body.Statements.Length);
@@ -554,6 +564,12 @@ actions response myactionname
 			Assert.AreEqual("a", localStatement.Variable.Value);
 			Assert.AreEqual(0, localStatement.Value.Length);
 		}
+
+		[Test]
+		public void LocalVariableDeclaration2()
+		{
+			var localStatement = ParseStatement<IfStatement>(@"if [ GetListCount ] > 1 { }");
+		}
 		
 		[Test]
 		public void LocalVariableDeclarationWithValue()
@@ -581,19 +597,10 @@ actions response myactionname
 	    }
 
 		[Test]
-		public void asdasd()
+		public void ForwardToBackslashExpansionModifier()
 		{
-			var notExpression = ParseExpression<NotOperatorExpression>("! $($(<)-mkdir)");
-
-
-			var result = notExpression.Expression.As<VariableDereferenceExpression>();
-
-			var combineExpression = result.VariableExpression.As<CombineExpression>();
-
-			Assert.AreEqual(2, combineExpression.Elements.Length);
-
-			Assert.AreEqual("<", combineExpression.Elements[0].As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
-			Assert.AreEqual("-mkdir", combineExpression.Elements[1].As<LiteralExpression>().Value);
+			var jam = @"$(winRTLegacyDll:\\\\:C) ;";
+			ParseExpression<VariableDereferenceExpression>(jam);
 		}
 
 		static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement

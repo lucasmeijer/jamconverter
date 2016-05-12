@@ -32,13 +32,34 @@ namespace jamconverter.Tests
         [Test]
         public void VariableExpansion()
         {
-            AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; Echo $(myvar) ;");
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = 123 ;
+Echo $(myvar) ;
+
+#foo = FOO ;
+#for x in $(foo) { Echo $(x) ; }
+#for x in ""$(foo)"" { Echo $(x) ; }
+#for x in $(""foo)"" { Echo $(x) ; }
+#for x in $\(foo) { Echo $(x) ; }
+#for x in \$(foo) { Echo $(x) ; }
+"
+			);
         }
 
 		[Test]
 		public void DereferenceCombineExpression()
 		{
-			AssertConvertedProgramHasIdenticalOutput("abc = 123 ; myvar = a ; Echo $($(myvar)bc:G=hi) ;");		}
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+abc = 123 ; 
+myvar = a ; 
+Echo $($(myvar)bc:G=hi) ;
+
+Echo ""foo  $(abc)bar"" ;
+"
+			);
+		}
 
 		[Test]
 		public void ValueSemantics()
@@ -290,7 +311,8 @@ Echo $(myvar:J=_) ;
         }
 
         [Test]
-        public void KeywordsInExpressionList()
+		[Ignore(("I hope we dont need this behaviour"))]
+		public void KeywordsInExpressionList()
         {
             AssertConvertedProgramHasIdenticalOutput(
 @"
@@ -299,6 +321,21 @@ Echo $(myvar) ;
 ");
         }
 
+	    [Test]
+	    public void GreaterThanOperator()
+	    {
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+rule Return3 { return 3 ; }
+rule Return0 { return 0 ; }
+if [ Return3 ] > 1 { Echo Yes ; } else { Echo no ; }
+if [ Return0 ] > 1 { Echo Yes ; } else { Echo no ; }
+
+if [ Return3 ] < 3 { Echo Yes ; } else { Echo no ; }
+if [ Return0 ] < 3 { Echo Yes ; } else { Echo no ; }
+
+");
+		}
 
         [Test]
         public void GristVariableExpansion()
@@ -375,6 +412,19 @@ Echo d ;
 		}
 
 		[Test]
+		public void AssignResultOfRuleInvocation()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+rule MyRule arg0 : arg1 { Echo $(arg0) $(arg1) ; return ""Hello"" ; }
+
+myvar = [ MyRule a : b ] ;
+Echo $(myvar) ;
+"
+			);
+		}
+
+		[Test]
 		public void RuleInvocationWithImplicitParameters()
 		{
 			AssertConvertedProgramHasIdenticalOutput(@"
@@ -421,6 +471,18 @@ Echo $(myvar[$(myindices)]) ;
 
 ");
         }
+
+		[Test]
+		public void Braces()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+if x { }
+# if x {} # Syntax error in Jam.
+Echo end of test ;
+"
+			);
+		}
 
         [Test]
         public void AppendOperator()
@@ -584,7 +646,6 @@ Echo $(mylist:I=\\.c\$) ;
 		}
 
 	    [Test]
-		[Ignore("broken")]
 	    public void Escaping()
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(
@@ -602,10 +663,13 @@ for e in $(mylist) {
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(
 @"
-mylist = foo"" ""bar a\""b ;
+mylist = foo"" ""bar a\""b ""a b c"": ;
 for e in $(mylist) {
   Echo $(e) ;
 }
+
+local dollar = ""$"" ;
+Echo $(dollar) ;
 "
 			);
 	    }
@@ -626,6 +690,98 @@ Echo $$\(x) ;
 "
 			);
 	    }
+
+		[Test]
+		public void Parenthesis()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+# Jam does not handle parenthesis special at all (despite what you would expect in conditional expressions).
+
+# Lines with ## are failing to parse correctly on our parser even though they are valid Jam.
+
+# Lines with ### are parsing correctly but we generate invalid code for them.
+
+Echo (a  b  c) ;
+Echo $(a) ;
+
+if (a) {
+  Echo a ;
+}
+
+if (((b))) {
+  Echo b ;
+}
+
+isTrue = a ;
+isFalse = ;
+
+##if ($(isFalse)) {
+##Echo this is false ;
+##}
+###if $(isFalse)||$(isTrue) { # This is a combine expression, not a boolean.
+###Echo this is NOT true ; ## !!!!!!!!
+###}
+if $(isFalse) || $(isTrue) { # Note whitespace
+  Echo this is true ; ## :)
+}
+if $(isTrue)(a { # This is a combine expression showing parens is not a token at low-level.
+  Echo this is true as well ;
+}
+
+# The following two are equivalent. Shows that the first case is not a parenthesized expression
+# as you'd expect.
+##if ($(isFalse) || $(isTrue)) { Echo aa ; }
+##if x$(isFalse) || $(isTrue)) { Echo aa ; }
+
+##if $(isFalse) && ($(isFalse) || $(isTrue)) {
+##Echo combined ;
+##}
+
+##if )( = )( {
+##Echo also wat? ;
+##}
+
+###if (x != x) {
+###Echo wat? ;
+###}
+###if (x = (x {
+###Echo this is what you meant, right? ;
+###}
+
+a = foo ;
+if $(a)x = foox {
+  Echo this one prints ;
+}
+if ($(a)x = foox) { # Just combine expression! Not parenthesis.
+  Echo but this one does not ;
+}
+
+# Neither of these is valid even though you'd expect them to if parenthesis are not special.
+# So why? Who knows....
+#if ( { Echo x ; }
+#if ) { Echo x ; }
+
+if () {
+  Echo this is just a literal with two characters ;
+}
+
+# This does not parse in Jam!
+#Echo ) ;
+"
+			);
+		}
+
+		[Test]
+		public void VariableExpansionInString()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = harry ;
+Echo ""bla$(myvar)bla"" ;
+Echo ""bla\\$\\(myvar\\)bla"" ; "
+			);
+		}
 
 	    [Test]
 		public void OnTargetVariables()
