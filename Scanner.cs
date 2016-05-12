@@ -229,6 +229,9 @@ namespace jamconverter
 				if (ch == '\\' && hasMoreCharacters)
 				{
 					++i; 
+					if ((_input[i] == '@' || _input[i] == '$') && (i + 1) < _input.Length && _input[i + 1] == '(')
+						break;
+
 					_builder.Append(_input[i]); 
 				} 
 				else if ((ch == '$' || ch == '@') && hasMoreCharacters && _input[i + 1] == '(')

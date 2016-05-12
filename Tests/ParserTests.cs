@@ -171,6 +171,18 @@ namespace jamconverter.Tests
 		    AssertLeftIsA_And_RightIsB(ifStatement);
 	    }
 
+		[Test]
+		public void IfStatementWithBinaryOperatorConditionWithInExpressions()
+		{
+            var ifStatement = ParseStatement<IfStatement>("if shared in $(OPTIONS) || module in $(OPTIONS) { }");
+			Assert.That(ifStatement.Condition, Is.InstanceOf<BinaryOperatorExpression>());
+			var binaryExpression = (BinaryOperatorExpression) ifStatement.Condition;
+			Assert.That(binaryExpression.Left, Is.InstanceOf<BinaryOperatorExpression>());
+			Assert.That(binaryExpression.Right[0], Is.InstanceOf<BinaryOperatorExpression>());
+			Assert.That(((BinaryOperatorExpression) binaryExpression.Left).Operator, Is.EqualTo(Operator.In));
+			Assert.That(((BinaryOperatorExpression) binaryExpression.Right[0]).Operator, Is.EqualTo(Operator.In));
+		}
+
 	    private static void AssertLeftIsA_And_RightIsB(IfStatement ifStatement)
 	    {
 		    Assert.AreEqual("a",
