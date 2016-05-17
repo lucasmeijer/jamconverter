@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Variables = System.Collections.Generic.Dictionary<string, JamList>;
+using runtimelib;
+using Variables = System.Collections.Generic.Dictionary<string, LocalJamList>;
 
 public class GlobalVariables
 {
-	private readonly Variables _values = new Variables();
-
 	private Variables _currentOnContext;
 	private Dictionary<string, Variables> _onTargetVariables = new Dictionary<string, Variables>();
 
@@ -17,46 +16,7 @@ public class GlobalVariables
 		Singleton = this;
 	}
 
-    public JamList this[string variableName]
-    {
-        get
-        {
-	        if (_currentOnContext != null)
-	        {
-		        JamList result = null;
-		        if (_currentOnContext.TryGetValue(variableName, out result))
-			        return result;
-	        }
-
-	        {
-		        JamList result = null;
-		        if (_values.TryGetValue(variableName, out result))
-			        return result;
-	        }
-
-	        {
-				JamList result;
-#if EMBEDDED_MODE
-				result = new JamList (Jam.Interop.GetVar (variableName));
-#else
-				result = new JamList ();
-#endif
-				_values[variableName] = result;
-				return result;
-			}
-        }
-        set
-        {
-            _values[variableName] = value;
-        }
-    }
-
-	/*
-    public JamList this[JamList variable]
-    {
-        get { return this[variable.Elements.First()]; }
-        set { this[variable.Elements.First()] = value; }
-    }*/
+    public JamListBase this[string variableName] => new RemoteJamList(variableName);
 
 	private Variables VariablesFor(string targetName)
 	{
@@ -69,76 +29,47 @@ public class GlobalVariables
 		return variables;
 	}
 
-	public IEnumerable<JamList> GetOrCreateVariableOnTargetContext(JamList targetNames, JamList variableNames)
+	public IEnumerable<JamListBase> GetOrCreateVariableOnTargetContext(JamListBase targetNames, JamListBase variableNames)
 	{
-		foreach (var targetName in targetNames)
+		foreach (var targetName in targetNames.Elements)
 		{
-			var variables = VariablesFor(targetName);
-
-			foreach (var variable in variableNames.Elements)
-			{
-				JamList result;
-				if (variables.TryGetValue(variable, out result))
-				{
-					yield return result;
-					continue;
-				}
-
-				var r = new JamList();
-				variables[variable] = r;
-				yield return r;
-			}
-		}
+            foreach(var variableName in variableNames.Elements)
+                yield return new RemoteJamList(variableName, targetName);
+        }
 	}
 
-	public IDisposable OnTargetContext(JamList targetName)
+	public IDisposable OnTargetContext(JamListBase targetName)
 	{
-		if (_currentOnContext != null)
-			throw new NotSupportedException("Nesting target contexts");
-
 		if (targetName.Elements.Count() != 1)
 			throw new ArgumentException("on statement being invoked on multiple targets. you couldn't even do this in jam!");
 
-		_onTargetVariables.TryGetValue(targetName.Elements.Single(), out _currentOnContext);
-		return new TemporaryTargetContext(this);
+		return new TemporaryTargetContext(targetName.Elements.Single());
 	}
 
 	private class TemporaryTargetContext : IDisposable
 	{
-		private readonly GlobalVariables _owner;
+	    private readonly string _target;
 
-		public TemporaryTargetContext(GlobalVariables owner)
-		{
-			_owner = owner;
-		}
+	    public TemporaryTargetContext(string target)
+	    {
+	        _target = target;
+	        Jam.Interop.PushSettingsFor(_target);
+	    }
 
-		public void Dispose()
-		{
-			_owner._currentOnContext = null;
-		}
+	    public void Dispose()
+	    {
+	        Jam.Interop.PopSettingsFor(_target);
+	    }
 	}
 
-	public JamList[] DereferenceElementsNonFlat(JamList variableNames)
+	public RemoteJamList[] DereferenceElementsNonFlat(JamListBase variableNames)
 	{
-		return variableNames.Elements.Select(e => this[e]).ToArray();
+		return variableNames.Elements.Select(e => new RemoteJamList(e)).ToArray();
 	}
 
-	public JamList DereferenceElements(JamList variableNames)
+	public LocalJamList DereferenceElements(JamListBase variableNames)
 	{
-		return new JamList(variableNames.Elements.SelectMany(v=>this[v]).ToArray());
-	}
-
-	public void SendVariablesToJam()
-	{
-#if EMBEDDED_MODE
-		foreach (var targetVars in _onTargetVariables) 
-		{
-			foreach (var targetVar in targetVars.Value)
-			{
-				Jam.Interop.Setting (targetVar.Key, new[]{ targetVars.Key }, targetVar.Value.Elements.ToArray ());
-			}
-		}
-#endif
+		return new LocalJamList(variableNames.Elements.SelectMany(v => this[v]).ToArray());
 	}
 }
 

@@ -15,17 +15,17 @@ namespace runtimelib
 			_types = types;
 		}
 
-		public JamList InvokeRule(JamList jamList, params JamList[] arguments)
+		public LocalJamList InvokeRule(JamListBase jamList, params JamListBase[] arguments)
 		{
             // Todo: Invoke multiple rules?
             var result = new List<string>();
 		    foreach (var rule in jamList.Elements)
 		        result.AddRange(BuiltinFunctions.InvokeRule(rule, arguments).Elements);
 
-            return new JamList(result.ToArray());
+            return new LocalJamList(result.ToArray());
 		}
 
-		static JamList InvokeMethod (MethodInfo method, JamList[] arguments)
+		static LocalJamList InvokeMethod (MethodInfo method, JamListBase[] arguments)
 		{
 			bool isParamsMethod = method.GetParameters ().Any () && method.GetParameters () [0].ParameterType.IsArray;
 
@@ -33,11 +33,11 @@ namespace runtimelib
 
 			object result = method.Invoke (null, targetArguments);
 			if (result == null)
-				return new JamList ();
-			return (JamList)result;
+				return new LocalJamList ();
+			return (LocalJamList)result;
 		}
 
-		public void DynamicInclude(JamList value)
+		public void DynamicInclude(JamListBase value)
 		{
             BuiltinFunctions.Include(value);
         }

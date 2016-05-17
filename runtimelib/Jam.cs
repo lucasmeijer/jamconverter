@@ -51,13 +51,13 @@ namespace Jam
 		public static extern void MakeActions(string name,string actions,int flags, int maxTargets, int maxLines);
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		public static extern void SetVar(string name,string[] value);
+		public static extern void SetVar(string name, Jam.Operator @operator, string[] value);
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public static extern string[] GetVar(string name);
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		public static extern void Setting(string name, string[] targets, string[] values);
+		public static extern void SetSetting(string name, string[] targets, Jam.Operator @operator, string[] values);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void Include(string jamfile);
@@ -72,5 +72,21 @@ namespace Jam
             RegisterRuleInternal(name, callback);
         }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void PushSettingsFor(string target);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void PopSettingsFor(string target);
+
+
+
+	}
+
+    public enum Operator
+    {
+        VAR_SET	= 0,	/* override previous value */
+        VAR_APPEND = 1,	/* append to previous value */
+        VAR_DEFAULT	= 2,	/* set only if no previous value */
+        VAR_REMOVE = 3	/* filter an old value */
     }
 }

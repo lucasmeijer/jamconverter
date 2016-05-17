@@ -172,10 +172,13 @@ if $(myvar) in d e { Echo Yes ; } else { Echo No ; }
         {
             AssertConvertedProgramHasIdenticalOutput(
 @"myvar = a b ; 
-Echo $(myvar) ; 
+#Echo $(myvar) ; 
 
+Echo check1 ;
 harry ?= sally ;
 Echo $(harry) ;
+Echo check2 ;
+
 
 harry ?= sailor ;
 Echo $(harry) ;
@@ -783,7 +786,22 @@ Echo ""bla\\$\\(myvar\\)bla"" ; "
 			);
 		}
 
-	    [Test]
+        [Test]
+        public void Subtract()
+        {
+            AssertConvertedProgramHasIdenticalOutput(@"
+myvar = one two three ;
+
+myvar2 = tw ;
+myvar3 = o ;
+myvar4 = $(myvar2)$(myvar3) ;
+myvar -= $(myvar4) ;
+Echo $(myvar) ;
+");
+        }
+
+
+        [Test]
 		public void OnTargetVariables()
 		{
 			AssertConvertedProgramHasIdenticalOutput(
@@ -946,7 +964,7 @@ Echo myglobal from file3 $(myglobal) ;
                 var toStayJam  = new ProgramDescripton(program.Where(f => !shouldConvert(f.FileName)));
 
                 var csharp = new JamToCSharpConverter().Convert(toBeCSharp, shouldConvert(program.First().FileName));
-
+		       
 			    csharpResult =
 				    new JamRunner().Run(new ProgramDescripton(csharp.Concat(toStayJam)))
 					    .Select(s => s.TrimEnd());

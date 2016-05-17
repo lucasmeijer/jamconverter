@@ -15,7 +15,7 @@ namespace jamconverter
                 yield return e;
         }
 
-		public static IEnumerable<T> Append<T>(this IEnumerable<T> collection, T element)
+		public static IEnumerable<T> AppendOne<T>(this IEnumerable<T> collection, T element)
 		{
 			return collection.Concat(new[] {element});
 		}

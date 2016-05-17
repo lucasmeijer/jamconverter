@@ -12,67 +12,67 @@ namespace runtimelib.tests
         [Test]
         public void Grist()
         {
-            Assert.AreEqual("<myapp>Harry", new JamList("Harry").GristWith(new JamList("myapp")).ToString());
+            Assert.AreEqual("<myapp>Harry", new LocalJamList("Harry").GristWith(new LocalJamList("myapp")).ToString());
         }
 
         [Test]
         public void ReGrist()
         {
-            Assert.AreEqual("<myapp>Harry", new JamList("<oldapp>Harry").GristWith(new JamList("myapp")).ToString());
+            Assert.AreEqual("<myapp>Harry", new LocalJamList("<oldapp>Harry").GristWith(new LocalJamList("myapp")).ToString());
         }
 
         [Test]
         public void UnGrist()
         {
-            Assert.AreEqual("Harry", new JamList("<oldapp>Harry").GristWith(new JamList()).ToString());
+            Assert.AreEqual("Harry", new LocalJamList("<oldapp>Harry").GristWith(new LocalJamList()).ToString());
         }
 
         [Test]
         public void GristWithAngleBrackets()
         {
-            Assert.AreEqual("<myapp>Harry", new JamList("<oldapp>Harry").GristWith(new JamList("<myapp>")).ToString());
+            Assert.AreEqual("<myapp>Harry", new LocalJamList("<oldapp>Harry").GristWith(new LocalJamList("<myapp>")).ToString());
         }
 
         [Test]
         public void WithEmptySuffix()
         {
-            Assert.AreEqual("myfile", new JamList("myfile").WithSuffix(new JamList()).ToString());
+            Assert.AreEqual("myfile", new LocalJamList("myfile").WithSuffix(new LocalJamList()).ToString());
         }
 
 
         [Test]
         public void JoinWithValue()
         {
-            Assert.AreEqual("this_is_nice", new JamList("this", "is","nice").JoinWithValue(new JamList("_")).ToString());
+            Assert.AreEqual("this_is_nice", new LocalJamList("this", "is","nice").JoinWithValue(new LocalJamList("_")).ToString());
         }
 		
         [Test]
         public void AsBoolReturnsTrue()
         {
-            Assert.IsTrue(new JamList("a","c").AsBool());
+            Assert.IsTrue(new LocalJamList("a","c").AsBool());
         }
 
         [Test]
         public void AsBoolReturnsFase()
         {
-            Assert.IsFalse(new JamList().AsBool());
+            Assert.IsFalse(new LocalJamList().AsBool());
         }
 
         [Test]
         public void Subtract()
         {
-            var jamlist = new JamList("one", "two", "two", "three", "four");
-            jamlist.Subtract(new JamList("four", "two"));
+            var jamlist = new LocalJamList("one", "two", "two", "three", "four");
+            jamlist.Subtract(new LocalJamList("four", "two"));
             CollectionAssert.AreEqual(new[] { "one","three"}, jamlist.Elements.ToArray());
         }
 
         [Test]
         public void ForEach()
         {
-            var jamlist = new JamList("one", "two", "three");
+            var jamlist = new LocalJamList("one", "two", "three");
 
             var result = new List<string>();
-            foreach (JamList v in jamlist)
+            foreach (LocalJamList v in jamlist)
             {
                 Assert.AreEqual(1, v.Elements.Count());
                 result.Add(v.Elements.First());
@@ -84,24 +84,24 @@ namespace runtimelib.tests
         [Test]
         public void IsIn()
         {
-            var jamlist = new JamList("one", "two", "three", "four");
+            var jamlist = new LocalJamList("one", "two", "three", "four");
 
-            Assert.IsTrue(new JamList("one").IsIn(jamlist));
-            Assert.IsTrue(new JamList("one","two").IsIn(jamlist));
-            Assert.IsFalse(new JamList("one", "five").IsIn(jamlist));
+            Assert.IsTrue(new LocalJamList("one").IsIn(jamlist));
+            Assert.IsTrue(new LocalJamList("one","two").IsIn(jamlist));
+            Assert.IsFalse(new LocalJamList("one", "five").IsIn(jamlist));
         }
 
 	    [Test]
 	    public void ImplicitConversion()
 	    {
-		    JamList j = "hello";
+		    LocalJamList j = "hello";
 			CollectionAssert.AreEqual(new[] { "hello"}, j.Elements);
 	    }
 
 	    [Test]
 	    public void AppendWithMoreArguments()
 	    {
-		    var j = new JamList("initial");
+		    var j = new LocalJamList("initial");
 			j.Append("asd", "asd2");
 
 			CollectionAssert.AreEqual(new[] { "initial", "asd", "asd2"}, j.Elements);
@@ -110,7 +110,7 @@ namespace runtimelib.tests
 	    [Test]
 	    public void Clone()
 	    {
-		    var j = new JamList("juha");
+		    var j = new LocalJamList("juha");
 		    var clone = j.Clone();
 			CollectionAssert.AreEqual(new[] { "juha"}, clone.Elements);
 	    }
@@ -118,29 +118,29 @@ namespace runtimelib.tests
 	    [Test]
 	    public void Include()
 	    {
-		    var j = new JamList("hello","there","sailor");
+		    var j = new LocalJamList("hello","there","sailor");
 			CollectionAssert.AreEqual(new[] {"there"}, j.Include("th").Elements);
 	    }
 
 		[Test]
 		public void IncludeWithRegex()
 		{
-			var j = new JamList("hello", "there", "sailor");
+			var j = new LocalJamList("hello", "there", "sailor");
 			CollectionAssert.AreEqual(new[] { "hello" }, j.Include("hel+").Elements);
 		}
 
 		[Test]
 		public void IncludeOnlyAllowsSingleElement()
 		{
-			var j = new JamList("hello", "there", "sailor");
-			var pattern = new JamList("one","two");
+			var j = new LocalJamList("hello", "there", "sailor");
+			var pattern = new LocalJamList("one","two");
 			Assert.Throws<ArgumentException>(() => j.Include(pattern));
 		}
 
 	    [Test]
 	    public void AssignIfEmpty()
 	    {
-		    var j = new JamList();
+		    var j = new LocalJamList();
 		    j.AssignIfEmpty("harry");
 			CollectionAssert.AreEqual(new[] { "harry" }, j.Elements);
 
@@ -148,19 +148,17 @@ namespace runtimelib.tests
 			CollectionAssert.AreEqual(new[] { "harry" }, j.Elements);
 		}
 
-
+		
 	    [Test]
 	    public void DereferenceElementsNonFlat()
 	    {
-		    var globals = new GlobalVariables
-		    {
-			    ["one"] = "1",
-			    ["two"] = "2"
-		    };
+			var globals = new GlobalVariables();
+		    globals["one"].Assign("1");
+			globals["two"].Assign("2");
 
-		    var variableNames = new JamList("one", "two");
+			var variableNames = new LocalJamList("one", "two");
 
-			JamList[] dereferenced = globals.DereferenceElementsNonFlat(variableNames);
+			RemoteJamList[] dereferenced = globals.DereferenceElementsNonFlat(variableNames);
 		
 			dereferenced[0].Append("another1");
 			dereferenced[1].Append("another2");
@@ -172,15 +170,13 @@ namespace runtimelib.tests
 		[Test]
 		public void DereferenceElements()
 		{
-			var globals = new GlobalVariables
-			{
-				["one"] = "1",
-				["two"] = "2"
-			};
+			var globals = new GlobalVariables();
+			globals["one"].Assign("1");
+			globals["two"].Assign("2");
 
-			var variableNames = new JamList("one", "two");
+			var variableNames = new LocalJamList("one", "two");
 
-			JamList dereferenced = globals.DereferenceElements(variableNames);
+			var dereferenced = globals.DereferenceElements(variableNames);
 			
 			CollectionAssert.AreEqual(new[] { "1", "2" }, dereferenced);
 		}
@@ -188,8 +184,8 @@ namespace runtimelib.tests
 	    [Test]
 	    public void GreaterThan()
 	    {
-		    var left = new JamList("1");
-		    var right = new JamList("3");
+		    var left = new LocalJamList("1");
+		    var right = new LocalJamList("3");
 		    Assert.IsFalse(left.GreaterThan(right));
 			Assert.IsTrue(right.GreaterThan(left));
 		}
@@ -197,8 +193,8 @@ namespace runtimelib.tests
 		[Test]
 		public void LessThan()
 		{
-			var left = new JamList("1");
-			var right = new JamList("3");
+			var left = new LocalJamList("1");
+			var right = new LocalJamList("3");
 			Assert.IsTrue(left.LessThan(right));
 			Assert.IsFalse(right.LessThan(left));
 		}
@@ -206,7 +202,7 @@ namespace runtimelib.tests
 		[Test]
 	    public void ElementsAsJamList()
 	    {
-		    var j = new JamList("one", "two");
+		    var j = new LocalJamList("one", "two");
 
 		    var elementsAsLists = j.ElementsAsJamLists.ToArray();
 			CollectionAssert.AreEqual(new[] { "one" }, elementsAsLists[0]);
