@@ -1,0 +1,3 @@
+[submodule "external/jamplus"]
+	path = external/jamplus
+	url = https://github.com/Unity-Technologies/jamplus
