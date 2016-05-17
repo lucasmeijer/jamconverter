@@ -27,7 +27,7 @@ namespace jamconverter
                 file.WriteAllText(subfile.Contents);
 	        }
 
-	        var jamPath = Environment.OSVersion.Platform == PlatformID.Win32NT ? "external/jamplus/bin/ntx86/jam.debug.exe" : "external/jamplus/macosx64/jam";
+	        var jamPath = Environment.OSVersion.Platform == PlatformID.Win32NT ? "external/jamplus/bin/win32/jam.exe" : "external/jamplus/macosx64/jam";
             var jamBinary = ConverterRoot.Combine(jamPath);
 
             string startupArg = "";
