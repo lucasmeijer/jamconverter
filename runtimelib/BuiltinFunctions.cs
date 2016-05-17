@@ -5,16 +5,16 @@ using System.Reflection;
 
 public static class BuiltinFunctions
 {
-	public static void RegisterJamFiles(params string[] paths)
+	public static void RegisterJamFile(string jamFile, Action entryPoint)
 	{
-#if EMBEDDED_MODE
-		// Nothing to do.
-#else
-		////TODO
-#endif
+	    Jam.Interop.RegisterRule(jamFile, args =>
+	    {
+	        entryPoint();
+	        return null;
+	    });
 	}
-
-	static string[][] JamListArrayToLOL(JamList[] values)
+    
+    static string[][] JamListArrayToLOL(JamList[] values)
 	{
 		return Array.ConvertAll (values, i => i.Elements.ToArray ());
 	}
@@ -66,10 +66,15 @@ public static class BuiltinFunctions
 				return new string[0];
 			return ((JamList)result).Elements.ToArray();
 		};
-		#if EMBEDDED_MODE
+	
 		Jam.Interop.RegisterRule(rulename, d);
-		#endif
 	}
+
+    public static void Include(JamList jamfiles)
+    {
+        foreach(var jamfile in jamfiles.Elements)
+            Jam.Interop.Include(jamfile);
+    }
 
     public static string SwitchTokenFor(JamList input)
     {

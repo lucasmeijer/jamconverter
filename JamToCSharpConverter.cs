@@ -29,7 +29,7 @@ namespace jamconverter
             get { yield return JamRunner.ConverterRoot.Combine(new NPath("bin/runtimelib.dll")); }
         }
 
-		public ProgramDescripton Convert(ProgramDescripton jamProgram)
+		public ProgramDescripton Convert(ProgramDescripton jamProgram, bool firstFileIsEntryPoint = true)
         {
 			foreach (var sourceFile in jamProgram)
 			{
@@ -52,9 +52,7 @@ namespace jamconverter
 			
 
 			globalsFile.Members.Add(staticGlobalsSingleton);
-
 			globalsFile.Members.Add(_staticGlobals);
-			
 
 			
 			var result = new ProgramDescripton();
@@ -94,7 +92,7 @@ namespace jamconverter
 
 		
 			result.Add(BuildActionsType());
-			result.Add(BuildEntryPoint(_filesToTopLevel.First().Key));
+			result.Add(BuildEntryPoint(firstFileIsEntryPoint ? _filesToTopLevel.First().Key : null));
 
 			var globalsFileDescription = new SourceFileDescription()
 			{
@@ -105,7 +103,7 @@ namespace jamconverter
 			return result;
         }
 
-	    private SourceFileDescription BuildEntryPoint(SourceFileDescription firstJamFile)
+	    private SourceFileDescription BuildEntryPoint(SourceFileDescription jamFileToInvokeOnStartup)
 	    {		
 		    var syntaxTree = NewSyntaxTree();
 		    var entrypointType = new NRefactory.TypeDeclaration() {Name = "EntryPoint"};
@@ -124,27 +122,29 @@ namespace jamconverter
 					.Prepend (new NRefactory.SimpleType ("BuiltinFunctions"))
 					.Select (st => new NRefactory.TypeOfExpression (st));
 
-			var filesRegistration =
-				new NRefactory.ExpressionStatement(
-					new NRefactory.InvocationExpression(
-						new NRefactory.MemberReferenceExpression(
-							new NRefactory.IdentifierExpression("BuiltinFunctions"),
-							"RegisterJamFiles"),
-						_filesToTopLevel.Keys.Select(file => new NRefactory.PrimitiveExpression(file.FileName))
-					)
-				);
-			mainMethod.Body.Statements.Add(filesRegistration);
 
-		    var objectCreateExpression = new NRefactory.ObjectCreateExpression(new NRefactory.SimpleType(nameof(DynamicRuleInvocationService)), types);
+	        foreach (var file in _filesToTopLevel.Keys)
+	        {
+	            var filesRegistration =
+	                new NRefactory.ExpressionStatement(
+	                    new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("BuiltinFunctions"), "RegisterJamFile"),
+	                        new NRefactory.PrimitiveExpression(file.FileName), new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(file.FileName)+".TopLevel")));
+
+	            mainMethod.Body.Statements.Add(filesRegistration);
+	        }
+
+	        var objectCreateExpression = new NRefactory.ObjectCreateExpression(new NRefactory.SimpleType(nameof(DynamicRuleInvocationService)), types);
 		    var assignment =
 			    new NRefactory.AssignmentExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(nameof(DynamicRuleInvocationService)),"Instance"), objectCreateExpression);
 
 			mainMethod.Body.Statements.Add(assignment);
 
-			var topLevelMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(firstJamFile.FileName)), "TopLevel");
-		    mainMethod.Body.Statements.Add(new NRefactory.ExpressionStatement() {Expression = new NRefactory.InvocationExpression(topLevelMethod)});
-			
-			syntaxTree.Members.Add(entrypointType);
+	        if (jamFileToInvokeOnStartup != null)
+	        {
+	            var topLevelMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(jamFileToInvokeOnStartup.FileName)), "TopLevel");
+	            mainMethod.Body.Statements.Add(new NRefactory.ExpressionStatement() {Expression = new NRefactory.InvocationExpression(topLevelMethod)});
+	        }
+	        syntaxTree.Members.Add(entrypointType);
 			entrypointType.Members.Add(mainMethod);
 
 			return new SourceFileDescription()
@@ -265,13 +265,13 @@ namespace jamconverter
 
 	    private NRefactory.Statement ProcessIncludeStatement(IncludeStatement statement)
 	    {
+            /*
 		    var literal = statement.Expression as LiteralExpression;
 		    if (literal != null)
 		    {
 			    var memberReferenceExpression = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(literal.Value)), "TopLevel");
-
 			    return new NRefactory.ExpressionStatement(new NRefactory.InvocationExpression(memberReferenceExpression));
-		    }
+		    }*/
 
 			var memberReferenceExpression2 = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(nameof(DynamicRuleInvocationService)),"Instance.DynamicInclude");
 			return new NRefactory.ExpressionStatement(new NRefactory.InvocationExpression(memberReferenceExpression2, ProcessExpression(statement.Expression)));

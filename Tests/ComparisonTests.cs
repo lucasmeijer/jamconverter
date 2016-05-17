@@ -862,41 +862,74 @@ Echo @($(myvar)/somepath:S=.ini) ;
 		{
 			var jam1 =
 @"
-Echo jam1 ;
-myvar = hello ;
-include file2.jam ;
-mydynamicfiles = file3.jam myfile2.jam ;
-include $(mydynamicfile) ;
-Echo jam1 post ;
+Echo this file will be csharp ;
+myvar = file2.jam ;
+include $(myvar) ;
+Echo file1 post ;
 ";
 			var jam2 =
 @"
-Echo hello $(hello) ;
-Echo Jam2 ;
+Echo this file will stay jam ;
+include file3.jam ;
+Echo file2 post ;
 ";
 
 			var jam3 =
 @"
-Echo hello $(hello) ;
-Echo Jam3 ;
+Echo and this file is csharp again ;
 ";
 
 			var jamProgram = new ProgramDescripton()
 			{
-				new SourceFileDescription() { Contents = jam1, FileName = "Jamfile.jam" },
+				new SourceFileDescription() { Contents = jam1, FileName = "file1.jam" },
 				new SourceFileDescription() { Contents = jam2, FileName = "file2.jam" },
 				new SourceFileDescription() { Contents = jam3, FileName = "file3.jam" }
 			};
 			
-			AssertConvertedProgramHasIdenticalOutput(jamProgram);
+			AssertConvertedProgramHasIdenticalOutput(jamProgram, new[] { "file1.jam", "file3.jam"});
 		}
 
-		private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
+        [Test]
+        public void VariablePersistence()
+        {
+            var jam1 =
+@"
+Echo this file will be csharp ;
+
+myglobal = 123 ;
+Echo myglobal from csharp $(myglobal) ;
+include file2.jam ;
+";
+            var jam2 =
+@"
+Echo this file will stay jam ;
+Echo myglobal from jam $(myglobal) ;
+myglobal = 312 ;
+include file3.jam ;
+";
+
+            var jam3 =
+@"
+Echo and this file is csharp again ;
+Echo myglobal from file3 $(myglobal) ;
+";
+
+            var jamProgram = new ProgramDescripton()
+            {
+                new SourceFileDescription() { Contents = jam1, FileName = "file1.jam" },
+                new SourceFileDescription() { Contents = jam2, FileName = "file2.jam" },
+                new SourceFileDescription() { Contents = jam3, FileName = "file3.jam" }
+            };
+
+            AssertConvertedProgramHasIdenticalOutput(jamProgram, new[] { "file1.jam", "file3.jam" });
+        }
+
+        private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(new ProgramDescripton() {new SourceFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}});
 	    }
 
-	    private static void AssertConvertedProgramHasIdenticalOutput(ProgramDescripton program)
+	    private static void AssertConvertedProgramHasIdenticalOutput(ProgramDescripton program, IEnumerable<string> onlyConvert = null)
 	    {
 		    var jamResult = new JamRunner().Run(program).Select(s => s.TrimEnd());
 		    Console.WriteLine("Jam:");
@@ -905,11 +938,17 @@ Echo Jam3 ;
 
 		    IEnumerable<string> csharpResult = null;
 
+	        Func<string, bool> shouldConvert = (string name) => onlyConvert == null || onlyConvert.Contains(name);
+
 		    try
 		    {
-			    var csharp = new JamToCSharpConverter().Convert(program);
+		        var toBeCSharp = new ProgramDescripton(program.Where(f => shouldConvert(f.FileName)));
+                var toStayJam  = new ProgramDescripton(program.Where(f => !shouldConvert(f.FileName)));
+
+                var csharp = new JamToCSharpConverter().Convert(toBeCSharp, shouldConvert(program.First().FileName));
+
 			    csharpResult =
-				    new JamRunner().Run(csharp)
+				    new JamRunner().Run(new ProgramDescripton(csharp.Concat(toStayJam)))
 					    .Select(s => s.TrimEnd());
 
 			    Console.WriteLine("C#:");

@@ -38,15 +38,14 @@ namespace jamconverter
 
                 startupArg += "-m " + csharpExe.InQuotes();
             }
-
-            var firstJamFile = program.FirstOrDefault(f => f.FileName.EndsWith(".jam"));
-            if (firstJamFile != null)
+            
+            if (program.First().FileName.EndsWith(".jam"))
             {
-                startupArg += " -f " + firstJamFile.FileName;
+                startupArg += " -f " + program.First().FileName;
             }
 
             startupArg += " -C " + tempDir;
-            Console.WriteLine("args: "+startupArg);
+            Console.WriteLine("args: "+ startupArg);
             var execute = Shell.Execute(jamBinary, startupArg);
 
             var lines = execute.Split(new[] {Environment.NewLine}, StringSplitOptions.None);

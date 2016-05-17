@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Policy;
 
 namespace Jam
 {
@@ -57,5 +58,19 @@ namespace Jam
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public static extern void Setting(string name, string[] targets, string[] values);
-	}
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern void Include(string jamfile);
+        
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        static extern void RegisterRuleInternal(string name, object callback);
+
+
+
+        public static void RegisterRule(string name, Func<string[][], string[]> callback)
+        {
+            RegisterRuleInternal(name, callback);
+        }
+
+    }
 }

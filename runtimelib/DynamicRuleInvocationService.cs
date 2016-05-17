@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -16,21 +17,12 @@ namespace runtimelib
 
 		public JamList InvokeRule(JamList jamList, params JamList[] arguments)
 		{
-			#if EMBEDDED_MODE
-			// Todo: Invoke multiple rules?
-			return BuiltinFunctions.InvokeRule(jamList.First(), arguments);
-			#else
-			var results = new JamList();
-			foreach (var value in jamList.Elements)
-			{
-				MethodInfo method = FindMethod(value);
-				if (method == null)
-					throw new ArgumentException("Unable to find dynamically invoked rule: " + value);
+            // Todo: Invoke multiple rules?
+            var result = new List<string>();
+		    foreach (var rule in jamList.Elements)
+		        result.AddRange(BuiltinFunctions.InvokeRule(rule, arguments).Elements);
 
-				results.Append (InvokeMethod (method, arguments));
-			}
-			return results;
-			#endif
+            return new JamList(result.ToArray());
 		}
 
 		static JamList InvokeMethod (MethodInfo method, JamList[] arguments)
@@ -47,12 +39,8 @@ namespace runtimelib
 
 		public void DynamicInclude(JamList value)
 		{
-			foreach (var fileName in value.Elements)
-			{
-				var type = _types.Single(t => t.Name == ConverterLogic.ClassNameForJamFile(fileName));
-				type.GetMethod("TopLevel").Invoke(null, null);
-			}
-		}
+            BuiltinFunctions.Include(value);
+        }
 
 		private MethodInfo FindMethod(string methodName)
 		{
