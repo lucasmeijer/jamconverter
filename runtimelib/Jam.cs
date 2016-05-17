@@ -24,26 +24,22 @@ namespace Jam
 		RemoveEmptyDirs = 1 << 12
 	}
 
-	public class InteropHelper
-	{
-		static InteropHelper()
-		{
-			InteropHelper.Enabled = InteropHelper.GetHasInterop();
-		}
+    public class InteropHelper
+    {
+        static InteropHelper()
+        {
+            InteropHelper.Enabled = InteropHelper.GetHasInterop();
+        }
 
-		public static bool Enabled { get; set; }
+        public static bool Enabled { get; set; }
 
-		private static bool GetHasInterop()
-		{
-#if EMBEDDED_MODE
-			return true;
-#else
-			return false;
-#endif
-		}
+        private static bool GetHasInterop()
+        {
+            return true;
+        }
+    }
 
-#if EMBEDDED_MODE
-	public class Interop
+    public class Interop
 	{
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public static extern string[] InvokeRule(string rulename, string[][] param);
@@ -61,7 +57,5 @@ namespace Jam
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public static extern void Setting(string name, string[] targets, string[] values);
-	}
-#endif
 	}
 }

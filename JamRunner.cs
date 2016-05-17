@@ -34,7 +34,7 @@ namespace jamconverter
             if (program.Any(f => f.FileName.EndsWith(".cs")))
             {
                 var csharpExe = tempDir.Combine("csharp.exe");
-                CSharpRunner.Compile(new ProgramDescripton(program.Where(f => f.FileName.EndsWith(".cs"))), new NPath[] {}, csharpExe);
+                CSharpRunner.Compile(new ProgramDescripton(program.Where(f => f.FileName.EndsWith(".cs"))), JamToCSharpConverter.RuntimeDependencies, csharpExe);
 
                 startupArg += "-m " + csharpExe.InQuotes();
             }
@@ -46,6 +46,7 @@ namespace jamconverter
             }
 
             startupArg += " -C " + tempDir;
+            Console.WriteLine("args: "+startupArg);
             var execute = Shell.Execute(jamBinary, startupArg);
 
             var lines = execute.Split(new[] {Environment.NewLine}, StringSplitOptions.None);

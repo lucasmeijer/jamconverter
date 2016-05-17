@@ -400,7 +400,6 @@ Echo d ;
         }
 
         [Test]
-		[Ignore("only works on pc")]
         public void BuiltinMD5()
         {
             AssertConvertedProgramHasIdenticalOutput("Echo [ MD5 harry ] ;");
@@ -910,7 +909,7 @@ Echo Jam3 ;
 		    {
 			    var csharp = new JamToCSharpConverter().Convert(program);
 			    csharpResult =
-				    new CSharpRunner().Run(csharp, JamToCSharpConverter.RuntimeDependencies)
+				    new JamRunner().Run(csharp)
 					    .Select(s => s.TrimEnd());
 
 			    Console.WriteLine("C#:");

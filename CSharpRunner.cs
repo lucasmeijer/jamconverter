@@ -30,11 +30,12 @@ namespace jamconverter.Tests
                 var file = absolutePath.WriteAllText(fileEntry.Contents);
                 Console.WriteLine(".cs: " + file);
             }
-            var csc = new NPath(Environment.OSVersion.Platform == PlatformID.Win32NT ? "C:/il2cpp-dependencies/Roslyn/Binaries/csc.exe" : "/usr/local/bin/mcs");
 
-          
+            var compiler = new NPath(@"C:\il2cpp-dependencies\MonoBleedingEdge\builds\monodistribution\bin\mcs" + (Environment.OSVersion.Platform == PlatformID.Win32NT ? ".bat" : ""));
+            
             if (additionalLibs == null) additionalLibs = new NPath[0];
-            Shell.Execute(csc, absoluteCSFiles.InQuotes().SeperateWithSpace() + " " + additionalLibs.InQuotes().Select(l => "-r:" + l).SeperateWithSpace() + " -debug -out:" + executable);
+
+            Shell.Execute(compiler, absoluteCSFiles.InQuotes().SeperateWithSpace() + " " + additionalLibs.InQuotes().Select(l => "-r:" + l).SeperateWithSpace() + " -debug -langversion:6 -out:" + executable);
 
             foreach (var lib in additionalLibs)
                 lib.Copy(tmpDir);

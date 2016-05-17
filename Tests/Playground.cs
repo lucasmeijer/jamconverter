@@ -12,6 +12,7 @@ namespace jamconverter.Tests
 	class Playground
 	{
 		[Test]
+        [Ignore("Playground")]
 		public void A()
 		{
 			var converter = new JamToCSharpConverter();
