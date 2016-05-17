@@ -16,7 +16,7 @@ namespace jamconverter.Tests
 		{
 			var converter = new JamToCSharpConverter();
 			var inputFile = "c:/unity/External/Jamplus/builds/bin/Jambase.jam";
-			var program = new[] {new SourceFileDescription() { Contents = new NPath(inputFile).ReadAllText(), FileName = "Main.cs"} };
+			var program = new ProgramDescripton{new SourceFileDescription() { Contents = new NPath(inputFile).ReadAllText(), FileName = "Main.cs"} };
 			var output = converter.Convert(program);
 		
 			new CSharpRunner().Run(output, new[] { new NPath("c:/jamconverter/bin/runtimelib.dll") }).Select(s => s.TrimEnd());

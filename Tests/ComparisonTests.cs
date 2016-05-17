@@ -882,7 +882,7 @@ Echo hello $(hello) ;
 Echo Jam3 ;
 ";
 
-			var jamProgram = new[]
+			var jamProgram = new ProgramDescripton()
 			{
 				new SourceFileDescription() { Contents = jam1, FileName = "Jamfile.jam" },
 				new SourceFileDescription() { Contents = jam2, FileName = "file2.jam" },
@@ -894,10 +894,10 @@ Echo Jam3 ;
 
 		private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
 	    {
-		    AssertConvertedProgramHasIdenticalOutput(new[] {new SourceFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}});
+		    AssertConvertedProgramHasIdenticalOutput(new ProgramDescripton() {new SourceFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}});
 	    }
 
-	    private static void AssertConvertedProgramHasIdenticalOutput(SourceFileDescription[] program)
+	    private static void AssertConvertedProgramHasIdenticalOutput(ProgramDescripton program)
 	    {
 		    var jamResult = new JamRunner().Run(program).Select(s => s.TrimEnd());
 		    Console.WriteLine("Jam:");
@@ -910,7 +910,7 @@ Echo Jam3 ;
 		    {
 			    var csharp = new JamToCSharpConverter().Convert(program);
 			    csharpResult =
-				    new CSharpRunner().Run(csharp, new[] {JamRunner.ConverterRoot.Combine(new NPath("bin/runtimelib.dll"))})
+				    new CSharpRunner().Run(csharp, JamToCSharpConverter.RuntimeDependencies)
 					    .Select(s => s.TrimEnd());
 
 			    Console.WriteLine("C#:");

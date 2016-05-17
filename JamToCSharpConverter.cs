@@ -19,10 +19,17 @@ namespace jamconverter
 
 	    public string Convert(string simpleProgram)
 	    {
-		    return Convert(new[] {new SourceFileDescription() {Contents = simpleProgram, FileName = "Jamfile.jam"}})[0].Contents;
+	        var sd = new SourceFileDescription() {Contents = simpleProgram, FileName = "Jamfile.jam"};
+
+	        return Convert(new ProgramDescripton {sd})[0].Contents;
 	    }
 
-		public SourceFileDescription[] Convert(SourceFileDescription[] jamProgram)
+        public static IEnumerable<NPath> RuntimeDependencies
+        {
+            get { yield return JamRunner.ConverterRoot.Combine(new NPath("bin/runtimelib.dll")); }
+        }
+
+		public ProgramDescripton Convert(ProgramDescripton jamProgram)
         {
 			foreach (var sourceFile in jamProgram)
 			{
@@ -50,7 +57,7 @@ namespace jamconverter
 			
 
 			
-			var result = new List<SourceFileDescription>();
+			var result = new ProgramDescripton();
 			
 			foreach (var kvp in _filesToTopLevel)
 			{
@@ -95,7 +102,7 @@ namespace jamconverter
 				Contents = globalsFile.ToString()
 			};
 			result.Add(globalsFileDescription);
-			return result.ToArray();
+			return result;
         }
 
 	    private SourceFileDescription BuildEntryPoint(SourceFileDescription firstJamFile)
