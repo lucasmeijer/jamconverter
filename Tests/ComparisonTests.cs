@@ -47,6 +47,23 @@ for x in \$(foo) { Echo $(x) ; }
 			);
         }
 
+
+		[Test]
+		[Ignore("not working yet")]
+		public void DModifier()
+		{
+			AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = some/dir/myfile.cs ;
+Echo $(myvar:D) ;
+myvar = file.cs ;
+Echo $(myvar:D) ;
+myfar = file1.cs harry/sally/subdir/yeah.cpp ;
+Echo $(myvar:D) ;
+"
+			);
+		}
+
 		[Test]
 		public void DereferenceCombineExpression()
 		{
