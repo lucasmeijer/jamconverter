@@ -1,12 +1,14 @@
 ﻿using System;
-using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using jamconverter.Tests;
 using NiceIO;
 using NUnit.Framework;
 using Unity.IL2CPP;
-using System.Collections.Generic;
 
-namespace jamconverter.Tests
+namespace jamconverter
 {
     class CSharpRunner
     {
@@ -31,6 +33,10 @@ namespace jamconverter.Tests
                 Console.WriteLine(".cs: " + file);
             }
 
+	        var csproj = tmpDir.Combine("program.csproj");
+	        csproj.WriteAllText(CSProjContentsFor(program, additionalLibs));
+			Console.WriteLine("csproj: "+csproj);
+
             var compiler = new NPath(@"C:\il2cpp-dependencies\MonoBleedingEdge\builds\monodistribution\bin\mcs" + (Environment.OSVersion.Platform == PlatformID.Win32NT ? ".bat" : ""));
             
             if (additionalLibs == null) additionalLibs = new NPath[0];
@@ -41,6 +47,37 @@ namespace jamconverter.Tests
                 lib.Copy(tmpDir);
             return executable;
         }
+
+	    private static string CSProjContentsFor(ProgramDescripton program, IEnumerable<NPath> additionalLibs)
+	    {
+		    var template = ReadTemplate();
+
+		    var inject = new StringBuilder();
+		    inject.AppendLine("<ItemGroup>");
+		    inject.AppendLine(@" <Reference Include=""System"" />");
+			inject.AppendLine(@" <Reference Include=""System.Core"" />");
+		    foreach (var additionalLib in additionalLibs)
+			    inject.AppendLine($@"  <Reference Include=""{additionalLib}"" />");
+			inject.AppendLine("</ItemGroup>");
+
+			inject.AppendLine("<ItemGroup>");
+			foreach (var file in program)
+				inject.AppendLine($@"  <Compile Include=""{file.FileName}"" />");
+			inject.AppendLine("</ItemGroup>");
+
+		    return template.Replace("$$INSERT_FILES_HERE$$", inject.ToString());
+	    }
+
+	    private static string ReadTemplate()
+	    {
+		    var assembly = typeof(CSharpRunner).Assembly;
+		    using (Stream resFilestream = assembly.GetManifestResourceStream(typeof(CSharpRunner), "csproj_template"))
+		    {
+			    byte[] ba = new byte[resFilestream.Length];
+			    resFilestream.Read(ba, 0, ba.Length);
+			    return Encoding.UTF8.GetString(ba);
+		    }
+	    }
     }
 
     [TestFixture]

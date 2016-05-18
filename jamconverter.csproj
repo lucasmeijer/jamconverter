@@ -102,6 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <EmbeddedResource Include="csproj_template" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
