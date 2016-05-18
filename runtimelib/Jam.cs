@@ -65,9 +65,10 @@ namespace Jam
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static extern void RegisterRuleInternal(string name, object callback);
 
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		public static extern string[] Expand(string name);
 
-
-        public static void RegisterRule(string name, Func<string[][], string[]> callback)
+		public static void RegisterRule(string name, Func<string[][], string[]> callback)
         {
             RegisterRuleInternal(name, callback);
         }
