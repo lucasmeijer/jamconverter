@@ -961,12 +961,16 @@ Echo myglobal from file3 $(myglobal) ;
 
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
 	    {
-		    AssertConvertedProgramHasIdenticalOutput(new ProgramDescripton() {new SourceFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}});
+		    AssertConvertedProgramHasIdenticalOutput(new ProgramDescripton {new SourceFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}});
 	    }
 
 	    private static void AssertConvertedProgramHasIdenticalOutput(ProgramDescripton program, IEnumerable<string> onlyConvert = null)
 	    {
-		    var jamResult = new JamRunner().Run(program).Select(s => s.TrimEnd());
+		    program[0].Contents = "NotFile all ;\n" + program[0].Contents;
+
+		    var jamRunInstructions = new JamRunnerInstructions {JamfilesToCreate = program};
+
+			var jamResult = new JamRunner().Run(jamRunInstructions).Select(s => s.TrimEnd());
 		    Console.WriteLine("Jam:");
 		    foreach (var l in jamResult)
 			    Console.WriteLine(l);
@@ -980,11 +984,16 @@ Echo myglobal from file3 $(myglobal) ;
 		        var toBeCSharp = new ProgramDescripton(program.Where(f => shouldConvert(f.FileName)));
                 var toStayJam  = new ProgramDescripton(program.Where(f => !shouldConvert(f.FileName)));
 
-                var csharp = new JamToCSharpConverter().Convert(toBeCSharp, shouldConvert(program.First().FileName));
-		       
-			    csharpResult =
-				    new JamRunner().Run(new ProgramDescripton(csharp.Concat(toStayJam)))
-					    .Select(s => s.TrimEnd());
+                var csharp = new JamToCSharpConverter().Convert(toBeCSharp);
+
+			    var convertedJamRunInstructions = new JamRunnerInstructions()
+			    {
+				    CSharpFiles = csharp,
+				    JamfilesToCreate = toStayJam,
+				    JamFileToInvokeOnStartup = program[0].FileName
+			    };
+
+			    csharpResult = new JamRunner().Run(convertedJamRunInstructions).Select(s => s.TrimEnd());
 
 			    Console.WriteLine("C#:");
 			    foreach (var l in csharpResult)

@@ -19,7 +19,7 @@ namespace jamconverter
             return Shell.Execute(executable, "").Split(new[] {Environment.NewLine}, StringSplitOptions.None);
         }
 
-        public static NPath Compile(ProgramDescripton program, IEnumerable<NPath> additionalLibs, NPath outputFile = null)
+        public static NPath Compile(List<SourceFileDescription> program, IEnumerable<NPath> additionalLibs, NPath outputFile = null)
         {
             var executable = outputFile ??  NPath.CreateTempDirectory("CSharp").Combine("program.exe");
             var tmpDir = executable.Parent;
@@ -48,7 +48,7 @@ namespace jamconverter
             return executable;
         }
 
-	    private static string CSProjContentsFor(ProgramDescripton program, IEnumerable<NPath> additionalLibs)
+	    private static string CSProjContentsFor(List<SourceFileDescription> program, IEnumerable<NPath> additionalLibs)
 	    {
 		    var template = ReadTemplate();
 
