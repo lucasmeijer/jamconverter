@@ -29,7 +29,7 @@ namespace jamconverter
             get { yield return JamRunner.ConverterRoot.Combine(new NPath("bin/runtimelib.dll")); }
         }
 
-		public ProgramDescripton Convert(ProgramDescripton jamProgram, bool firstFileIsEntryPoint = true)
+		public ProgramDescripton Convert(ProgramDescripton jamProgram)
         {
 			foreach (var sourceFile in jamProgram)
 			{
@@ -90,7 +90,7 @@ namespace jamconverter
 
 		
 			result.Add(BuildActionsType());
-			result.Add(BuildEntryPoint(firstFileIsEntryPoint ? _filesToTopLevel.First().Key : null));
+			result.Add(BuildEntryPoint());
 
 			var globalsFileDescription = new SourceFileDescription()
 			{
@@ -101,7 +101,7 @@ namespace jamconverter
 			return result;
         }
 
-	    private SourceFileDescription BuildEntryPoint(SourceFileDescription jamFileToInvokeOnStartup)
+	    private SourceFileDescription BuildEntryPoint()
 	    {		
 		    var syntaxTree = NewSyntaxTree();
 		    var entrypointType = new NRefactory.TypeDeclaration() {Name = "EntryPoint"};
@@ -137,11 +137,6 @@ namespace jamconverter
 
 			mainMethod.Body.Statements.Add(assignment);
 
-	        if (jamFileToInvokeOnStartup != null)
-	        {
-	            var topLevelMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(jamFileToInvokeOnStartup.FileName)), "TopLevel");
-	            mainMethod.Body.Statements.Add(new NRefactory.ExpressionStatement() {Expression = new NRefactory.InvocationExpression(topLevelMethod)});
-	        }
 	        syntaxTree.Members.Add(entrypointType);
 			entrypointType.Members.Add(mainMethod);
 
@@ -799,7 +794,7 @@ namespace jamconverter
 			//@(mads:S=.exe) -> new LocalJamList("mads").WithSuffix(".exe");
 
 			var resultExpression = ProcessExpansionStyleExpressionVariablePreModifiers(expansionStyleExpression);
-
+			
 	        if (expansionStyleExpression.IndexerExpression != null)
             {
                 var memberReferenceExpression = new NRefactory.MemberReferenceExpression(resultExpression, "IndexedBy");
@@ -840,6 +835,8 @@ namespace jamconverter
         {
             switch (modifier.Command)
             {
+				case 'D':
+		            return "DirectoryModifier";
                 case 'S':
                     return "WithSuffix";
                 case 'E':
