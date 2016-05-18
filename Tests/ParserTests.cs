@@ -601,7 +601,15 @@ actions response myactionname
 			Assert.AreEqual("my:funky:arg0", invocationExpression.Arguments[0].Single().As<LiteralExpression>().Value);
 	    }
 
-	    [Test]
+		[Test]
+		public void DynamicRuleInvocationInBrackets()
+		{
+			var invocationExpression = ParseExpression<InvocationExpression>("[ $(mydynamicrule) ]");
+
+			Assert.AreEqual("mydynamicrule", invocationExpression.RuleExpression.As<VariableDereferenceExpression>().VariableExpression.As<LiteralExpression>().Value);
+		}
+
+		[Test]
 	    public void LiteralExpansionExpression()
 	    {
 		    var result = ParseExpression<LiteralExpansionExpression>("@(myname:S=exe)");

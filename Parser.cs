@@ -201,14 +201,24 @@ namespace jamconverter
                 return new AssignmentStatement() { Left = leftSideOfAssignment, Right = right, Operator = OperatorFor(assignmentToken.tokenType) };
             }
             
-            var invocationExpression = new InvocationExpression {RuleExpression = ParseExpression(), Arguments = ParseArgumentList()};
+            var invocationExpression = ParseInvocationExpression();
 
             _scanResult.Next().Is(TokenType.Terminator);
 
             return new ExpressionStatement {Expression = invocationExpression};
         }
 
-        private Expression ParseLeftSideOfAssignment()
+	    private InvocationExpression ParseInvocationExpression()
+	    {
+		    var invocationExpression = new InvocationExpression
+		    {
+			    RuleExpression = ParseExpression(),
+			    Arguments = ParseArgumentList()
+		    };
+		    return invocationExpression;
+	    }
+
+	    private Expression ParseLeftSideOfAssignment()
         {
             var cursor = _scanResult.GetCursor();
             ParseExpression();
@@ -354,8 +364,10 @@ namespace jamconverter
 			    case TokenType.AccoladeOpen:
 				    return null;
 			    case TokenType.BracketOpen:
-				    return ParseInvocationExpression();
-
+				    _scanResult.Next();
+				    var result = ParseInvocationExpression();
+				    _scanResult.Next().Is(TokenType.BracketClose);
+				    return result;
 				case TokenType.Not:
 				    _scanResult.Next();
 				    var expression = ParseExpression();
@@ -367,21 +379,7 @@ namespace jamconverter
 		    }
 	    }
 
-	    private Expression ParseInvocationExpression()
-        {
-            var bracketOpen = _scanResult.Next();
-            if (bracketOpen.tokenType != TokenType.BracketOpen)
-                throw new ParsingException();
-
-            var ruleExpression = ParseExpression();
-            var arguments = ParseArgumentList();
-            var closeBracket = _scanResult.Next();
-            if (closeBracket.tokenType != TokenType.BracketClose)
-                throw new ParsingException();
-            return new InvocationExpression {RuleExpression = ruleExpression.As<LiteralExpression>(), Arguments = arguments};
-        }
-
-        private Expression ParseExpansionStyleExpression()
+	    private Expression ParseExpansionStyleExpression()
         {
             var token = _scanResult.Next();
 
