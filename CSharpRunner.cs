@@ -50,6 +50,7 @@ namespace jamconverter
 
 	    private static string CSProjContentsFor(List<SourceFileDescription> program, IEnumerable<NPath> additionalLibs)
 	    {
+	        additionalLibs = additionalLibs ?? new NPath[] {};
 		    var template = ReadTemplate();
 
 		    var inject = new StringBuilder();

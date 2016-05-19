@@ -148,39 +148,6 @@ namespace runtimelib.tests
 			CollectionAssert.AreEqual(new[] { "harry" }, j.Elements);
 		}
 
-		
-	    [Test]
-	    public void DereferenceElementsNonFlat()
-	    {
-			var globals = new GlobalVariables();
-		    globals["one"].Assign("1");
-			globals["two"].Assign("2");
-
-			var variableNames = new LocalJamList("one", "two");
-
-			RemoteJamList[] dereferenced = globals.DereferenceElementsNonFlat(variableNames);
-		
-			dereferenced[0].Append("another1");
-			dereferenced[1].Append("another2");
-
-			CollectionAssert.AreEqual(new[] { "1", "another1"}, globals["one"].Elements);
-			CollectionAssert.AreEqual(new[] { "2", "another2" }, globals["two"].Elements);
-	    }
-
-		[Test]
-		public void DereferenceElements()
-		{
-			var globals = new GlobalVariables();
-			globals["one"].Assign("1");
-			globals["two"].Assign("2");
-
-			var variableNames = new LocalJamList("one", "two");
-
-			var dereferenced = globals.DereferenceElements(variableNames);
-			
-			CollectionAssert.AreEqual(new[] { "1", "2" }, dereferenced);
-		}
-
 	    [Test]
 	    public void GreaterThan()
 	    {
