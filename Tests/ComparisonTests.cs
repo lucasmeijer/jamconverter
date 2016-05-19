@@ -149,7 +149,26 @@ if $(myvar) = 3212 { Echo yes ; } else if $(myvar) = 123 { Echo no ; } else Echo
         Echo end ;
 ");
         }
-	
+
+        [Test]
+        public void AndOperator()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+
+type = Cpp ;
+buildMode = BUILDMODE_DYNAMICLIB ;
+if $(type) = Cpp && $(buildMode) = BUILDMODE_DYNAMICLIB { Echo yes ; } else { Echo no ; }
+
+buildMode = bla ;
+if $(type) = Cpp && $(buildMode) = BUILDMODE_DYNAMICLIB { Echo yes ; } else { Echo no ; }
+
+
+if $(type) in Cs Cpp Exe && $(type) = Cpp { Echo Yes ; } else { Echo no ; }
+
+");
+        }
+
 
         [Test]
         public void EqualsConditional()

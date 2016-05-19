@@ -518,9 +518,42 @@ namespace jamconverter
 					return left;
 				this._scanResult.Next();
 			}
-			
-	        var right = ParseCondition();
-	        return new BinaryOperatorExpression() {Left = left, Operator = OperatorFor(nextToken), Right = new NodeList<Expression> { right } };
+            
+            var right = IsComparisonOperator(nextToken) ? ParseExpression() : ParseCondition();
+
+            var boe = new BinaryOperatorExpression() { Left = left, Operator = OperatorFor(nextToken), Right = new NodeList<Expression> { right } };
+
+            nextToken = _scanResult.Peek().tokenType;
+            if (!IsLogicalOperator(nextToken))
+                return boe;
+            this._scanResult.Next();
+            return new BinaryOperatorExpression() { Left = boe, Operator = OperatorFor(nextToken), Right = new NodeList<Expression> { ParseCondition() } };
+        }
+
+        private bool IsComparisonOperator(TokenType nextToken)
+        {
+            switch (nextToken)
+            {
+                case TokenType.Assignment:
+                case TokenType.GreaterThan:
+                case TokenType.LessThan:
+                case TokenType.NotEqual:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private bool IsLogicalOperator(TokenType nextToken)
+        {
+            switch (nextToken)
+            {
+                case TokenType.And:
+                case TokenType.Or:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 

@@ -164,23 +164,47 @@ namespace jamconverter.Tests
         }
 		
 	    [Test]
-	    public void IfStatementWithAddOperator()
+	    public void IfStatementWithAndOperator()
 	    {
 		    var ifStatement = ParseStatement<IfStatement>("if $(a) && $(b) { }");
 		    Assert.AreEqual(Operator.And, ifStatement.Condition.As<BinaryOperatorExpression>().Operator);
 		    AssertLeftIsA_And_RightIsB(ifStatement);
 	    }
 
-		[Test]
+        [Test]
+        public void IfStatementWithTwoNestedBinaryOperatorExpressins()
+        {
+            var ifStatement = ParseStatement<IfStatement>("if $(a) = 3 && $(b) = 4 { }");
+           
+            var binaryExpression = ifStatement.Condition.As<BinaryOperatorExpression>();
+            Assert.AreEqual(Operator.And, binaryExpression.Operator);
+
+            var left = binaryExpression.Left.As<BinaryOperatorExpression>();
+            var right = binaryExpression.Right.Single().As<BinaryOperatorExpression>();
+            Assert.AreEqual(Operator.Assignment, left.Operator);
+            Assert.AreEqual(Operator.Assignment, right.Operator);
+
+            Assert.AreEqual("3", left.Right.Single().As<LiteralExpression>().Value);
+            Assert.AreEqual("4", right.Right.Single().As<LiteralExpression>().Value);
+        }
+
+
+        [Test]
 		public void IfStatementWithBinaryOperatorConditionWithInExpressions()
 		{
             var ifStatement = ParseStatement<IfStatement>("if shared in $(OPTIONS) || module in $(OPTIONS) { }");
-			Assert.That(ifStatement.Condition, Is.InstanceOf<BinaryOperatorExpression>());
-			var binaryExpression = (BinaryOperatorExpression) ifStatement.Condition;
-			Assert.That(binaryExpression.Left, Is.InstanceOf<BinaryOperatorExpression>());
-			Assert.That(binaryExpression.Right[0], Is.InstanceOf<BinaryOperatorExpression>());
-			Assert.That(((BinaryOperatorExpression) binaryExpression.Left).Operator, Is.EqualTo(Operator.In));
-			Assert.That(((BinaryOperatorExpression) binaryExpression.Right[0]).Operator, Is.EqualTo(Operator.In));
+
+
+            var binaryExpression = ifStatement.Condition.As<BinaryOperatorExpression>();
+            Assert.AreEqual(Operator.Or, binaryExpression.Operator);
+
+            var left = binaryExpression.Left.As<BinaryOperatorExpression>();
+            var right = binaryExpression.Right.Single().As<BinaryOperatorExpression>();
+            Assert.AreEqual(Operator.In, left.Operator);
+            Assert.AreEqual(Operator.In, right.Operator);
+
+            Assert.AreEqual("shared", left.Left.As<LiteralExpression>().Value);
+            Assert.AreEqual("module", right.Left.As<LiteralExpression>().Value);
 		}
 
 	    private static void AssertLeftIsA_And_RightIsB(IfStatement ifStatement)
