@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -224,6 +225,12 @@ public abstract class JamListBase : IEnumerable<string>
 		return new LocalJamList(strings);
 	}
 
+	public LocalJamList Exclude(JamListBase pattern)
+	{
+		throw new NotImplementedException();
+	}
+
+
 	public abstract void AssignIfEmpty(params JamListBase[] values);
 	public abstract void Assign(params JamListBase[] values);
 
@@ -255,6 +262,17 @@ public abstract class JamListBase : IEnumerable<string>
 	public LocalJamList PModifier_TODO(params JamListBase[] value)
 	{
 		throw new NotImplementedException();
+	}
+
+	public LocalJamList DirectoryModifier(params JamListBase[] values)
+	{
+		var result = new List<string>();
+		foreach (var element in Elements)
+		{
+			result.AddRange(Jam.Interop.Expand($"@({element}:D)"));
+		}
+		
+		return new LocalJamList(result.ToArray());
 	}
 
 	public LocalJamList Rooted_TODO(params JamListBase[] value)
