@@ -6,47 +6,46 @@ using System.Threading.Tasks;
 using NiceIO;
 using NUnit.Framework;
 
-using static jamconverter.Tests.Hello;
-
 namespace jamconverter.Tests
 {
 	[TestFixture]
 	class Playground
 	{
 		[Test]
-        [Ignore("Playground")]
+        //[Ignore("Playground")]
 		public void A()
 		{
 			var converter = new JamToCSharpConverter();
 
-			//var inputFile = "c:/unity/External/Jamplus/builds/bin/Jambase.jam";
-			var inputFile = "c:/unity/External/Jamplus/builds/bin/modules/c.jam";
-			//var inputFile = "c:/unity/Projects/Jam/RuntimeFiles.jam";
-
+			var convertfiles = new[] {"Projects/Jam/Editor.jam", "Projects/Jam/SetupRuntimeModules2.jam"};
 			var files =
-				OurJamFiles()
-					.Split('\n')
+				convertfiles
 					.Where(l => l[0] != '#' && !l.Contains("Config.jam"))
-					.Select(fn => new NPath("c:/unity").Combine(fn.Trim())).Skip(130);
+					.Select(fn => new NPath(fn));
+
+			var basePath = new NPath("c:/unity");
 
 			var program =
 				files
-					.Select(f => new SourceFileDescription() {FileName = f.FileName, Contents = f.ReadAllText()})
+					.Select(f => new SourceFileDescription() {FileName = f.ToString(SlashMode.Forward), Contents = basePath.Combine(f).ReadAllText()})
 					.ToArray();
             //var program = new[] {new SourceFileDescription() { Contents = new NPath(inputFile).ReadAllText(), FileName = "Main.cs"} };
 
-            var output = converter.Convert(new ProgramDescripton(program));
-		
-			new CSharpRunner().Run(output, new[] { new NPath("c:/jamconverter/bin/runtimelib.dll") }).Select(s => s.TrimEnd());
+            var csProgram = converter.Convert(new ProgramDescripton(program));
+			
+			
+			var jambase = @"C:\unity\External\Jamplus\builds\bin\Jambase.jam";
+			var jamrunner = new JamRunner();
 
-			foreach (var sourceFile in output)
+			var instructions = new JamRunnerInstructions()
 			{
-				var file = NPath.SystemTemp.Combine(sourceFile.FileName);
-				file.WriteAllText(sourceFile.Contents);
-				Console.WriteLine(file);
-			}
+				CSharpFiles = csProgram,
+				WorkingDir = new NPath("c:/unity"),
+				JamFileToInvokeOnStartup = jambase.InQuotes(),
+				AdditionalArg = "Editor"
+			};
+			jamrunner.Run(instructions);
 
-			int a = Really;
 		}//local listIncludes = @(I=\\$(C.BUILD_EXTENSIONS)$:J=$(colon)) ;
 
 		string OurJamFiles()
@@ -490,9 +489,5 @@ Tools\il2cpp\libil2cpp.jam";
 		}
 
 	}
-
-	class Hello
-	{
-		public static int Really;
-	}
+	
 }
