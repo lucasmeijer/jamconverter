@@ -56,19 +56,19 @@ public class LocalJamList : JamListBase
 
 public static class JamListExtensions
 {
-	public static void Assign(this IEnumerable<JamListBase> jamlists, params LocalJamList[] values)
+	public static void Assign(this IEnumerable<JamListBase> jamlists, params JamListBase[] values)
 	{
 		foreach(var jamlist in jamlists)
 			jamlist.Assign(values);
 	}
 
-	public static void Append(this IEnumerable<JamListBase> jamlists, params LocalJamList[] values)
+	public static void Append(this IEnumerable<JamListBase> jamlists, params JamListBase[] values)
 	{
 		foreach (var jamlist in jamlists)
 			jamlist.Append(values);
 	}
 
-	public static void AssignIfEmpty(this IEnumerable<JamListBase> jamlists, params LocalJamList[] values)
+	public static void AssignIfEmpty(this IEnumerable<JamListBase> jamlists, params JamListBase[] values)
 	{
 		foreach (var jamlist in jamlists)
 			jamlist.AssignIfEmpty(values);

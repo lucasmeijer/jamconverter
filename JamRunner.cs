@@ -38,6 +38,8 @@ namespace jamconverter
 			startupArg += " -f " + (instructions.JamFileToInvokeOnStartup ?? instructions.JamfilesToCreate[0].FileName);
 
 			startupArg += " -C " + instructions.WorkingDir;
+
+			startupArg += " " + instructions.AdditionalArg;
 			Console.WriteLine("args: " + startupArg);
 
 			var execute = Shell.Execute(jamBinary, startupArg);
@@ -72,5 +74,6 @@ namespace jamconverter
 		public List<SourceFileDescription> JamfilesToCreate = new List<SourceFileDescription>();
 		public NPath WorkingDir;
 		public string JamFileToInvokeOnStartup;
+		public string AdditionalArg = "";
 	}
 }
