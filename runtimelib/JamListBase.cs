@@ -303,4 +303,9 @@ public abstract class JamListBase : IEnumerable<string>
 	{
 		return new LocalJamList(input);
 	}
+
+    public static implicit operator bool(JamListBase x)
+    {
+        return x.AsBool();
+    }
 }

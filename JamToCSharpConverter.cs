@@ -676,10 +676,6 @@ namespace jamconverter
                     return "JamEquals";
                 case Operator.In:
                     return "IsIn";
-				case Operator.And:
-		            return "And";
-				case Operator.Or:
-		            return "Or";
 				case Operator.NotEqual:
 		            return "NotJamEquals";
 				case Operator.GreaterThan:
@@ -744,6 +740,11 @@ namespace jamconverter
 		    {
 			    var left = ProcessExpression(binaryOperatorExpression.Left);
 			    var right = ProcessExpressionList(binaryOperatorExpression.Right);
+
+                
+		        if (binaryOperatorExpression.Operator == Operator.And || binaryOperatorExpression.Operator == Operator.Or)
+		            return new NRefactory.ParenthesizedExpression(new NRefactory.BinaryOperatorExpression(left, binaryOperatorExpression.Operator == Operator.And ? NRefactory.BinaryOperatorType.ConditionalAnd : NRefactory.BinaryOperatorType.ConditionalOr, right));
+
 
 				return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(left, CSharpMethodForConditionOperator(binaryOperatorExpression.Operator)), right);
 		    }

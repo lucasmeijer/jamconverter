@@ -193,7 +193,7 @@ namespace jamconverter.Tests
 		public void IfStatementWithBinaryOperatorConditionWithInExpressions()
 		{
             var ifStatement = ParseStatement<IfStatement>("if shared in $(OPTIONS) || module in $(OPTIONS) { }");
-
+        
 
             var binaryExpression = ifStatement.Condition.As<BinaryOperatorExpression>();
             Assert.AreEqual(Operator.Or, binaryExpression.Operator);
@@ -288,7 +288,25 @@ namespace jamconverter.Tests
 			ParseCondition<BinaryOperatorExpression>("a < b");
 		}
 
-		[Test]
+        [Test]
+        public void Parenthesis()
+        {
+            ParseCondition<BinaryOperatorExpression>("( $(cs) || $(generatedCs) )");
+
+            Assert.AreEqual(Operator.Or, ParseCondition<BinaryOperatorExpression>("a || ( b && c )").Operator);
+            Assert.AreEqual(Operator.Or, ParseCondition<BinaryOperatorExpression>("( a && b ) || c").Operator);
+            Assert.AreEqual(Operator.GreaterThan, ParseCondition<BinaryOperatorExpression>("a > ( b && c )").Operator);
+         }
+
+        [Test]
+        public void Precendence()
+        {
+            Assert.AreEqual(Operator.And, ParseCondition<BinaryOperatorExpression>("a || b && c").Operator);
+            Assert.AreEqual(Operator.And, ParseCondition<BinaryOperatorExpression>("a && b || c").Operator);
+            Assert.AreEqual(Operator.And, ParseCondition<BinaryOperatorExpression>("a > b && c").Operator);
+        }
+
+        [Test]
         public void CombineExpression()
         {
             var combineExpression = ParseExpression<CombineExpression>("$(b)c$(d)");

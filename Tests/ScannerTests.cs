@@ -250,7 +250,20 @@ on_new_line");
 			Assert.That(result[0].literal, Is.EqualTo("(aa)"));
 		}
 
-		[Test]
+
+
+        [Test]
+        public void ParenthesisAreOk()
+        {
+            var a = new Scanner("( ) && $(c)");
+            var result = a.ScanAllTokens().ToArray();
+            
+            Assert.That(result.Last().tokenType == TokenType.EOF);
+
+            Assert.That(result[result.Length-3].literal, Is.EqualTo("c"));
+        }
+
+        [Test]
 		public void LiteralExpansion()
 		{
 			var a = new Scanner("@(abc)");

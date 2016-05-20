@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AST.cs" />
+    <Compile Include="ConditionParser.cs" />
     <Compile Include="CSharpRunner.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="JamRunnerTests.cs" />

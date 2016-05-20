@@ -96,7 +96,8 @@ namespace jamconverter
 
 			if (c == ')')
 			{
-				--_insideVariableExpansionDepth;
+                if (_insideVariableExpansionDepth>0)
+    				--_insideVariableExpansionDepth;
 				++nextChar;
 				return new ScanToken() { tokenType = TokenType.ParenthesisClose, literal = ")" };
 			}

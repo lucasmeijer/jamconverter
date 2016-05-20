@@ -169,7 +169,6 @@ if $(type) in Cs Cpp Exe && $(type) = Cpp { Echo Yes ; } else { Echo no ; }
 ");
         }
 
-
         [Test]
         public void EqualsConditional()
         {
@@ -752,8 +751,16 @@ if (((b))) {
   Echo b ;
 }
 
+
 isTrue = a ;
 isFalse = ;
+
+if $(isTrue) || $(isFalse) || $(isFalse) { Echo yes1 ; } else { Echo no1 ; }
+if $(isTrue) || $(isTrue) && $(isFalse) { Echo yes2 ; } else { Echo no2 ; }
+
+if ( $(isTrue) || $(isTrue) ) && $(isFalse) { Echo yes3 ; } else { Echo no3 ; }
+
+
 
 ##if ($(isFalse)) {
 ##Echo this is false ;
@@ -808,7 +815,7 @@ if () {
 # This does not parse in Jam!
 #Echo ) ;
 "
-			);
+            );
 		}
 
 		[Test]
