@@ -657,15 +657,14 @@ namespace jamconverter
     
         NRefactory.Expression ProcessCondition(Expression condition)
         {
+         
 	        var processExpression = ProcessExpression(condition);
-	        if (condition is BinaryOperatorExpression)
-		        return processExpression;
 
-			var literalExpression = condition as LiteralExpression;
-			if (literalExpression != null)
-				return new NRefactory.PrimitiveExpression(literalExpression.Value.Length != 0);
-
-	        return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(processExpression,"AsBool"));
+            var literalExpression = condition as LiteralExpression;
+            if (literalExpression != null)
+                return new NRefactory.PrimitiveExpression(literalExpression.Value.Length != 0);
+            
+           return processExpression;
         }
 
 	    string CSharpMethodForConditionOperator(Operator @operator)
@@ -752,7 +751,7 @@ namespace jamconverter
 		    var notOperatorExpression = e as NotOperatorExpression;
 		    if (notOperatorExpression != null)
 		    {
-			    return new NRefactory.UnaryOperatorExpression(NRefactory.UnaryOperatorType.Not, ProcessExpression(notOperatorExpression.Expression));
+			    return new NRefactory.UnaryOperatorExpression(NRefactory.UnaryOperatorType.Not, new NRefactory.ParenthesizedExpression(ProcessExpression(notOperatorExpression.Expression)));
 		    }
 
             if (e == null)

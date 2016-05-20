@@ -293,16 +293,16 @@ namespace jamconverter.Tests
         {
             ParseCondition<BinaryOperatorExpression>("( $(cs) || $(generatedCs) )");
 
-            Assert.AreEqual(Operator.Or, ParseCondition<BinaryOperatorExpression>("a || ( b && c )").Operator);
-            Assert.AreEqual(Operator.Or, ParseCondition<BinaryOperatorExpression>("( a && b ) || c").Operator);
+            Assert.AreEqual(Operator.And, ParseCondition<BinaryOperatorExpression>("( a || b ) && c").Operator);
+            Assert.AreEqual(Operator.And, ParseCondition<BinaryOperatorExpression>("a && ( b || c )").Operator);
             Assert.AreEqual(Operator.GreaterThan, ParseCondition<BinaryOperatorExpression>("a > ( b && c )").Operator);
          }
 
         [Test]
         public void Precendence()
         {
-            Assert.AreEqual(Operator.And, ParseCondition<BinaryOperatorExpression>("a || b && c").Operator);
-            Assert.AreEqual(Operator.And, ParseCondition<BinaryOperatorExpression>("a && b || c").Operator);
+            Assert.AreEqual(Operator.Or, ParseCondition<BinaryOperatorExpression>("a || b && c").Operator);
+            Assert.AreEqual(Operator.Or, ParseCondition<BinaryOperatorExpression>("a && b || c").Operator);
             Assert.AreEqual(Operator.And, ParseCondition<BinaryOperatorExpression>("a > b && c").Operator);
         }
 

@@ -275,7 +275,8 @@ namespace jamconverter.AST
 	    Or,
 	    NotEqual,
 		LessThan,
-		GreaterThan
+		GreaterThan,
+	    Not
     }
 
     public class RuleDeclarationStatement : Statement

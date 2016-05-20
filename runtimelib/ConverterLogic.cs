@@ -16,7 +16,7 @@ namespace runtimelib
 
 		public static string CleanIllegalCharacters(string input)
 		{
-			return input.Replace(".", "_").Replace("+", "Plus");
+		    return input.Replace(".", "_").Replace("+", "Plus").Replace("*", "Star");
 		}
 	}
 }

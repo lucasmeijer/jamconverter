@@ -444,26 +444,6 @@ namespace jamconverter
             {TokenType.LessThan, Operator.LessThan}
         };
 
-        private static int PrecendenceFor(Operator o)
-        {
-            var order = new List<Operator>()
-            {
-                Operator.Or,
-                Operator.And,
-                
-                Operator.Subtract,
-                Operator.AssignmentIfEmpty,
-                Operator.Append,
-
-                Operator.In,
-                Operator.Assignment,
-                Operator.NotEqual,
-                Operator.GreaterThan,
-                Operator.LessThan
-            };
-
-            return order.IndexOf(o);
-        }
 
         public static bool IsBinaryOperator(TokenType tokenType)
 		{

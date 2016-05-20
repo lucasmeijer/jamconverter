@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.NRefactory.CSharp;
 using jamconverter.AST;
+using BinaryOperatorExpression = jamconverter.AST.BinaryOperatorExpression;
+using Expression = jamconverter.AST.Expression;
 
 namespace jamconverter
 {
@@ -46,6 +49,13 @@ namespace jamconverter
                 if (nextToken.literal == "(")
                 {
                     stack.Push(new ParenthesisOpenNode());
+                    _scanResult.Next();
+                    continue;
+                }
+
+                if (nextToken.tokenType == TokenType.Not)
+                {
+                    stack.Push(new OperatorNode(Operator.Not));
                     _scanResult.Next();
                     continue;
                 }
@@ -98,11 +108,24 @@ namespace jamconverter
                 }
 
                 var @operator = (OperatorNode)evaluationStackNode;
+                if (IsUnaryOperator(@operator.Operator))
+                {
+                    stack.Push(new ValueNode(new NodeList<Expression>() { new NotOperatorExpression()
+                    {
+                        Expression = rightNode.Expressions.Single()
+                    }}));
+                    continue;
+                }
                 var left = ((ValueNode)stack.Pop()).Expressions;
 
                 var boe = new BinaryOperatorExpression() { Left = left.Single(), Operator = @operator.Operator, Right = rightNode.Expressions };
                 stack.Push(new ValueNode(new NodeList<Expression>() { boe }));
             }
+        }
+
+        private bool IsUnaryOperator(Operator @operator)
+        {
+            return @operator == Operator.Not;
         }
 
         ValueNode ParseValue(Operator? @operator)
@@ -120,6 +143,7 @@ namespace jamconverter
         {
             var order = new List<Operator>()
             {
+                Operator.Not,
                 Operator.Or,
                 Operator.And,
 
@@ -134,7 +158,10 @@ namespace jamconverter
                 Operator.LessThan
             };
 
-            return order.IndexOf(o);
+            int precendenceFor = order.IndexOf(o);
+            if (precendenceFor == -1)
+                throw new NotSupportedException();
+            return precendenceFor;
         }
     }
 }
