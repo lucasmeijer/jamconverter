@@ -417,7 +417,7 @@ namespace jamconverter
                     if (peek.tokenType == TokenType.Assignment)
                     {
                         _scanResult.Next();
-                        modifierValue = ParseExpression();
+                        modifierValue = ParseExpression() ?? new EmptyExpression();
                     }
 
                     modifiers.Add(new VariableDereferenceModifier {Command = modifier.literal[0], Value = modifierValue});

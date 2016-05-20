@@ -187,6 +187,10 @@ namespace jamconverter.AST
         public string Value { get; set; }
     }
 
+    public class EmptyExpression : Expression
+    {
+    }
+
     public class CombineExpression : Expression
     {
         public NodeList<Expression> Elements

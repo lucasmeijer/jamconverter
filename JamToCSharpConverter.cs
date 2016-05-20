@@ -744,7 +744,6 @@ namespace jamconverter
 		        if (binaryOperatorExpression.Operator == Operator.And || binaryOperatorExpression.Operator == Operator.Or)
 		            return new NRefactory.ParenthesizedExpression(new NRefactory.BinaryOperatorExpression(left, binaryOperatorExpression.Operator == Operator.And ? NRefactory.BinaryOperatorType.ConditionalAnd : NRefactory.BinaryOperatorType.ConditionalOr, right));
 
-
 				return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(left, CSharpMethodForConditionOperator(binaryOperatorExpression.Operator)), right);
 		    }
 
@@ -754,7 +753,7 @@ namespace jamconverter
 			    return new NRefactory.UnaryOperatorExpression(NRefactory.UnaryOperatorType.Not, new NRefactory.ParenthesizedExpression(ProcessExpression(notOperatorExpression.Expression)));
 		    }
 
-            if (e == null)
+            if (e == null || e is EmptyExpression)
                 return new NRefactory.ObjectCreateExpression(LocalJamListAstType);
 
             throw new NotImplementedException("CSharpFor cannot deal with " + e);
@@ -804,11 +803,12 @@ namespace jamconverter
 
             foreach (var modifier in expansionStyleExpression.Modifiers)
             {
-                var csharpMethod = CSharpMethodForModifier(modifier);
+                var csharpMethod = CSharpMethodForModifier(modifier, modifier.Value != null);
 
                 var memberReferenceExpression = new NRefactory.MemberReferenceExpression(resultExpression, csharpMethod);
-                var valueExpression = ProcessExpression(modifier.Value);
-                resultExpression = new NRefactory.InvocationExpression(memberReferenceExpression, valueExpression);
+
+                var args = modifier.Value == null ? new NRefactory.Expression[0] : new[] {ProcessExpression(modifier.Value)};
+                resultExpression = new NRefactory.InvocationExpression(memberReferenceExpression, args);
             }
             return resultExpression;
         }
@@ -831,20 +831,20 @@ namespace jamconverter
 						);
 	    }
 
-	    private string CSharpMethodForModifier(VariableDereferenceModifier modifier)
+	    private string CSharpMethodForModifier(VariableDereferenceModifier modifier, bool hasValue)
         {
             switch (modifier.Command)
             {
 				case 'D':
 		            return "DirectoryModifier";
                 case 'S':
-                    return "WithSuffix";
+                    return hasValue ? "WithSuffix" : "GetSuffix" ;
                 case 'E':
                     return "IfEmptyUse";
                 case 'G':
                     return "GristWith";
                 case 'J':
-                    return "JoinWithValue";
+                    return hasValue ? "JoinWithValue" : "Join";
 				case 'X':
 		            return "Exclude";
 				case 'I':
@@ -853,12 +853,14 @@ namespace jamconverter
 		            return "Rooted_TODO";
 				case 'P':
 		            return "PModifier_TODO";
-				
 				case 'U':
 					return "ToUpper";
 				case 'L':
-					return "ToLower";	
+					return "ToLower";
+                case 'B':
+                    return hasValue ? "SetBasePath" : "GetBasePath";
                 default:
+                    return $"TodoModifier_{modifier.Command}"; 
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);
             }
         }

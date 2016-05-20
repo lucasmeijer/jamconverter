@@ -8,6 +8,7 @@ using BinaryOperatorExpression = jamconverter.AST.BinaryOperatorExpression;
 using BlockStatement = jamconverter.AST.BlockStatement;
 using BreakStatement = jamconverter.AST.BreakStatement;
 using ContinueStatement = jamconverter.AST.ContinueStatement;
+using EmptyExpression = ICSharpCode.NRefactory.CSharp.EmptyExpression;
 using Expression = jamconverter.AST.Expression;
 using ExpressionStatement = jamconverter.AST.ExpressionStatement;
 using ForStatement = jamconverter.AST.ForStatement;
@@ -349,6 +350,20 @@ namespace jamconverter.Tests
             Assert.AreEqual('S', variableDereferenceExpression.Modifiers[1].Command);
         }
 
+        [Test]
+        public void Modifier_With_No_Value()
+        {
+            var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(harry:S)");
+            Assert.IsNull(variableDereferenceExpression.Modifiers.Single().Value);
+        }
+
+        [Test]
+        public void Modifier_With_Empty_Value()
+        {
+            var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(harry:S=)");
+            Assert.IsInstanceOf<AST.EmptyExpression>(variableDereferenceExpression.Modifiers.Single().Value);
+        }
+        
         [Test]
         public void VariableExpansionModifiersWithValue()
         {

@@ -298,14 +298,21 @@ Echo one$(myvar)$(myvar)two ;
         {
             AssertConvertedProgramHasIdenticalOutput(
 @"
-#myvar = main.cs ; 
-#Echo $(myvar:S=.cpp) ;
+myvar = main.cs ; 
+Echo $(myvar:S=.cpp) ;
 
-#myvar = main.cs.pieter ; 
-#Echo $(myvar:S=.cpp:S=.exe) ;
+myvar = main.cs.pieter ; 
+Echo $(myvar:S=.cpp:S=.exe) ;
 
 myvar = main.cs.pieter ; 
 Echo $(myvar:S=) ;
+
+myvar = hello sailor ;
+Echo $(myvar:S) ;
+myvar = hello.bat ;
+Echo $(myvar:S) ;
+myvar = hello. ;
+Echo $(myvar:S) ;
 ");
         }
 
@@ -335,6 +342,9 @@ Echo $(myvar:E=alternative) ;
 myvar = ;
 Echo $(myvar:E=*) ;
 
+myvar = ;
+Echo $(myvar:E=) ;
+
 ");
         }
 
@@ -345,6 +355,8 @@ Echo $(myvar:E=*) ;
 @"
 myvar = im on a boat ; 
 Echo $(myvar:J=_) ;
+Echo $(myvar:J=) ;
+Echo $(myvar:J) ;
 ");
         }
 
@@ -653,7 +665,6 @@ Echo $(mylist:L) ;
 
 
 		[Test]
-		[Ignore("broken")]
 		public void IncludeModifier()
 		{
 			AssertConvertedProgramHasIdenticalOutput(
@@ -680,10 +691,60 @@ Echo $(pathWithBackslash:I=\\\\) ;
 Echo $(mylist:I=\\.c$) ;
 Echo $(mylist:I=\\.c\$) ;
 
+filter = hello there ;
+Echo $(mylist:I=$(filter)) ;
+
+
 ");
 		}
 
-	    [Test]
+        [Test]
+        public void ExcludeModifier()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+mylist = hello there sailor.c ; 
+Echo $(mylist:X=th) ;
+
+patterninvar = sai ;
+Echo $(mylist:X=$(patterninvar)) ;
+
+#make test for regex
+Echo $(mylist:X=hel+) ;
+
+# Jam treats double backslashes like one that still escapes the next character.
+# Both expressions should match 'sailor.c'.
+Echo $(mylist:X=\.c) ;
+Echo $(mylist:X=\\.c) ;
+
+pathWithBackslash = a\\b ;
+Echo $(pathWithBackslash) ;
+#Echo $(pathWithBackslash:X=\\) ; # Not valid in Jam. Jam does one level of escaping, regex another.
+Echo $(pathWithBackslash:X=\\\\) ;
+
+Echo $(mylist:X=\\.c$) ;
+Echo $(mylist:X=\\.c\$) ;
+
+filter = hello there ;
+Echo $(mylist:X=$(filter)) ;
+
+
+");
+        }
+
+
+        [Test]
+        public void BModifier()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myfile = a/b/c/d.hello ;
+Echo $(myfile:B) ;
+Echo $(myfile:B=amazing) ;
+");
+        }
+
+        [Test]
 	    public void Escaping()
 	    {
 		    AssertConvertedProgramHasIdenticalOutput(
