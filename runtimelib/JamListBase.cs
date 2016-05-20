@@ -39,27 +39,22 @@ public abstract class JamListBase : IEnumerable<string>
 
 	public LocalJamList WithSuffix(JamListBase value)
 	{
-		return new LocalJamList(Enumerable.Select<string, string>(Elements, s =>
-		{
-			var suffix = value.Elements.Length > 0 ? value.Elements[0] : "";
-			return WithSuffix(s, suffix);
-		}).ToArray());
-	}
+        GlobalVariables.Singleton["internal_temp1"].Assign(this);
 
-	private string WithSuffix(string value, string suffix)
-	{
-		if (suffix.Length == 0)
-		{
-			var lastIndexOf = value.LastIndexOf(".");
-			if (lastIndexOf<0)
-				return value;
-			return value.Substring(0, lastIndexOf);
-		}
+        if (!value.Elements.Any())
+            return new LocalJamList(Jam.Interop.Expand("$(internal_temp1:S=)"));
 
-		return System.IO.Path.ChangeExtension(value, suffix);
-	}
+        GlobalVariables.Singleton["internal_temp2"].Assign(value);
+        return new LocalJamList(Jam.Interop.Expand("$(internal_temp1:S=$(internal_temp2))"));//"$(internal_temp2))"));
+    }
 
-	public LocalJamList IndexedBy(JamListBase indices)
+    public LocalJamList GetSuffix()
+    {
+        GlobalVariables.Singleton["internal_temp1"].Assign(this);
+        return new LocalJamList(Jam.Interop.Expand("$(internal_temp1:S)"));
+    }
+
+    public LocalJamList IndexedBy(JamListBase indices)
 	{
 		var result = new List<string>();
 		foreach (var index in indices) {
@@ -131,12 +126,12 @@ public abstract class JamListBase : IEnumerable<string>
 		return new LocalJamList(Enumerable.ToArray<string>(Elements.Select(UnGrist)));
 	}
 
-	public LocalJamList ToUpper(JamListBase value)
+	public LocalJamList ToUpper()
 	{
 		return new LocalJamList(Enumerable.Select<string, string>(Elements, e => e.ToUpperInvariant()).ToArray());
 	}
 
-	public LocalJamList ToLower(JamListBase value)
+	public LocalJamList ToLower()
 	{
 		return new LocalJamList(Enumerable.Select<string, string>(Elements, e => e.ToLowerInvariant()).ToArray());
 	}
@@ -164,13 +159,28 @@ public abstract class JamListBase : IEnumerable<string>
 
 	public LocalJamList JoinWithValue(JamListBase joinValue)
 	{
-		if (joinValue.Elements.Length != 1)
-			throw new NotSupportedException();
-
-		return new LocalJamList(string.Join(joinValue.Elements[0], Elements));
+	    return InvokeInternalModifier('J', joinValue);
 	}
 
-	public bool AsBool()
+    private LocalJamList InvokeInternalModifier(char modifierLetter, JamListBase argument = null)
+    {
+        GlobalVariables.Singleton["internal_temp1"].Assign(this);
+        if (argument == null)
+            return new LocalJamList(Jam.Interop.Expand($"$(internal_temp1:{modifierLetter})"));
+
+        if (!argument.Elements.Any())
+            return new LocalJamList(Jam.Interop.Expand($"$(internal_temp1:{modifierLetter}=)"));
+
+        GlobalVariables.Singleton["internal_temp2"].Assign(argument);
+        return new LocalJamList(Jam.Interop.Expand($"$(internal_temp1:{modifierLetter}=$(internal_temp2))"));
+    }
+
+    public LocalJamList Join()
+    {
+        return InvokeInternalModifier('J');
+    }
+
+    public bool AsBool()
 	{
 		return Elements.Length > 0;
 	}
@@ -216,22 +226,15 @@ public abstract class JamListBase : IEnumerable<string>
 
 	public LocalJamList Include(JamListBase pattern)
 	{
-		if (pattern.Elements.Count() != 1)
-			throw new ArgumentException();
+        return InvokeInternalModifier('I', pattern);
+    }
 
-		var patternStr = pattern.Elements.Single();
-		
-		var strings = Enumerable.Where<string>(Elements, e=>Regex.Matches(e, patternStr).Count > 0).ToArray();
-		return new LocalJamList(strings);
-	}
+    public LocalJamList Exclude(JamListBase pattern)
+    {
+        return InvokeInternalModifier('X', pattern);
+    }
 
-	public LocalJamList Exclude(JamListBase pattern)
-	{
-		throw new NotImplementedException();
-	}
-
-
-	public abstract void AssignIfEmpty(params JamListBase[] values);
+    public abstract void AssignIfEmpty(params JamListBase[] values);
 	public abstract void Assign(params JamListBase[] values);
 
 	protected static string[] ElementsOf(JamListBase[] values)
@@ -280,7 +283,17 @@ public abstract class JamListBase : IEnumerable<string>
 		throw new NotImplementedException();
 	}
 
-	public bool NotJamEquals(JamListBase value)
+    public LocalJamList SetBasePath(JamListBase value)
+    {
+        return InvokeInternalModifier('B', value);
+    }
+
+    public LocalJamList GetBasePath()
+    {
+        return InvokeInternalModifier('B', null);
+    }
+
+    public bool NotJamEquals(JamListBase value)
 	{
 		return !JamEquals(value);
 	}
