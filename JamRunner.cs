@@ -41,7 +41,7 @@ namespace jamconverter
 
 			startupArg += " " + instructions.AdditionalArg;
 			Console.WriteLine("args: " + startupArg);
-
+            
 			var execute = Shell.Execute(jamBinary, startupArg);
 
 			var lines = execute.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
