@@ -80,6 +80,7 @@ namespace jamconverter
                     return ParseReturnStatement();
                 case TokenType.Literal:
                 case TokenType.VariableDereferencerOpen:
+                case TokenType.BracketOpen:
                     return ParseAssignmentOrExpressionStatement();
                 case TokenType.On:
                     return ParseOnStatement();
@@ -200,7 +201,7 @@ namespace jamconverter
 
                 return new AssignmentStatement() {Left = leftSideOfAssignment, Right = right, Operator = OperatorFor(assignmentToken.tokenType)};
             }
-
+            
             var invocationExpression = ParseInvocationExpression();
 
             _scanResult.Next().Is(TokenType.Terminator);
@@ -210,7 +211,15 @@ namespace jamconverter
 
         private InvocationExpression ParseInvocationExpression()
         {
+            var hasBracketSyntax = _scanResult.Peek().tokenType == TokenType.BracketOpen;
+            if (hasBracketSyntax)
+                _scanResult.Next();
+
             var invocationExpression = new InvocationExpression {RuleExpression = ParseExpression(), Arguments = ParseArgumentList()};
+
+            if (hasBracketSyntax)
+                _scanResult.Next().Is(TokenType.BracketClose);
+
             return invocationExpression;
         }
 
@@ -361,10 +370,7 @@ namespace jamconverter
                 case TokenType.AccoladeOpen:
                     return null;
                 case TokenType.BracketOpen:
-                    _scanResult.Next();
-                    var result = ParseInvocationExpression();
-                    _scanResult.Next().Is(TokenType.BracketClose);
-                    return result;
+                    return ParseInvocationExpression();
                 case TokenType.Not:
                     _scanResult.Next();
                     var expression = ParseExpression();

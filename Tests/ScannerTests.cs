@@ -86,6 +86,15 @@ namespace jamconverter.Tests
             CollectionAssert.AreEqual(new[] { TokenType.AccoladeOpen, TokenType.WhiteSpace, TokenType.Literal, TokenType.WhiteSpace, TokenType.AccoladeClose, TokenType.EOF}, result.Select(r => r.tokenType));
         }
 
+        [Test]
+        public void QuotedExpression()
+        {
+            var a = new Scanner(@"""($(d)) = """);
+            var result = a.ScanAllTokens().ToArray();
+
+            CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.VariableDereferencerOpen, TokenType.Literal, TokenType.ParenthesisClose, TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+        }
+
 
         [Test]
         public void LetterFollowedByDollar()

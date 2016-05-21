@@ -11,7 +11,7 @@ namespace runtimelib
 	{
 		public static string ClassNameForJamFile(string fileName)
 		{
-			return "Gen_"+new NPath(fileName).FileNameWithoutExtension;
+			return "Gen_"+CleanIllegalCharacters(new NPath(fileName).FileNameWithoutExtension);
 		}
 
 		public static string CleanIllegalCharacters(string input)

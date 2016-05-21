@@ -34,7 +34,14 @@ namespace jamconverter
 			foreach (var sourceFile in jamProgram)
 			{
 				Console.WriteLine("sourceFile: "+sourceFile.FileName);
-				_filesToTopLevel.Add(sourceFile, new Parser(sourceFile.Contents).ParseTopLevel());
+			    try
+			    {
+			        _filesToTopLevel.Add(sourceFile, new Parser(sourceFile.Contents).ParseTopLevel());
+			    }
+			    catch (Exception e)
+			    {
+			        Console.WriteLine("Parsing error in: "+sourceFile.FileName);
+			    }
 			}
 			_allActions = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<ActionsDeclarationStatement>());
 			_allRules = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<RuleDeclarationStatement>());
@@ -66,26 +73,37 @@ namespace jamconverter
 				typeForJamFile = new NRefactory.TypeDeclaration { Name = ConverterLogic.ClassNameForJamFile(file.FileName) };
 				syntaxTree.Members.Add(typeForJamFile);
 
-				
 
-				typeForJamFile.Members.Add(new NRefactory.FieldDeclaration() { ReturnType = StaticGlobalsType, Modifiers = NRefactory.Modifiers.Static, Variables = { new NRefactory.VariableInitializer("Globals", new NRefactory.ObjectCreateExpression(StaticGlobalsType)) } });
+			    try
+			    {
+			        typeForJamFile.Members.Add(new NRefactory.FieldDeclaration()
+			        {
+			            ReturnType = StaticGlobalsType,
+			            Modifiers = NRefactory.Modifiers.Static,
+			            Variables = {new NRefactory.VariableInitializer("Globals", new NRefactory.ObjectCreateExpression(StaticGlobalsType))}
+			        });
 
-				var body = new NRefactory.BlockStatement();
-				foreach (var statement in topLevel.Statements)
-				{
-					var nStatement = ProcessStatement(statement);
-					if (nStatement != null)
-						body.Statements.Add(nStatement);
-				}
+			        var body = new NRefactory.BlockStatement();
+			        foreach (var statement in topLevel.Statements)
+			        {
+			            var nStatement = ProcessStatement(statement);
+			            if (nStatement != null)
+			                body.Statements.Add(nStatement);
+			        }
 
-				typeForJamFile.Members.Add(new NRefactory.MethodDeclaration
-				{
-					Name = "TopLevel",
-					ReturnType = new NRefactory.PrimitiveType("void"),
-					Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
-					Body = body
-				});
-				result.Add(new SourceFileDescription() { FileName = typeForJamFile.Name+".cs", Contents = syntaxTree.ToString()});
+			        typeForJamFile.Members.Add(new NRefactory.MethodDeclaration
+			        {
+			            Name = "TopLevel",
+			            ReturnType = new NRefactory.PrimitiveType("void"),
+			            Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
+			            Body = body
+			        });
+			        result.Add(new SourceFileDescription() {FileName = typeForJamFile.Name + ".cs", Contents = syntaxTree.ToString()});
+			    }
+			    catch (Exception e)
+			    {
+			        Console.WriteLine($"failed converting {file.FileName}");
+			    }
 			}
 
 		
@@ -161,13 +179,13 @@ namespace jamconverter
 			    actionWrapperBody.Statements.Add(new NRefactory.ReturnStatement(
 				    new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("InvokeRule"), new NRefactory.Expression[]
 				    {
-					    new NRefactory.PrimitiveExpression(action.Name),
+					    new NRefactory.PrimitiveExpression(ConverterLogic.CleanIllegalCharacters(action.Name)),
 					    new NRefactory.IdentifierExpression("values"),
 				    })
 				    ));
 			    var actionMethod = new NRefactory.MethodDeclaration
 			    {
-				    Name = action.Name,
+				    Name = ConverterLogic.CleanIllegalCharacters(action.Name),
 				    ReturnType = LocalJamListAstType,
 				    Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
 				    Body = actionWrapperBody
@@ -344,6 +362,8 @@ namespace jamconverter
            
             foreach(var switchCase in switchStatement.Cases)
             {
+                if (switchCase.CaseExpression.Value.Contains("*"))
+                    throw new NotImplementedException("We dont support * yet in case");
                 var section = new NRefactory.SwitchSection();
                 section.CaseLabels.Add(new NRefactory.CaseLabel(new NRefactory.PrimitiveExpression(switchCase.CaseExpression.Value)));
                 section.Statements.AddRange(switchCase.Statements.Select(ProcessStatement));
@@ -581,6 +601,8 @@ namespace jamconverter
 		        body.Statements.Add(new NRefactory.ExpressionStatement(new NRefactory.AssignmentExpression(identifier.Clone(), cloneExpression )));
 	        }
 			
+           // body.Statements.Add(new NRefactory.IdentifierExpression($"System.Console.WriteLine(\"{ruleDeclaration.Name}\")"));
+
             foreach (var subStatement in ruleDeclaration.Body.Statements)
                 body.Statements.Add(ProcessStatement(subStatement));
 
@@ -704,7 +726,10 @@ namespace jamconverter
 
 	    IEnumerable<NRefactory.Expression> ExpressionsForJamListConstruction(NodeList<Expression> expressionList)
 	    {
-		    foreach (var expression in expressionList)
+            if (expressionList.OfType<AST.InvocationExpression>().Count() > 1)
+                throw new NotSupportedException("jam uses back to front evaluatino order for multiple invocation expressions in one list.  change the jam code to not do that");
+
+            foreach (var expression in expressionList)
 		    {
 			    yield return ProcessExpression(expression);
 		    }
@@ -859,6 +884,14 @@ namespace jamconverter
 					return "ToLower";
                 case 'B':
                     return hasValue ? "SetBasePath" : "GetBasePath";
+                case 'A':
+                    if (hasValue) throw new NotSupportedException();
+                    return "InterpetAsJamVariable";
+                case 'W':
+                    return "JamGlob";
+                case 'T':
+                    if (hasValue) throw new NotSupportedException();
+                    return "GetBoundPath";
                 default:
                     return $"TodoModifier_{modifier.Command}"; 
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);

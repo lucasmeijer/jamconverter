@@ -388,7 +388,7 @@ namespace jamconverter.Tests
 
             Assert.AreEqual(1, variableDereferenceExpression.Modifiers.Length);
             Assert.AreEqual('B', variableDereferenceExpression.Modifiers[0].Command);
-            Assert.AreEqual(null, variableDereferenceExpression.Modifiers[0].Value);
+            Assert.IsInstanceOf<AST.EmptyExpression>(variableDereferenceExpression.Modifiers[0].Value);
         }
 
         [Test]
@@ -412,9 +412,10 @@ namespace jamconverter.Tests
 	    }
 
         [Test]
-        public void InvocationExpressionWithBrackets()
+        public void InvocationExpressionStatementWithBrackets()
         {
-            var invocationExpression = ParseExpression<InvocationExpression>("[ MyRule myarg ]");
+            var expressionStatement = ParseStatement<ExpressionStatement>("[ MyRule myarg ] ;");
+            var invocationExpression = expressionStatement.Expression.As<InvocationExpression>();
 
             Assert.AreEqual("MyRule", invocationExpression.RuleExpression.As<LiteralExpression>().Value);
 

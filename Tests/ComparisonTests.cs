@@ -267,12 +267,16 @@ $(myrules) $(whynot) [ MakeArg2 ] ;
             AssertConvertedProgramHasIdenticalOutput(
 @"myvar = john doe ; 
 Echo $(myvar)postfix ; 
+Echo $(myvar).* ;
+Echo *.$(myvar) ;
 
 myemptyvar = ;
 Echo $(myvar)$(myemptyvar)hello ;
 
 Echo one$(myvar)two ;
 Echo one$(myvar)$(myvar)two ;
+
+
 
 ");
         }
@@ -344,6 +348,32 @@ Echo $(myvar:E=*) ;
 
 myvar = ;
 Echo $(myvar:E=) ;
+
+");
+        }
+
+        [Test]
+        [Ignore("wontfix")]
+        public void ExpressionList()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+
+rule ReturnMe args
+{
+   Echo hello from $(args) ;
+   return $(args) ;
+}
+
+local mylist = 
+  abc
+  [ ReturnMe harry sally ]
+  [ ReturnMe OhNo ]
+  dog
+  [ ReturnMe Last ]
+;
+
+Echo $(mylist) ;
 
 ");
         }
@@ -741,6 +771,38 @@ Echo $(mylist:X=$(filter)) ;
 myfile = a/b/c/d.hello ;
 Echo $(myfile:B) ;
 Echo $(myfile:B=amazing) ;
+");
+        }
+
+        [Test]
+        public void AModifier()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+local dollar = $ ;
+local open = \( ;
+local close = \) ;
+local myvar = $(dollar)$(open)name$(close) ;
+name = harry ;
+Echo $(myvar:A) ;
+
+");
+        }
+
+        [Test]
+        public void WModifier()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = c:/unity/* ;
+Echo $(myvar:W) ;
+
+chop = c:/ ;
+Echo $(myvar:W=$(chop)) ;
+
+multiple = c:/ c:/unity ;
+Echo $(multiple:W) ;
+
 ");
         }
 

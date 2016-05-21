@@ -293,6 +293,26 @@ public abstract class JamListBase : IEnumerable<string>
         return InvokeInternalModifier('B', null);
     }
 
+    public LocalJamList InterpetAsJamVariable()
+    {
+        return InvokeInternalModifier('A', null);
+    }
+
+    public LocalJamList JamGlob()
+    {
+        return InvokeInternalModifier('W', null);
+    }
+
+    public LocalJamList JamGlob(JamListBase value)
+    {
+        return InvokeInternalModifier('W', value);
+    }
+
+    public LocalJamList GetBoundPath()
+    {
+        return InvokeInternalModifier('T');
+    }
+    
     public bool NotJamEquals(JamListBase value)
 	{
 		return !JamEquals(value);

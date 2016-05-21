@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NiceIO;
 using NUnit.Framework;
+using Unity.IL2CPP;
 
 namespace jamconverter.Tests
 {
@@ -17,13 +18,20 @@ namespace jamconverter.Tests
 		{
 			var converter = new JamToCSharpConverter();
 
-			var convertfiles = new[] {"Projects/Jam/Editor.jam", "Projects/Jam/SetupRuntimeModules2.jam"};
+			var convertfiles = new[] {"Projects/Jam/Editor.jam", "Projects/Jam/SetupRuntimeModules2.jam", "PlatformDependent/WinPlayer/StandalonePlayer.jam" };
+
 			var files =
 				convertfiles
 					.Where(l => l[0] != '#' && !l.Contains("Config.jam"))
 					.Select(fn => new NPath(fn));
 
+            
 			var basePath = new NPath("c:/unity");
+
+		    var folders = new NPath[] {new NPath("Projects/Jam"), new NPath("PlatformDependent")};
+
+		    folders.SelectMany(f => basePath.Combine(f).Files("*.jam"));
+		    files = folders.SelectMany(f => basePath.Combine(f).Files("*.jam", true)).Where(f=>!f.FileName.Contains("iOSPlayer") && !f.FileName.Contains("Config")).Select(f => f.RelativeTo(basePath));
 
 			var program =
 				files
@@ -42,13 +50,47 @@ namespace jamconverter.Tests
 				CSharpFiles = csProgram,
 				WorkingDir = new NPath("c:/unity"),
 				JamFileToInvokeOnStartup = jambase.InQuotes(),
-				AdditionalArg = "Editor"
-			};
-			jamrunner.Run(instructions);
+				AdditionalArg = "\"<StandalonePlayer>Runtime/Graphics/Texture2D.obj\" -sPLATFORM=win64 -q -dx -d +7 "
+            };
 
-		}//local listIncludes = @(I=\\$(C.BUILD_EXTENSIONS)$:J=$(colon)) ;
+		    var tempDir = NPath.CreateTempDirectory("jamrunner");
+		    instructions.WorkingDir = instructions.WorkingDir ?? tempDir;
 
-		string OurJamFiles()
+		    foreach (var f1 in instructions.JamfilesToCreate)
+		        instructions.WorkingDir.Combine(f1.FileName).WriteAllText(f1.Contents);
+
+		    string startupArg = "";
+		    string csharparg = "";
+		    if (instructions.CSharpFiles.Any())
+		    {
+		        var csharpExe = tempDir.Combine("csharp.exe");
+		        CSharpRunner.Compile(instructions.CSharpFiles, JamToCSharpConverter.RuntimeDependencies, csharpExe);
+		        csharparg = "-m " + csharpExe.InQuotes();
+		    }
+
+		    var jamPath = Environment.OSVersion.Platform == PlatformID.Win32NT ? "external/jamplus/bin/win32/jam.exe" : "external/jamplus/macosx64/jam";
+		    var jamBinary = JamRunner.ConverterRoot.Combine(jamPath);
+
+		    startupArg += "-f " + (instructions.JamFileToInvokeOnStartup ?? instructions.JamfilesToCreate[0].FileName);
+
+		    startupArg += " -C " + instructions.WorkingDir;
+
+		    startupArg += " " + instructions.AdditionalArg;
+		    Console.WriteLine("args: " + startupArg);
+
+
+            var dropbox = new NPath(@"C:\Users\lucas\Dropbox");
+
+            var args2 = new Shell.ExecuteArgs() { Arguments = startupArg + " " + csharparg+" "+instructions.AdditionalArg, Executable = jamBinary.ToString() };
+            Shell.Execute(args2, null, dropbox.Combine("output_cs"));
+
+            //var args = new Shell.ExecuteArgs() { Arguments = startupArg + " " + instructions.AdditionalArg, Executable = jamBinary.ToString() };
+            //Shell.Execute(args, null, dropbox.Combine("output_jam"));
+
+
+        }//local listIncludes = @(I=\\$(C.BUILD_EXTENSIONS)$:J=$(colon)) ;
+
+        string OurJamFiles()
 		{
 			return 
 			

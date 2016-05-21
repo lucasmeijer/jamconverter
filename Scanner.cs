@@ -96,10 +96,13 @@ namespace jamconverter
 
 			if (c == ')')
 			{
-                if (_insideVariableExpansionDepth>0)
-    				--_insideVariableExpansionDepth;
-				++nextChar;
-				return new ScanToken() { tokenType = TokenType.ParenthesisClose, literal = ")" };
+			    if (_insideVariableExpansionDepth > 0 || !isInsideQuote)
+			    {
+                    if (_insideVariableExpansionDepth > 0)
+			         --_insideVariableExpansionDepth;
+			        ++nextChar;
+			        return new ScanToken() {tokenType = TokenType.ParenthesisClose, literal = ")"};
+			    }
 			}
 
             if (c == '#')

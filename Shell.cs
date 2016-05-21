@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using NiceIO;
 using Environment = System.Environment;
 using StreamWriter = System.IO.StreamWriter;
 
@@ -61,7 +62,7 @@ namespace Unity.IL2CPP
 			return allConsoleOutput;
 		}
 
-		public static ExecuteResult Execute(ExecuteArgs executeArgs, IExecuteController controller = null)
+		public static ExecuteResult Execute(ExecuteArgs executeArgs, IExecuteController controller = null, NPath outputFile = null)
 		{
 			using (var p = NewProcess(executeArgs))
 			{
@@ -70,7 +71,7 @@ namespace Unity.IL2CPP
 
 				lock (FileLocker)
 				{
-					tempOutputFile = Path.GetTempFileName();
+				    tempOutputFile = outputFile == null ? Path.GetTempFileName() : outputFile.ToString();
 					tempErrorFile = Path.GetTempFileName();
 					fOut = File.Create(tempOutputFile);
 					fError = File.Create(tempErrorFile);
@@ -107,17 +108,20 @@ namespace Unity.IL2CPP
 					p.CancelOutputRead();
 				}
 
-				string output;
+			    string output = "";
 				string error;
-				lock (FileLocker)
-				{
-					if (controller != null)
-						controller.AboutToCleanup(tempOutputFile, tempErrorFile);
+			    lock (FileLocker)
+			    {
+			        if (controller != null)
+			            controller.AboutToCleanup(tempOutputFile, tempErrorFile);
+                    
+			        if (outputFile == null)
+			        {
+			            output = File.ReadAllText(tempOutputFile, Encoding.UTF8);
+                        File.Delete(tempOutputFile);
+                    }
 
-					output = File.ReadAllText(tempOutputFile, Encoding.UTF8);
-					File.Delete(tempOutputFile);
-
-					error = File.ReadAllText(tempErrorFile, Encoding.UTF8);
+                    error = File.ReadAllText(tempErrorFile, Encoding.UTF8);
 					File.Delete(tempErrorFile);
 				}
 
@@ -125,7 +129,7 @@ namespace Unity.IL2CPP
 				var result = new ExecuteResult()
 				{
 					ExitCode = p.ExitCode,
-					StdOut = output,
+					StdOut = outputFile == null ? output : "in outputfile",
 					StdErr = error,
 					Duration = TimeSpan.FromMilliseconds(stopWatch.ElapsedMilliseconds)
 				};
