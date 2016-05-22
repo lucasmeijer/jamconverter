@@ -354,7 +354,7 @@ namespace jamconverter
         {
             var scanToken = _scanResult.Peek();
             var tokenType = scanToken.tokenType;
-            if (IsBinaryOperator(tokenType))
+            if (IsBinaryOperator(tokenType) && tokenType != TokenType.In)
                 return null;
 
             switch (tokenType)

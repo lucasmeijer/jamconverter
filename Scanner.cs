@@ -124,7 +124,7 @@ namespace jamconverter
             var literal = ReadLiteral(allowColon: _insideVariableExpansionDepth==0);
 
             var isUnquotedLiteral = (nextChar - oldPosition) == literal.Length;
-            if (isUnquotedLiteral && literal == ":" && !char.IsWhiteSpace(_input[nextChar]))
+            if (isUnquotedLiteral && literal == ":" && !char.IsWhiteSpace(_input[nextChar]) && _insideVariableExpansionDepth>0)
                 _insideVariableExpansionModifierSpan = true;
 
             var tokenType = TokenType.Literal;
@@ -240,7 +240,7 @@ namespace jamconverter
             for (i = nextChar; i != _input.Length; i++)
             {
 				//dont allow colons as the first character 
-				bool reallyAllowCon = allowColon && nextChar != i; 
+				bool reallyAllowCon = allowColon;// && nextChar != i; 
 				bool hasMoreCharacters = (i + 1) < _input.Length;
 				char ch = _input[i]; 
 				if (ch == '\\' && hasMoreCharacters)

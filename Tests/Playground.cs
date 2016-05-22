@@ -18,23 +18,27 @@ namespace jamconverter.Tests
 		{
 			var converter = new JamToCSharpConverter();
 
-			var convertfiles = new[] {"Projects/Jam/Editor.jam", "Projects/Jam/SetupRuntimeModules2.jam", "PlatformDependent/WinPlayer/StandalonePlayer.jam" };
 
+            var convertfiles = new[] {"Projects/Jam/Editor.jam", "Projects/Jam/SetupRuntimeModules2.jam", "PlatformDependent/WinPlayer/StandalonePlayer.jam" };
+
+            /*
 			var files =
 				convertfiles
 					.Where(l => l[0] != '#' && !l.Contains("Config.jam"))
 					.Select(fn => new NPath(fn));
-
+                    */
             
 			var basePath = new NPath("c:/unity");
 
-		    var folders = new NPath[] {new NPath("Projects/Jam"), new NPath("PlatformDependent")};
-
-		    files = folders.SelectMany(f => basePath.Combine(f).Files("*.jam", true)).Where(f=>!f.FileName.Contains("iOSPlayer") && !f.FileName.Contains("Config")).Select(f => f.RelativeTo(basePath));
-
+		    var files = new List<NPath>();
+            files.AddRange(basePath.Combine("Runtime").Files("*.jam", true));
+            files.AddRange(basePath.Combine("Projects/Jam").Files("*.jam", true));
+            files.AddRange(basePath.Files("*.jam", false));
+            files.AddRange(basePath.Combine("PlatformDependent").Files("*.jam", true));
+            
 			var program =
-				files
-					.Select(f => new SourceFileDescription() {FileName = f.ToString(SlashMode.Forward), Contents = basePath.Combine(f).ReadAllText()})
+				files.Where(f=>!f.ToString().Contains("Config"))
+					.Select(f => new SourceFileDescription() {FileName = f.RelativeTo(basePath).ToString(SlashMode.Forward), Contents = f.ReadAllText()})
 					.ToArray();
             //var program = new[] {new SourceFileDescription() { Contents = new NPath(inputFile).ReadAllText(), FileName = "Main.cs"} };
 

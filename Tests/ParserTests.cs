@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using ICSharpCode.NRefactory.CSharp;
 using jamconverter.AST;
+using NiceIO;
 using NUnit.Framework;
 using BinaryOperatorExpression = jamconverter.AST.BinaryOperatorExpression;
 using BlockStatement = jamconverter.AST.BlockStatement;
@@ -97,6 +98,19 @@ namespace jamconverter.Tests
             var variableDereferenceExpression = ParseExpression<VariableDereferenceExpression>("$(myvar[123])");
             Assert.AreEqual("myvar", variableDereferenceExpression.VariableExpression.As<LiteralExpression>().Value);
             Assert.AreEqual("123", variableDereferenceExpression.IndexerExpression.As<LiteralExpression>().Value);
+        }
+
+        [Test]
+        public void Complex()
+        {
+            ParseExpression<Expression>("$(a):$(hello)/");
+        }
+        
+        
+        [Test]
+        public void LooksLikeExpansinoModifierButIsNot()
+        {
+            ParseStatement<BlockStatement>("{ local grist = $(TARGET):RPX ; Echo hello ; }");
         }
 
         [Test]
@@ -548,17 +562,7 @@ actions response myactionname
         public void ExpressionListWithOnLiteral()
         {
             //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
-            CollectionAssert.AreEqual(new[] { "I","am","on","else","boat"}, ParseExpressionList("I am on else boat").Cast<LiteralExpression>().Select(le => le.Value));
-        }
-
-        [Test]
-        public void VariableOnTargetAssignment()
-        {
-            //the tricky part here is that we don't misqualify the "on" as a on keyword like in "myvar on target = bla"
-            var assignmentStatment = ParseStatement<AssignmentStatement>("myvar on mytarget = 3 ;").Left.As<VariableOnTargetExpression>();
-
-            Assert.AreEqual("myvar", assignmentStatment.Variable.As<LiteralExpression>().Value);
-            Assert.AreEqual("mytarget", assignmentStatment.Targets[0].As<LiteralExpression>().Value);
+            CollectionAssert.AreEqual(new[] { "I","am","in", "on","else","boat"}, ParseExpressionList("I am in on else boat").Cast<LiteralExpression>().Select(le => le.Value));
         }
 
 		[Test]

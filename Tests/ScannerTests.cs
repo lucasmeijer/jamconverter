@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using NiceIO;
 using NUnit.Framework;
 
 namespace jamconverter.Tests
@@ -153,6 +154,13 @@ namespace jamconverter.Tests
             Assert.That(result[5].literal, Is.EqualTo(" "));
         }
 
+        [Test]
+        public void LooksLikeExpansinoModifierButIsNot()
+        {
+            var a = new Scanner(@"local grist = $(TARGET):RPX; Echo hello;");
+            var scanAllTokens = a.ScanAllTokens().ToArray();
+            Assert.IsFalse(scanAllTokens.Any(t => t.tokenType == TokenType.VariableExpansionModifier));
+        }
 
         //        var jam = @"SCE_ROOT_DIR = $(SCE_ROOT_DIR:J="" "") ;
 
@@ -207,6 +215,28 @@ namespace jamconverter.Tests
         }
 
         [Test]
+        public void Combine()
+        {
+            var a = new Scanner(@"$(a):$(hello)/");
+            var scanAllTokens = a.ScanAllTokens().ToArray();
+
+            CollectionAssert.AreEqual(new[]
+            {
+                TokenType.VariableDereferencerOpen,
+                TokenType.Literal,
+                TokenType.ParenthesisClose,
+                TokenType.Literal,
+                TokenType.VariableDereferencerOpen,
+                TokenType.Literal,
+                TokenType.ParenthesisClose,
+                TokenType.Literal,
+                TokenType.EOF
+
+            }, scanAllTokens.Select(r => r.tokenType));
+
+        }
+
+        
         public void Comment()
         {
             var a = new Scanner(
