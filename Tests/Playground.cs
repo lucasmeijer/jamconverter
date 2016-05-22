@@ -28,9 +28,8 @@ namespace jamconverter.Tests
             
 			var basePath = new NPath("c:/unity");
 
-		    var folders = new NPath[] {new NPath("Projects/Jam"), new NPath("PlatformDependent")};
+		    var folders = new NPath[] {new NPath("Projects/Jam")};//, new NPath("PlatformDependent")};
 
-		    folders.SelectMany(f => basePath.Combine(f).Files("*.jam"));
 		    files = folders.SelectMany(f => basePath.Combine(f).Files("*.jam", true)).Where(f=>!f.FileName.Contains("iOSPlayer") && !f.FileName.Contains("Config")).Select(f => f.RelativeTo(basePath));
 
 			var program =
@@ -50,7 +49,7 @@ namespace jamconverter.Tests
 				CSharpFiles = csProgram,
 				WorkingDir = new NPath("c:/unity"),
 				JamFileToInvokeOnStartup = jambase.InQuotes(),
-				AdditionalArg = "\"<StandalonePlayer>Runtime/Graphics/Texture2D.obj\" -sPLATFORM=win64 -q -dx -d +7 "
+				AdditionalArg = "\"<StandalonePlayer>Runtime/Graphics/Texture2D.obj\" -sPLATFORM=win64 -q -dx"
             };
 
 		    var tempDir = NPath.CreateTempDirectory("jamrunner");
@@ -76,12 +75,14 @@ namespace jamconverter.Tests
 		    startupArg += " -C " + instructions.WorkingDir;
 
 		    startupArg += " " + instructions.AdditionalArg;
-		    Console.WriteLine("args: " + startupArg);
 
 
             var dropbox = new NPath(@"C:\Users\lucas\Dropbox");
 
-            var args2 = new Shell.ExecuteArgs() { Arguments = startupArg + " " + csharparg+" "+instructions.AdditionalArg, Executable = jamBinary.ToString() };
+		    var finalArg = jamBinary.ToString() + " "+startupArg + " " + csharparg+" "+instructions.AdditionalArg;
+            Console.WriteLine("args: " + finalArg);
+
+            var args2 = new Shell.ExecuteArgs() { Arguments = finalArg, Executable = jamBinary.ToString() };
             Shell.Execute(args2, null, dropbox.Combine("output_cs"));
 
             //var args = new Shell.ExecuteArgs() { Arguments = startupArg + " " + instructions.AdditionalArg, Executable = jamBinary.ToString() };

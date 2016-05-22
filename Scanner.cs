@@ -248,7 +248,7 @@ namespace jamconverter
 					Debug.Assert(i > nextChar);
 					break;
 				}
-                else if (isInsideQuote)
+                else if (isInsideQuote && _insideVariableExpansionDepth == 0)
                 {
                     if (ch == '"')
 						isInsideQuote = false;

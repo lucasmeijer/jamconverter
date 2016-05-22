@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Text;
 using NUnit.Framework;
 
 namespace jamconverter.Tests
@@ -95,6 +96,32 @@ namespace jamconverter.Tests
             CollectionAssert.AreEqual(new[] { TokenType.Literal, TokenType.VariableDereferencerOpen, TokenType.Literal, TokenType.ParenthesisClose, TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
         }
 
+        [Test]
+        public void VariableDereferenceWithIndexerInsideQuotes()
+        {
+            //"($(passed_define_set[0])=.*)\\s*"
+            var a = new Scanner(@"""($(passed_define_set[0]) =.*)""");
+            var result = a.ScanAllTokens().ToArray();
+
+            Assert.AreEqual("passed_define_set", result[2].literal);
+       }
+
+        [Test]
+        public void EscapedEndQuote()
+        {
+            var sb = new StringBuilder();
+            sb.Append('"');
+            sb.Append('a');
+            sb.Append('\\');
+            sb.Append('"');
+            sb.Append('"');
+
+            var a = new Scanner(sb.ToString());
+            var result = a.ScanAllTokens().ToArray();
+
+            Assert.AreEqual("a\"", result[0].literal);
+            Assert.AreEqual(2, result.Length);
+        }
 
         [Test]
         public void LetterFollowedByDollar()
