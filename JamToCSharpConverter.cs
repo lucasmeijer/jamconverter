@@ -190,7 +190,7 @@ namespace jamconverter
 				    Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
 				    Body = actionWrapperBody
 			    };
-			    actionMethod.Parameters.Add(new NRefactory.ParameterDeclaration(new NRefactory.PrimitiveType("LocalJamList[]"), "values",
+			    actionMethod.Parameters.Add(new NRefactory.ParameterDeclaration(new NRefactory.PrimitiveType("JamListBase[]"), "values",
 				    NRefactory.ParameterModifier.Params));
 			    actions.Members.Add(actionMethod);
 		    }
@@ -892,8 +892,14 @@ namespace jamconverter
                 case 'T':
                     if (hasValue) throw new NotSupportedException();
                     return "GetBoundPath";
+                case '\\':
+                    if (hasValue) throw new NotSupportedException();
+                    return "BackSlashify";
+                case '/':
+                    if (hasValue) throw new NotSupportedException();
+                    return "ForwardSlashify";
                 default:
-                    return $"TodoModifier_{modifier.Command}"; 
+                    //return $"TodoModifier_{modifier.Command}"; 
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);
             }
         }

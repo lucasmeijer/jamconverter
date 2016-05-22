@@ -185,7 +185,17 @@ public abstract class JamListBase : IEnumerable<string>
 		return Elements.Length > 0;
 	}
 
-	public abstract void Subtract(params JamListBase[] localJamListBases);
+    public LocalJamList BackSlashify()
+    {
+        throw new NotImplementedException();
+    }
+
+    public LocalJamList ForwardSlashify()
+    {
+        throw new NotImplementedException();
+    }
+
+    public abstract void Subtract(params JamListBase[] localJamListBases);
 
 	public IEnumerator<string> GetEnumerator()
 	{

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
@@ -106,23 +107,19 @@ namespace jamconverter.Tests
             Assert.AreEqual("passed_define_set", result[2].literal);
        }
 
+       
         [Test]
-        public void EscapedEndQuote()
+        public void BackSlashModifier()
         {
-            var sb = new StringBuilder();
-            sb.Append('"');
-            sb.Append('a');
-            sb.Append('\\');
-            sb.Append('"');
-            sb.Append('"');
-
+            var sb = new StringBuilder("$(a:\\)");
             var a = new Scanner(sb.ToString());
             var result = a.ScanAllTokens().ToArray();
 
-            Assert.AreEqual("a\"", result[0].literal);
-            Assert.AreEqual(2, result.Length);
+            var scanToken = result[result.Length-3];
+            Assert.AreEqual("\\", scanToken.literal);
+            Assert.AreEqual(TokenType.VariableExpansionModifier, scanToken.tokenType);
         }
-
+        
         [Test]
         public void LetterFollowedByDollar()
         {
@@ -133,6 +130,31 @@ namespace jamconverter.Tests
 			Assert.That(result[0].literal, Is.EqualTo("a$"));
         }
 
+
+        [Test]
+        public void QuotedSpaceAsVariableModifierIsLiteralNotWhiteSpace()
+        {
+            var a = new Scanner("$(a:J=\" \")");
+            var result = a.ScanAllTokens().ToArray();
+
+            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencerOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.Assignment, TokenType.Literal, TokenType.ParenthesisClose, TokenType.EOF }, result.Select(r => r.tokenType));
+            Assert.That(result[5].literal, Is.EqualTo(" "));
+        }
+
+        [Test]
+        public void QuotedSpaceAsVariableModifierWithTerminator()
+        {
+            var a = new Scanner(@"$(a:J="" "") ;
+");                
+                
+           var result = a.ScanAllTokens().ToArray();
+
+            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencerOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.Assignment, TokenType.Literal, TokenType.ParenthesisClose, TokenType.WhiteSpace, TokenType.Terminator, TokenType.WhiteSpace, TokenType.EOF }, result.Select(r => r.tokenType));
+            Assert.That(result[5].literal, Is.EqualTo(" "));
+        }
+
+
+        //        var jam = @"SCE_ROOT_DIR = $(SCE_ROOT_DIR:J="" "") ;
 
         [Test]
         public void VariableExpansionModifier()
@@ -149,10 +171,10 @@ namespace jamconverter.Tests
         [Test]
         public void VariableExpansionModifierWithValue()
         {
-            var a = new Scanner("$(harry:BS=v");
+            var a = new Scanner("$(harry:BS=v)");
             var result = a.ScanAllTokens().ToArray();
 
-            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencerOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.VariableExpansionModifier, TokenType.Assignment, TokenType.Literal, TokenType.EOF }, result.Select(r => r.tokenType));
+            CollectionAssert.AreEqual(new[] { TokenType.VariableDereferencerOpen, TokenType.Literal, TokenType.Colon, TokenType.VariableExpansionModifier, TokenType.VariableExpansionModifier, TokenType.Assignment, TokenType.Literal, TokenType.ParenthesisClose, TokenType.EOF }, result.Select(r => r.tokenType));
             
             Assert.AreEqual("v", result[6].literal);
         }

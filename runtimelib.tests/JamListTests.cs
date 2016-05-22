@@ -32,19 +32,6 @@ namespace runtimelib.tests
         {
             Assert.AreEqual("<myapp>Harry", new LocalJamList("<oldapp>Harry").GristWith(new LocalJamList("<myapp>")).ToString());
         }
-
-        [Test]
-        public void WithEmptySuffix()
-        {
-            Assert.AreEqual("myfile", new LocalJamList("myfile").WithSuffix(new LocalJamList()).ToString());
-        }
-
-
-        [Test]
-        public void JoinWithValue()
-        {
-            Assert.AreEqual("this_is_nice", new LocalJamList("this", "is","nice").JoinWithValue(new LocalJamList("_")).ToString());
-        }
 		
         [Test]
         public void AsBoolReturnsTrue()
@@ -114,28 +101,6 @@ namespace runtimelib.tests
 		    var clone = j.Clone();
 			CollectionAssert.AreEqual(new[] { "juha"}, clone.Elements);
 	    }
-
-	    [Test]
-	    public void Include()
-	    {
-		    var j = new LocalJamList("hello","there","sailor");
-			CollectionAssert.AreEqual(new[] {"there"}, j.Include("th").Elements);
-	    }
-
-		[Test]
-		public void IncludeWithRegex()
-		{
-			var j = new LocalJamList("hello", "there", "sailor");
-			CollectionAssert.AreEqual(new[] { "hello" }, j.Include("hel+").Elements);
-		}
-
-		[Test]
-		public void IncludeOnlyAllowsSingleElement()
-		{
-			var j = new LocalJamList("hello", "there", "sailor");
-			var pattern = new LocalJamList("one","two");
-			Assert.Throws<ArgumentException>(() => j.Include(pattern));
-		}
 
 	    [Test]
 	    public void AssignIfEmpty()

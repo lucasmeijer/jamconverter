@@ -28,7 +28,7 @@ namespace jamconverter.Tests
             
 			var basePath = new NPath("c:/unity");
 
-		    var folders = new NPath[] {new NPath("Projects/Jam")};//, new NPath("PlatformDependent")};
+		    var folders = new NPath[] {new NPath("Projects/Jam"), new NPath("PlatformDependent")};
 
 		    files = folders.SelectMany(f => basePath.Combine(f).Files("*.jam", true)).Where(f=>!f.FileName.Contains("iOSPlayer") && !f.FileName.Contains("Config")).Select(f => f.RelativeTo(basePath));
 

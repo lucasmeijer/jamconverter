@@ -12,6 +12,7 @@ namespace jamconverter
         private int nextChar = 0;
 		private bool isInsideQuote = false;
         private bool _insideVariableExpansionModifierSpan;
+        private bool _insideVariableExpansionModifierValueSpan;
         private int _insideVariableExpansionDepth = 0;
 
         List<ScanToken> _previouslyScannedTokens = new List<ScanToken>();
@@ -57,21 +58,17 @@ namespace jamconverter
                 if (c == '=')
                 {
                     _insideVariableExpansionModifierSpan = false;
+                    _insideVariableExpansionModifierValueSpan = true;
                     nextChar++;
                     var scanToken = new ScanToken() {tokenType = TokenType.Assignment, literal = c.ToString()};
                     return scanToken;
                 }
-                if (char.IsLetter(c))
+                if (char.IsLetter(c) || c == '\\' || c == '/')
                 {
                     nextChar++;
                     var scanToken = new ScanToken() {tokenType = TokenType.VariableExpansionModifier, literal = c.ToString()};
                     return scanToken;
                 }
-				if (c == '\\' && _input.Substring(nextChar, 4) == "\\\\\\\\")
-				{
-					nextChar += 4;
-					return new ScanToken { tokenType = TokenType.VariableExpansionModifier, literal = "\\\\\\\\" };
-				}
                 if (c == ')')
                     _insideVariableExpansionModifierSpan = false;
             }
@@ -94,16 +91,25 @@ namespace jamconverter
 				return new ScanToken() { tokenType = TokenType.LiteralExpansionOpen, literal = "@(" };
 			}
 
-			if (c == ')')
-			{
-			    if (_insideVariableExpansionDepth > 0 || !isInsideQuote)
-			    {
-                    if (_insideVariableExpansionDepth > 0)
-			         --_insideVariableExpansionDepth;
-			        ++nextChar;
-			        return new ScanToken() {tokenType = TokenType.ParenthesisClose, literal = ")"};
-			    }
-			}
+            if (c == ')')
+            {
+                bool processAsParenthesisClose = false;
+                if (_insideVariableExpansionDepth > 0)
+                {
+                    --_insideVariableExpansionDepth;
+                    processAsParenthesisClose = true;
+                }
+
+                if (_previouslyScannedTokens.Last().tokenType == TokenType.WhiteSpace && NextCharIfAnyIsWhiteSpace())
+                    processAsParenthesisClose = true;
+
+                if (processAsParenthesisClose)
+                {
+                    ++nextChar;
+                    return new ScanToken() {tokenType = TokenType.ParenthesisClose, literal = ")"};
+                }
+            }
+        
 
             if (c == '#')
             {
@@ -132,7 +138,14 @@ namespace jamconverter
 
             return new ScanToken() {tokenType = tokenType, literal = literal};
         }
-        
+
+        private bool NextCharIfAnyIsWhiteSpace()
+        {
+            if (nextChar+1 >= _input.Length)
+                return true;
+            return char.IsWhiteSpace(_input[nextChar + 1]);
+        }
+
         private TokenType TokenTypeFor(string literal, bool hasWhitespaceAround)
         {
             switch (literal)
@@ -248,16 +261,17 @@ namespace jamconverter
 					Debug.Assert(i > nextChar);
 					break;
 				}
-                else if (isInsideQuote && _insideVariableExpansionDepth == 0)
+                else if (isInsideQuote && (_insideVariableExpansionDepth == 0 || char.IsWhiteSpace(ch)))
                 {
                     if (ch == '"')
-						isInsideQuote = false;
-					else 
-						_builder.Append(ch);
+                    {
+                        isInsideQuote = false;
+                    } else
+                        _builder.Append(ch);
                 }
 				else if (ch == '"')
 				{
-					isInsideQuote = true;
+					isInsideQuote = !isInsideQuote;
 				}
 				else if (IsLiteral(ch, reallyAllowCon) || ((ch == '$' || ch == '@') && hasMoreCharacters && _input[i + 1] != '(')) // Prevent single $ inside literal being treated as DereferenceVariable token. 
 				{ 

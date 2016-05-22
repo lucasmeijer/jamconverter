@@ -62,9 +62,10 @@ namespace jamconverter
 
                 stack.Push(ParseValue(mostRecentOperator));
 
-                var nextTokenType = _scanResult.Peek().tokenType;
+                nextToken = _scanResult.Peek();
+                var nextTokenType = nextToken.tokenType;
 
-                if (nextTokenType == TokenType.ParenthesisClose)
+                if (nextToken.tokenType == TokenType.ParenthesisClose)
                 {
                     CollapseStack(stack);
                     _scanResult.Next();

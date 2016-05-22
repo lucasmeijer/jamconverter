@@ -68,7 +68,13 @@ public static class JamListExtensions
 			jamlist.Append(values);
 	}
 
-	public static void AssignIfEmpty(this IEnumerable<JamListBase> jamlists, params JamListBase[] values)
+    public static void Subtract(this IEnumerable<JamListBase> jamlists, params JamListBase[] values)
+    {
+        foreach (var jamlist in jamlists)
+            jamlist.Subtract(values);
+    }
+
+    public static void AssignIfEmpty(this IEnumerable<JamListBase> jamlists, params JamListBase[] values)
 	{
 		foreach (var jamlist in jamlists)
 			jamlist.AssignIfEmpty(values);

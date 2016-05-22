@@ -265,6 +265,13 @@ namespace jamconverter.Tests
             Assert.Throws<ParsingException>(()=>ParseStatement<IfStatement>("if ! $(somevar) = 321 { }"));
         }
 
+
+        [Test]
+        public void InOperatorFollowedByParenthesisClose()
+        {
+            ParseCondition<Expression>("! ( hello in bla )");
+        }
+
         [Test]
         public void IfWithElseStatement()
         {
@@ -681,7 +688,17 @@ actions response myactionname
 			ParseExpression<VariableDereferenceExpression>(jam);
 		}
 
-		static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
+        [Test]
+        public void ModifierWithQuotedWhiteSpaceAsStatement()
+        {
+            var jam = @"
+	SCE_ROOT_DIR = $(SCE_ROOT_DIR:J="" "") ;
+";
+
+            ParseStatement<AssignmentStatement>(jam);
+        }
+
+        static TExpected ParseStatement<TExpected>(string jamCode) where TExpected : Statement
         {
             var parser = new Parser(jamCode);
             var node = parser.ParseStatement();

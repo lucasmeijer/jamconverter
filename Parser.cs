@@ -30,7 +30,7 @@ namespace jamconverter
                 }
                 return result;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 Console.WriteLine("Parsing failed. Previous 50 tokens:");
                 var cursor = _scanResult.GetCursor();
@@ -352,7 +352,8 @@ namespace jamconverter
 
         public Expression ParseExpression()
         {
-            var tokenType = _scanResult.Peek().tokenType;
+            var scanToken = _scanResult.Peek();
+            var tokenType = scanToken.tokenType;
             if (IsBinaryOperator(tokenType))
                 return null;
 
@@ -466,7 +467,7 @@ namespace jamconverter
             var peek = _scanResult.Peek(false);
             
             if (peek.tokenType == TokenType.EOF || (peek.tokenType != TokenType.Literal && peek.tokenType != TokenType.VariableDereferencerOpen && peek.tokenType != TokenType.LiteralExpansionOpen))
-                return firstExpression;
+                return firstExpression; 
 
             var tail = ParseExpression();
             var combineExpressionTail = tail as CombineExpression;
