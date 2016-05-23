@@ -10,30 +10,6 @@ namespace runtimelib.tests
     public class JamListTests
     {
         [Test]
-        public void Grist()
-        {
-            Assert.AreEqual("<myapp>Harry", new LocalJamList("Harry").GristWith(new LocalJamList("myapp")).ToString());
-        }
-
-        [Test]
-        public void ReGrist()
-        {
-            Assert.AreEqual("<myapp>Harry", new LocalJamList("<oldapp>Harry").GristWith(new LocalJamList("myapp")).ToString());
-        }
-
-        [Test]
-        public void UnGrist()
-        {
-            Assert.AreEqual("Harry", new LocalJamList("<oldapp>Harry").GristWith(new LocalJamList()).ToString());
-        }
-
-        [Test]
-        public void GristWithAngleBrackets()
-        {
-            Assert.AreEqual("<myapp>Harry", new LocalJamList("<oldapp>Harry").GristWith(new LocalJamList("<myapp>")).ToString());
-        }
-		
-        [Test]
         public void AsBoolReturnsTrue()
         {
             Assert.IsTrue(new LocalJamList("a","c").AsBool());

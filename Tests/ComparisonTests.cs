@@ -49,7 +49,6 @@ for x in \$(foo) { Echo $(x) ; }
 
 
 		[Test]
-		[Ignore("not working yet")]
 		public void DModifier()
 		{
 			AssertConvertedProgramHasIdenticalOutput(
@@ -60,11 +59,76 @@ myvar = file.cs ;
 Echo $(myvar:D) ;
 myfar = file1.cs harry/sally/subdir/yeah.cpp ;
 Echo $(myvar:D) ;
+
+a = c:/unity/build/temp/Unity.CommonTools.dll ;
+Echo $(a:D) ;
 "
+            
 			);
 		}
 
-		[Test]
+        [Test]
+        public void Emptyness()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+empty = ;
+if $(empty) { Echo yes ; } else { Echo no ; }
+if $(empty) = """" { Echo yes ; } else { Echo no ; }
+
+rule ReturnNothing { }
+empty = [ ReturnNothing ] ;
+if $(empty) { Echo yes ; } else { Echo no ; }
+if $(empty) = """" { Echo yes ; } else { Echo no ; }
+
+empty = """" ;
+if $(empty) { Echo yes ; } else { Echo no ; }
+if $(empty) = """" { Echo yes ; } else { Echo no ; }
+"
+
+            );
+        }
+
+
+        [Test]
+        [Ignore("not implemented yet")]
+        public void ImplicitReturnValues()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+
+rule OtherRule
+{
+  return a b c ;
+}
+
+rule LooksLikeIDoNotReturnAnything
+{
+   OtherRule ;
+   if a = 3 { }
+}
+
+Echo [ LooksLikeIDoNotReturnAnything ] ;
+
+"
+
+            );
+        }
+
+
+        [Test]
+        public void SlashingModifier()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = so\me/dir/myf\ile.cs ;
+Echo $(myvar:\\) ;
+Echo $(myvar:/) ;
+"
+            );
+        }
+
+        [Test]
 		public void DereferenceCombineExpression()
 		{
 			AssertConvertedProgramHasIdenticalOutput(
@@ -636,6 +700,14 @@ for myvar in $(myvars)
    Echo $(myvar) $($(myvar)) ;
 }
 
+for t in $(mylist)
+{
+   for t2 in $(mylist)
+   {
+       Echo $(t2) $(t) ;
+   }
+}
+
 
 ");
         }
@@ -966,6 +1038,14 @@ Echo $(myvar) ;
 ");
         }
 
+        [Test]
+        public void SingleValueIsIn()
+        {
+            AssertConvertedProgramHasIdenticalOutput(@"
+if harry in harry sally johny { Echo yes ; } else { Echo no ; }
+");
+        }
+
 
         [Test]
 		public void OnTargetVariables()
@@ -1009,6 +1089,10 @@ Echo luca slucas lucas ;
 mytargets = superman spiderman ;
 myvar on $(mytargets) = [ GreenGoblin ] ;
 myvar on $(mytargets) += uh oh ;
+myvar on superman += onlyonsuperman ;
+myvar on spiderman += onlyonspiderman ;
+
+myvar_only_spiderman on spiderman = catwoman ;
 
 on superman {
   Echo $(myvar) ;
@@ -1017,12 +1101,23 @@ on spiderman {
   Echo $(myvar) ;
 }
 
+on $(mytargets) {
+    Echo $(myvar) ;
+    Echo $(myvar_only_spiderman) ;
+}
+
+
 Echo valid ;
 myvar = 3 ;
 mads = myvar myvar2 ;
 $(mads) on mytarget = 2 ;
 containsmytarget = mytarget  ;
 on $(containsmytarget) { Echo $(myvar) ;  Echo $(myvar2) ; }
+
+rule ReturnEmpty { return ; }
+empty = [ ReturnEmpty ] ;
+on $(empty) { }
+
 
 ");
 		}
@@ -1040,6 +1135,7 @@ Echo @($(myvar)/somepath:S=.ini) ;
 			);
 		}
 
+      
 
 		[Test]
 		public void Include()
@@ -1065,13 +1161,38 @@ Echo and this file is csharp again ;
 
 			var jamProgram = new ProgramDescripton()
 			{
-				new SourceFileDescription() { Contents = jam1, FileName = "file1.jam" },
-				new SourceFileDescription() { Contents = jam2, FileName = "file2.jam" },
-				new SourceFileDescription() { Contents = jam3, FileName = "file3.jam" }
+				new SourceFileDescription() { Contents = jam1, File = new NPath("file1.jam") },
+				new SourceFileDescription() { Contents = jam2, File = new NPath("file2.jam") },
+				new SourceFileDescription() { Contents = jam3, File = new NPath("file3.jam") }
 			};
 			
 			AssertConvertedProgramHasIdenticalOutput(jamProgram, new[] { "file1.jam", "file3.jam"});
 		}
+
+        [Test]
+        public void IncludedFileReturns()
+        {
+            var jam1 =
+@"
+Echo file1 ;
+include file2.jam ;
+Echo file1 post ;
+";
+            var jam2 =
+@"
+Echo file2 ;
+#return ;
+Echo file2 post ;
+";
+
+            var jamProgram = new ProgramDescripton()
+            {
+                new SourceFileDescription() { Contents = jam1, File = new NPath("file1.jam") },
+                new SourceFileDescription() { Contents = jam2, File = new NPath("file2.jam") },
+            };
+
+            AssertConvertedProgramHasIdenticalOutput(jamProgram);
+        }
 
         [Test]
         public void VariablePersistence()
@@ -1100,9 +1221,9 @@ Echo myglobal from file3 $(myglobal) ;
 
             var jamProgram = new ProgramDescripton()
             {
-                new SourceFileDescription() { Contents = jam1, FileName = "file1.jam" },
-                new SourceFileDescription() { Contents = jam2, FileName = "file2.jam" },
-                new SourceFileDescription() { Contents = jam3, FileName = "file3.jam" }
+                new SourceFileDescription() { Contents = jam1, File = new NPath("file1.jam") },
+                new SourceFileDescription() { Contents = jam2, File = new NPath("file2.jam") },
+                new SourceFileDescription() { Contents = jam3, File = new NPath("file3.jam") }
             };
 
             AssertConvertedProgramHasIdenticalOutput(jamProgram, new[] { "file1.jam", "file3.jam" });
@@ -1110,7 +1231,7 @@ Echo myglobal from file3 $(myglobal) ;
 
         private static void AssertConvertedProgramHasIdenticalOutput(string simpleProgram)
 	    {
-		    AssertConvertedProgramHasIdenticalOutput(new ProgramDescripton {new SourceFileDescription() {FileName = "Jamfile.jam", Contents = simpleProgram}});
+		    AssertConvertedProgramHasIdenticalOutput(new ProgramDescripton {new SourceFileDescription() {File = new NPath("Jamfile.jam"), Contents = simpleProgram}});
 	    }
 
 	    private static void AssertConvertedProgramHasIdenticalOutput(ProgramDescripton program, IEnumerable<string> onlyConvert = null)
@@ -1126,12 +1247,12 @@ Echo myglobal from file3 $(myglobal) ;
 
 		    IEnumerable<string> csharpResult = null;
 
-	        Func<string, bool> shouldConvert = (string name) => onlyConvert == null || onlyConvert.Contains(name);
+	        Func<NPath, bool> shouldConvert = (NPath name) => onlyConvert == null || onlyConvert.Contains(name.ToString());
 
 		    try
 		    {
-		        var toBeCSharp = new ProgramDescripton(program.Where(f => shouldConvert(f.FileName)));
-                var toStayJam  = new ProgramDescripton(program.Where(f => !shouldConvert(f.FileName)));
+		        var toBeCSharp = new ProgramDescripton(program.Where(f => shouldConvert(f.File)));
+                var toStayJam  = new ProgramDescripton(program.Where(f => !shouldConvert(f.File)));
 
                 var csharp = new JamToCSharpConverter().Convert(toBeCSharp);
 
@@ -1139,7 +1260,7 @@ Echo myglobal from file3 $(myglobal) ;
 			    {
 				    CSharpFiles = csharp,
 				    JamfilesToCreate = toStayJam,
-				    JamFileToInvokeOnStartup = program[0].FileName
+				    JamFileToInvokeOnStartup = program[0].File.FileName
 			    };
 
 			    csharpResult = new JamRunner().Run(convertedJamRunInstructions).Select(s => s.TrimEnd());

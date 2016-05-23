@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,20 +33,21 @@ namespace jamconverter.Tests
 
 		    var files = new List<NPath>();
             files.AddRange(basePath.Combine("Runtime").Files("*.jam", true));
+            files.AddRange(basePath.Combine("Editor").Files("*.jam", true));
             files.AddRange(basePath.Combine("Projects/Jam").Files("*.jam", true));
             files.AddRange(basePath.Files("*.jam", false));
             files.AddRange(basePath.Combine("PlatformDependent").Files("*.jam", true));
             
 			var program =
 				files.Where(f=>!f.ToString().Contains("Config"))
-					.Select(f => new SourceFileDescription() {FileName = f.RelativeTo(basePath).ToString(SlashMode.Forward), Contents = f.ReadAllText()})
+					.Select(f => new SourceFileDescription() {File = f.RelativeTo(basePath), Contents = f.ReadAllText()})
 					.ToArray();
             //var program = new[] {new SourceFileDescription() { Contents = new NPath(inputFile).ReadAllText(), FileName = "Main.cs"} };
 
             var csProgram = converter.Convert(new ProgramDescripton(program));
 			
 			
-			var jambase = @"C:\unity\External\Jamplus\builds\bin\Jambase.jam";
+			var jambase = @"C:\jamconverter\external\jamplus\bin\Jambase.jam";
 			var jamrunner = new JamRunner();
 
 			var instructions = new JamRunnerInstructions()
@@ -56,11 +58,11 @@ namespace jamconverter.Tests
 				AdditionalArg = "\"<StandalonePlayer>Runtime/Graphics/Texture2D.obj\" -sPLATFORM=win64 -q -dx"
             };
 
-		    var tempDir = NPath.CreateTempDirectory("jamrunner");
+		    var tempDir = NPath.SystemTemp.Combine("JamRunner");
 		    instructions.WorkingDir = instructions.WorkingDir ?? tempDir;
 
 		    foreach (var f1 in instructions.JamfilesToCreate)
-		        instructions.WorkingDir.Combine(f1.FileName).WriteAllText(f1.Contents);
+		        instructions.WorkingDir.Combine(f1.File).WriteAllText(f1.Contents);
 
 		    string startupArg = "";
 		    string csharparg = "";
@@ -74,12 +76,12 @@ namespace jamconverter.Tests
 		    var jamPath = Environment.OSVersion.Platform == PlatformID.Win32NT ? "external/jamplus/bin/win32/jam.exe" : "external/jamplus/macosx64/jam";
 		    var jamBinary = JamRunner.ConverterRoot.Combine(jamPath);
 
-		    startupArg += "-f " + (instructions.JamFileToInvokeOnStartup ?? instructions.JamfilesToCreate[0].FileName);
+		    startupArg += "-f " + (instructions.JamFileToInvokeOnStartup ?? instructions.JamfilesToCreate[0].File.FileName);
 
 		    startupArg += " -C " + instructions.WorkingDir;
 
-		    startupArg += " " + instructions.AdditionalArg;
-
+		    startupArg += " -d +16" + instructions.AdditionalArg;
+            
 
             var dropbox = new NPath(@"C:\Users\lucas\Dropbox");
 
@@ -87,13 +89,26 @@ namespace jamconverter.Tests
             Console.WriteLine("args: " + finalArg);
 
             var args2 = new Shell.ExecuteArgs() { Arguments = finalArg, Executable = jamBinary.ToString() };
-            Shell.Execute(args2, null, dropbox.Combine("output_cs"));
+		    var output_cs = dropbox.Combine("output_cs");
+		    Shell.Execute(args2, null, output_cs);
+            Truncate(output_cs);
 
-            //var args = new Shell.ExecuteArgs() { Arguments = startupArg + " " + instructions.AdditionalArg, Executable = jamBinary.ToString() };
-            //Shell.Execute(args, null, dropbox.Combine("output_jam"));
+            var args = new Shell.ExecuteArgs() { Arguments = startupArg + " " + instructions.AdditionalArg, Executable = jamBinary.ToString() };
+		    var output_jam = dropbox.Combine("output_jam");
+		    Shell.Execute(args, null, output_jam);
+            Truncate(output_jam);
 
+        }
 
-        }//local listIncludes = @(I=\\$(C.BUILD_EXTENSIONS)$:J=$(colon)) ;
+	    private void Truncate(NPath outputJam)
+	    {
+	        var text = outputJam.ReadAllText();
+	        var limit = 8000*1000;
+	        if (text.Length > limit)
+	            outputJam.WriteAllText(text.Substring(0, limit));
+	    }
+
+//local listIncludes = @(I=\\$(C.BUILD_EXTENSIONS)$:J=$(colon)) ;
 
         string OurJamFiles()
 		{

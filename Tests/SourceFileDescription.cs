@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using NiceIO;
 
 namespace jamconverter.Tests
 {
 	internal class SourceFileDescription
 	{
-		public string FileName;
+		public NPath File;
 		public string Contents;
 	}
 

@@ -22,7 +22,7 @@ namespace jamconverter
 			instructions.WorkingDir = instructions.WorkingDir ?? tempDir;
 
 			foreach (var f in instructions.JamfilesToCreate)
-				instructions.WorkingDir.Combine(f.FileName).WriteAllText(f.Contents);
+				instructions.WorkingDir.Combine(f.File).WriteAllText(f.Contents);
 
 			string startupArg = "";
 			if (instructions.CSharpFiles.Any())
@@ -35,7 +35,7 @@ namespace jamconverter
 			var jamPath = Environment.OSVersion.Platform == PlatformID.Win32NT ? "external/jamplus/bin/win32/jam.exe" : "external/jamplus/macosx64/jam";
 			var jamBinary = ConverterRoot.Combine(jamPath);
 
-			startupArg += " -f " + (instructions.JamFileToInvokeOnStartup ?? instructions.JamfilesToCreate[0].FileName);
+			startupArg += " -f " + (instructions.JamFileToInvokeOnStartup ?? instructions.JamfilesToCreate[0].File.FileName);
 
 			startupArg += " -C " + instructions.WorkingDir;
 

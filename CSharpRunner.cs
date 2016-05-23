@@ -27,10 +27,10 @@ namespace jamconverter
             var absoluteCSFiles = new List<NPath>();
             foreach (var fileEntry in program)
             {
-                var absolutePath = tmpDir.Combine(fileEntry.FileName);
+                var absolutePath = tmpDir.Combine(fileEntry.File);
                 absoluteCSFiles.Add(absolutePath);
                 var file = absolutePath.WriteAllText(fileEntry.Contents);
-                Console.WriteLine(".cs: " + file);
+                //Console.WriteLine(".cs: " + file);
             }
 
 	        var csproj = tmpDir.Combine("program.csproj");
@@ -41,7 +41,17 @@ namespace jamconverter
             
             if (additionalLibs == null) additionalLibs = new NPath[0];
 
-            Shell.Execute(compiler, absoluteCSFiles.InQuotes().SeperateWithSpace() + " " + additionalLibs.InQuotes().Select(l => "-r:" + l).SeperateWithSpace() + " -debug -langversion:6 -out:" + executable);
+            var rsp = tmpDir.Combine("args.rsp");
+            rsp.WriteAllText(program.Select(f => f.File).InQuotes().SeperateWithSpace());
+
+            var args = new Shell.ExecuteArgs()
+            {
+                Executable = compiler.ToString(),
+                Arguments =  "@"+rsp+" " + additionalLibs.InQuotes().Select(l => "-r:" + l).SeperateWithSpace() + " -debug -langversion:6 -out:" + executable.InQuotes(),
+                WorkingDirectory = tmpDir.ToString()
+            };
+            Console.WriteLine(args.Arguments);
+            Console.Write(Shell.Execute(args));
 
             foreach (var lib in additionalLibs)
                 lib.Copy(tmpDir);
@@ -63,7 +73,7 @@ namespace jamconverter
 
 			inject.AppendLine("<ItemGroup>");
 			foreach (var file in program)
-				inject.AppendLine($@"  <Compile Include=""{file.FileName}"" />");
+				inject.AppendLine($@"  <Compile Include=""{file.File}"" />");
 			inject.AppendLine("</ItemGroup>");
 
 		    return template.Replace("$$INSERT_FILES_HERE$$", inject.ToString());
@@ -96,7 +106,7 @@ class Dummy {
 }
 ";
 
-            var output = new CSharpRunner().Run(new ProgramDescripton() { new SourceFileDescription() { Contents = program, FileName = "Main.cs" }});
+            var output = new CSharpRunner().Run(new ProgramDescripton() { new SourceFileDescription() { Contents = program, File = new NPath("Main.cs") }});
             CollectionAssert.AreEqual(new[] {"Hello!"}, output);
         }
     }

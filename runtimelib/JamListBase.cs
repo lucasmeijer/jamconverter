@@ -109,6 +109,9 @@ public abstract class JamListBase : IEnumerable<string>
 
 	public bool JamEquals(JamListBase other)
 	{
+	    if (other.Elements.Length > 0 && other.Elements[0].Length == 0 && Elements.Length == 0)
+	        return true;
+
 		return Enumerable.SequenceEqual(Elements, other.Elements);
 	}
 
@@ -119,14 +122,17 @@ public abstract class JamListBase : IEnumerable<string>
 		return Elements.Length > 0 ? this : value;
 	}
 
-	public LocalJamList GristWith(JamListBase value)
+	public LocalJamList SetGrist(JamListBase value)
 	{
-		if (value.Elements.Length>0)
-			return new LocalJamList(Enumerable.Select<string, string>(Elements, e => $"<{value.Elements[0].Trim('<','>')}>{UnGrist(e)}").ToArray());
-		return new LocalJamList(Enumerable.ToArray<string>(Elements.Select(UnGrist)));
+	    return InvokeInternalModifier('G', value);
 	}
 
-	public LocalJamList ToUpper()
+    public LocalJamList Grist()
+    {
+        return InvokeInternalModifier('G');
+    }
+
+    public LocalJamList ToUpper()
 	{
 		return new LocalJamList(Enumerable.Select<string, string>(Elements, e => e.ToUpperInvariant()).ToArray());
 	}
@@ -181,18 +187,23 @@ public abstract class JamListBase : IEnumerable<string>
     }
 
     public bool AsBool()
-	{
-		return Elements.Length > 0;
-	}
+    {
+        return Elements.Length > 0 && Elements[0].Length > 0;
+    }
 
     public LocalJamList BackSlashify()
     {
-        throw new NotImplementedException();
+        return InvokeInternalModifier('\\');
     }
 
     public LocalJamList ForwardSlashify()
     {
-        throw new NotImplementedException();
+        return InvokeInternalModifier('/');
+    }
+
+    public LocalJamList Escape()
+    {
+        return InvokeInternalModifier('C');
     }
 
     public abstract void Subtract(params JamListBase[] localJamListBases);
@@ -272,26 +283,25 @@ public abstract class JamListBase : IEnumerable<string>
 		return AsBool() || value;
 	}
 
-	public LocalJamList PModifier_TODO(params JamListBase[] value)
+	public LocalJamList Parent()
 	{
-		throw new NotImplementedException();
-	}
+        return InvokeInternalModifier('P');
+    }
 
-	public LocalJamList DirectoryModifier(params JamListBase[] values)
+	public LocalJamList GetDirectory()
 	{
-		var result = new List<string>();
-		foreach (var element in Elements)
-		{
-			result.AddRange(Jam.Interop.Expand($"@({element}:D)"));
-		}
-		
-		return new LocalJamList(result.ToArray());
-	}
+        return InvokeInternalModifier('D');
+    }
 
-	public LocalJamList Rooted_TODO(params JamListBase[] value)
+    public LocalJamList SetDirectory(JamListBase value)
+    {
+        return InvokeInternalModifier('D', value);
+    }
+
+    public LocalJamList Rooted(JamListBase value)
 	{
-		throw new NotImplementedException();
-	}
+        return InvokeInternalModifier('R', value);
+    }
 
     public LocalJamList SetBasePath(JamListBase value)
     {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using runtimelib;
 using Variables = System.Collections.Generic.Dictionary<string, LocalJamList>;
 
@@ -40,17 +41,31 @@ public class GlobalVariables
 
 	public IDisposable OnTargetContext(JamListBase targetName)
 	{
-		if (targetName.Elements.Count() != 1)
-			throw new ArgumentException("on statement being invoked on multiple targets. you couldn't even do this in jam!");
+	    var count = targetName.Elements.Count();
+	    if (count == 0)
+	        return new TemporaryTargetContext();
 
-		return new TemporaryTargetContext(targetName.Elements.Single());
+        
+	    if (count > 1)
+	    {
+	        var sb = new StringBuilder("Warning, you are creating an OnTargetContext with multiple targets, which does not do what you expect. everything past the first target is ignored. values are: ");
+	        foreach (var e in targetName.Elements)
+	            sb.AppendLine(e);
+            Console.WriteLine(sb);
+	    }
+
+	    return new TemporaryTargetContext(targetName.Elements.First());
 	}
 
 	private class TemporaryTargetContext : IDisposable
 	{
 	    private readonly string _target;
 
-	    public TemporaryTargetContext(string target)
+        public TemporaryTargetContext()
+        {
+        }
+
+        public TemporaryTargetContext(string target)
 	    {
 	        _target = target;
 	        Jam.Interop.PushSettingsFor(_target);
@@ -58,7 +73,8 @@ public class GlobalVariables
 
 	    public void Dispose()
 	    {
-	        Jam.Interop.PopSettingsFor(_target);
+            if (_target != null)
+    	        Jam.Interop.PopSettingsFor(_target);
 	    }
 	}
 

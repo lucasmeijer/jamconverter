@@ -9,14 +9,14 @@ namespace runtimelib
 {
 	public class ConverterLogic
 	{
-		public static string ClassNameForJamFile(string fileName)
+		public static string ClassNameForJamFile(NPath fileName)
 		{
-			return "Gen_"+CleanIllegalCharacters(new NPath(fileName).FileNameWithoutExtension);
+			return "Gen_"+CleanIllegalCharacters(fileName.ToString(SlashMode.Forward));
 		}
 
 		public static string CleanIllegalCharacters(string input)
 		{
-		    return input.Replace(".", "_").Replace("+", "Plus").Replace("*", "Star");
+		    return input.Replace(".", "_").Replace("+", "Plus").Replace("*", "Star").Replace("-", "_").Replace("/", "_");
 		}
 	}
 }

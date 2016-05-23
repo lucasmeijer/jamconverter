@@ -19,7 +19,7 @@ namespace jamconverter
 
 	    public string Convert(string simpleProgram)
 	    {
-	        var sd = new SourceFileDescription() {Contents = simpleProgram, FileName = "Jamfile.jam"};
+	        var sd = new SourceFileDescription() {Contents = simpleProgram, File = new NPath("Jamfile.jam")};
 
 	        return Convert(new ProgramDescripton {sd})[0].Contents;
 	    }
@@ -33,14 +33,13 @@ namespace jamconverter
         {
 			foreach (var sourceFile in jamProgram)
 			{
-				Console.WriteLine("sourceFile: "+sourceFile.FileName);
 			    try
 			    {
 			        _filesToTopLevel.Add(sourceFile, new Parser(sourceFile.Contents).ParseTopLevel());
 			    }
 			    catch (Exception e)
 			    {
-			        Console.WriteLine("Parsing error in: "+sourceFile.FileName);
+			        Console.WriteLine("Parsing error in: "+sourceFile.File);
 			    }
 			}
 			_allActions = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<ActionsDeclarationStatement>());
@@ -70,11 +69,11 @@ namespace jamconverter
 				var topLevel = kvp.Value;
 
 				var syntaxTree = NewSyntaxTree();
-				typeForJamFile = new NRefactory.TypeDeclaration { Name = ConverterLogic.ClassNameForJamFile(file.FileName) };
+				typeForJamFile = new NRefactory.TypeDeclaration { Name = ConverterLogic.ClassNameForJamFile(file.File) };
 				syntaxTree.Members.Add(typeForJamFile);
 
 
-			    try
+//			    try
 			    {
 			        typeForJamFile.Members.Add(new NRefactory.FieldDeclaration()
 			        {
@@ -98,11 +97,11 @@ namespace jamconverter
 			            Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
 			            Body = body
 			        });
-			        result.Add(new SourceFileDescription() {FileName = typeForJamFile.Name + ".cs", Contents = syntaxTree.ToString()});
+			        result.Add(new SourceFileDescription() {File = new NPath(typeForJamFile.Name + ".cs"), Contents = syntaxTree.ToString()});
 			    }
-			    catch (Exception e)
+			    //catch (Exception e)
 			    {
-			        Console.WriteLine($"failed converting {file.FileName}");
+			      //  Console.WriteLine($"failed converting {file.FileName}");
 			    }
 			}
 
@@ -112,7 +111,7 @@ namespace jamconverter
 
 			var globalsFileDescription = new SourceFileDescription()
 			{
-				FileName = "StaticGlobals.cs",
+				File = new NPath("StaticGlobals.cs"),
 				Contents = globalsFile.ToString()
 			};
 			result.Add(globalsFileDescription);
@@ -132,7 +131,7 @@ namespace jamconverter
 		    };
 
 			var types =
-				_filesToTopLevel.Keys.Select (file => ConverterLogic.ClassNameForJamFile (file.FileName))
+				_filesToTopLevel.Keys.Select (file => ConverterLogic.ClassNameForJamFile (file.File))
 				    .Select (name => new NRefactory.SimpleType (name))
 					.Prepend (new NRefactory.SimpleType ("Actions"))
 					.Prepend (new NRefactory.SimpleType ("BuiltinFunctions"))
@@ -144,7 +143,7 @@ namespace jamconverter
 	            var filesRegistration =
 	                new NRefactory.ExpressionStatement(
 	                    new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("BuiltinFunctions"), "RegisterJamFile"),
-	                        new NRefactory.PrimitiveExpression(file.FileName), new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(file.FileName)+".TopLevel")));
+	                        new NRefactory.PrimitiveExpression(file.File.ToString(SlashMode.Forward)), new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(file.File)+".TopLevel")));
 
 	            mainMethod.Body.Statements.Add(filesRegistration);
 	        }
@@ -160,7 +159,7 @@ namespace jamconverter
 
 			return new SourceFileDescription()
 		    {
-			    FileName = "EntryPoint.cs",
+			    File = new NPath("EntryPoint.cs"),
 			    Contents = syntaxTree.ToString()
 			};
 	    }
@@ -196,7 +195,7 @@ namespace jamconverter
 		    }
 		    var syntaxtree = NewSyntaxTree();
 		    syntaxtree.Members.Add(actions);
-		    var sourceFileDescription = new SourceFileDescription() {FileName = "Actions.cs", Contents = syntaxtree.ToString()};
+		    var sourceFileDescription = new SourceFileDescription() {File = new NPath("Actions.cs"), Contents = syntaxtree.ToString()};
 		    return sourceFileDescription;
 	    }
 
@@ -236,7 +235,7 @@ namespace jamconverter
             }
 
             if (statement is ReturnStatement)
-                return new NRefactory.ReturnStatement(ProcessExpressionList(statement.As<ReturnStatement>().ReturnExpression, mightModify:true));
+                return ProcessReturnStatement(statement);
 
             if (statement is ForStatement)
                 return ProcessForStatement((ForStatement) statement);
@@ -274,7 +273,15 @@ namespace jamconverter
 	        return ProcessExpressionStatement((ExpressionStatement) statement);
         }
 
-	    private NRefactory.Statement ProcessIncludeStatement(IncludeStatement statement)
+        private NRefactory.Statement ProcessReturnStatement(Statement statement)
+        {
+            NRefactory.Expression returnExpression = null;
+            if (FindParentOfType<RuleDeclarationStatement>(statement) != null)
+                returnExpression = ProcessExpressionList(statement.As<ReturnStatement>().ReturnExpression, mightModify: true);
+            return new NRefactory.ReturnStatement(returnExpression);
+        }
+
+        private NRefactory.Statement ProcessIncludeStatement(IncludeStatement statement)
 	    {
             /*
 		    var literal = statement.Expression as LiteralExpression;
@@ -460,19 +467,19 @@ namespace jamconverter
 						return new NRefactory.IdentifierExpression (cleanName);
 				}
 
-			    var forLoop = FindParentOfType<ForStatement>(parentExpression);
-			    if (forLoop != null && forLoop.LoopVariable.Value == identifierName)
-				    return new NRefactory.IdentifierExpression(cleanName);
+		        if (FindAllParentsOfType<ForStatement>(parentExpression).Any(f => f.LoopVariable.Value == identifierName))
+                    return new NRefactory.IdentifierExpression(cleanName);
 		    }
 
-		    return StaticGlobalVariableFor(cleanName);
+		    return StaticGlobalVariableFor(identifierName);
 	    }
 
-	    private NRefactory.MemberReferenceExpression StaticGlobalVariableFor(string cleanName)
-        {
+	    private NRefactory.MemberReferenceExpression StaticGlobalVariableFor(string nonCleanName)
+	    {
+	        var cleanName = ConverterLogic.CleanIllegalCharacters(nonCleanName);
             if (_staticGlobals.Members.OfType<NRefactory.PropertyDeclaration>().All(p => p.Name != cleanName))
             {
-                var indexerExpression = new NRefactory.IndexerExpression(new NRefactory.ThisReferenceExpression(), new NRefactory.PrimitiveExpression(cleanName));
+                var indexerExpression = new NRefactory.IndexerExpression(new NRefactory.ThisReferenceExpression(), new NRefactory.PrimitiveExpression(nonCleanName));
                 _staticGlobals.Members.Add(new NRefactory.PropertyDeclaration()
                 {
                     Name = cleanName,
@@ -484,16 +491,22 @@ namespace jamconverter
             return new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), cleanName);
         }
 
-        private T FindParentOfType<T>(Node node) where T : Node
+        private IEnumerable<T> FindAllParentsOfType<T>(Node node) where T : Node
         {
             if (node.Parent == null)
-                return null;
+                yield break;
 
             var needleNode = node.Parent as T;
             if (needleNode != null)
-                return needleNode;
+                yield return needleNode;
 
-            return FindParentOfType<T>(node.Parent);
+            foreach (var n in FindAllParentsOfType<T>(node.Parent))
+                yield return n;
+        }
+
+        private T FindParentOfType<T>(Node node) where T : Node
+        {
+            return FindAllParentsOfType<T>(node).FirstOrDefault();
         }
 
         private static string CSharpMethodNameForAssignmentOperator(Operator assignmentOperator)
@@ -591,8 +604,8 @@ namespace jamconverter
 	            return parameterDeclaration;
             }));
 
-			if (IsActions(methodName))
-				body.Statements.Add (new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(ActionsNameFor(methodName)), arguments.Select(a => new NRefactory.IdentifierExpression(ArgumentNameFor(a)))));
+			//if (IsActions(methodName))
+			//	body.Statements.Add (new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(ActionsNameFor(methodName)), arguments.Select(a => new NRefactory.IdentifierExpression(ArgumentNameFor(a)))));
 
 	        foreach (var arg in arguments)
 	        {
@@ -726,8 +739,8 @@ namespace jamconverter
 
 	    IEnumerable<NRefactory.Expression> ExpressionsForJamListConstruction(NodeList<Expression> expressionList)
 	    {
-            if (expressionList.OfType<AST.InvocationExpression>().Count() > 1)
-                throw new NotSupportedException("jam uses back to front evaluatino order for multiple invocation expressions in one list.  change the jam code to not do that");
+  //          if (expressionList.OfType<AST.InvocationExpression>().Count() > 1)
+    //            throw new NotSupportedException("jam uses back to front evaluatino order for multiple invocation expressions in one list.  change the jam code to not do that");
 
             foreach (var expression in expressionList)
 		    {
@@ -735,14 +748,16 @@ namespace jamconverter
 		    }
 	    }
 
-	    NRefactory.Expression ProcessExpression(Expression e)
+	    NRefactory.Expression ProcessExpression(Expression e, bool allowConversionToStringLiteral = true)
         {
-			
 			var literalExpression = e as LiteralExpression;
-            if (literalExpression != null)
-                return new NRefactory.PrimitiveExpression(literalExpression.Value);
-                        
-            var expansionStyleExpression = e as ExpansionStyleExpression;
+	        if (literalExpression != null)
+	        {
+	            var primitiveExpression = new NRefactory.PrimitiveExpression(literalExpression.Value);
+	            return allowConversionToStringLiteral ? (NRefactory.Expression) primitiveExpression : new NRefactory.ObjectCreateExpression(LocalJamListAstType, primitiveExpression);
+	        }
+
+	        var expansionStyleExpression = e as ExpansionStyleExpression;
             if (expansionStyleExpression != null)
                 return ProcessExpansionStyleExpression(expansionStyleExpression);
 
@@ -750,7 +765,7 @@ namespace jamconverter
             if (combineExpression != null)
             {
                 var combineMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("LocalJamList"), "Combine");
-                return new NRefactory.InvocationExpression(combineMethod, combineExpression.Elements.Select(ProcessExpression));
+                return new NRefactory.InvocationExpression(combineMethod, combineExpression.Elements.Select(e2=>ProcessExpression(e2)));
             }
 
             var invocationExpression = e as InvocationExpression;
@@ -762,14 +777,17 @@ namespace jamconverter
 		    var binaryOperatorExpression = e as BinaryOperatorExpression;
 		    if (binaryOperatorExpression != null)
 		    {
-			    var left = ProcessExpression(binaryOperatorExpression.Left);
-			    var right = ProcessExpressionList(binaryOperatorExpression.Right);
-
-                
 		        if (binaryOperatorExpression.Operator == Operator.And || binaryOperatorExpression.Operator == Operator.Or)
-		            return new NRefactory.ParenthesizedExpression(new NRefactory.BinaryOperatorExpression(left, binaryOperatorExpression.Operator == Operator.And ? NRefactory.BinaryOperatorType.ConditionalAnd : NRefactory.BinaryOperatorType.ConditionalOr, right));
+		        {
+                    var left = ProcessExpression(binaryOperatorExpression.Left);
+		            var right = ProcessExpressionList(binaryOperatorExpression.Right);
+                    return new NRefactory.ParenthesizedExpression(new NRefactory.BinaryOperatorExpression(left, binaryOperatorExpression.Operator == Operator.And ? NRefactory.BinaryOperatorType.ConditionalAnd : NRefactory.BinaryOperatorType.ConditionalOr, right));
+		        }
 
-				return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(left, CSharpMethodForConditionOperator(binaryOperatorExpression.Operator)), right);
+                var left2 = ProcessExpression(binaryOperatorExpression.Left, allowConversionToStringLiteral:false);
+		        var right2 = ProcessExpressionList(binaryOperatorExpression.Right);
+                
+                return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(left2, CSharpMethodForConditionOperator(binaryOperatorExpression.Operator)), right2);
 		    }
 
 		    var notOperatorExpression = e as NotOperatorExpression;
@@ -861,13 +879,13 @@ namespace jamconverter
             switch (modifier.Command)
             {
 				case 'D':
-		            return "DirectoryModifier";
+		            return hasValue ? "SetDirectory" : "GetDirectory";
                 case 'S':
                     return hasValue ? "WithSuffix" : "GetSuffix" ;
                 case 'E':
                     return "IfEmptyUse";
                 case 'G':
-                    return "GristWith";
+                    return hasValue ? "SetGrist" : "GetGrist";
                 case 'J':
                     return hasValue ? "JoinWithValue" : "Join";
 				case 'X':
@@ -875,9 +893,9 @@ namespace jamconverter
 				case 'I':
 		            return "Include";
 				case 'R':
-		            return "Rooted_TODO";
+		            return "Rooted";
 				case 'P':
-		            return "PModifier_TODO";
+		            return "Parent";
 				case 'U':
 					return "ToUpper";
 				case 'L':
@@ -898,6 +916,9 @@ namespace jamconverter
                 case '/':
                     if (hasValue) throw new NotSupportedException();
                     return "ForwardSlashify";
+                case 'C':
+                    if (hasValue) throw new NotSupportedException();
+                    return "Escape";
                 default:
                     //return $"TodoModifier_{modifier.Command}"; 
                     throw new NotSupportedException("Unkown variable expansion command: " + modifier.Command);
