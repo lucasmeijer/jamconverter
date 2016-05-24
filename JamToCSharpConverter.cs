@@ -389,7 +389,9 @@ namespace jamconverter
 	            yield break;
 	        }
 
-            yield return new NRefactory.VariableDeclarationStatement(LocalJamListAstType, ConverterLogic.CleanIllegalCharacters(statement.Variable.Value), new NRefactory.ObjectCreateExpression(LocalJamListAstType, ExpressionsForJamListConstruction(statement.Value)));
+	        var initialValue = ProcessExpressionList(statement.Value);
+	        var localType = (initialValue is NRefactory.PrimitiveExpression || initialValue is NRefactory.IdentifierExpression) ? JamListBaseAstType : new NRefactory.PrimitiveType("var");
+	        yield return new NRefactory.VariableDeclarationStatement(localType, ConverterLogic.CleanIllegalCharacters(statement.Variable.Value), initialValue);
 		}
 
         private bool IsInTopLevel(LocalStatement statement)
@@ -683,7 +685,7 @@ namespace jamconverter
 			//if (IsActions(methodName))
 			//	body.Statements.Add (new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(ActionsNameFor(methodName)), arguments.Select(a => new NRefactory.IdentifierExpression(ArgumentNameFor(a)))));
 
-            foreach (var arg in arguments.Where(a => IsArgumentModified(ruleDeclaration, a) || optionalArguments.Contains(a)))
+            foreach (var arg in arguments)//.Where(a => IsArgumentModified(ruleDeclaration, a) || optionalArguments.Contains(a)))
 	        {
 				var identifier = new NRefactory.IdentifierExpression(ArgumentNameFor(arg));
 		        var cloneExpression = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(identifier, "Clone")); 
@@ -820,7 +822,6 @@ namespace jamconverter
 
         public NRefactory.Expression ProcessExpressionList(NodeList<Expression> expressionList, bool mightModify = false)
         {
-			
 			if (expressionList.Length == 1 && mightModify)
 	        {
 		        if (expressionList[0] is VariableDereferenceExpression)
@@ -891,7 +892,7 @@ namespace jamconverter
 		        if (CanUseCustomIsIsOperator(binaryOperatorExpression, right2))
 		            return new NRefactory.BinaryOperatorExpression(left2, NRefactory.BinaryOperatorType.Equality, right2);
 
-		        return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(left2, CSharpMethodForConditionOperator(binaryOperatorExpression.Operator)), right2);
+		        return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(left2, CSharpMethodForConditionOperator(binaryOperatorExpression.Operator)), ExpressionsForJamListConstruction(binaryOperatorExpression.Right));
 		    }
 
 		    var notOperatorExpression = e as NotOperatorExpression;
