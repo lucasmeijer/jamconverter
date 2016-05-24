@@ -24,6 +24,11 @@ public class LocalJamList : JamListBase
 		_elements = ElementsOf(values.ToArray());
 	}
 
+    public static LocalJamList CreateReversed(params JamListBase[] values)
+    {
+        return new LocalJamList(values.Reverse());
+    }
+
 	public override string[] Elements => _elements;
 
 	public override void Append(params JamListBase[] values)

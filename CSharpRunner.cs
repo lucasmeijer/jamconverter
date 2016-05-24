@@ -24,12 +24,9 @@ namespace jamconverter
             var executable = outputFile ??  NPath.CreateTempDirectory("CSharp").Combine("program.exe");
             var tmpDir = executable.Parent;
 
-            var absoluteCSFiles = new List<NPath>();
             foreach (var fileEntry in program)
             {
-                var absolutePath = tmpDir.Combine(fileEntry.File);
-                absoluteCSFiles.Add(absolutePath);
-                var file = absolutePath.WriteAllText(fileEntry.Contents);
+                var file = tmpDir.Combine(fileEntry.File).WriteAllText(fileEntry.Contents);
                 //Console.WriteLine(".cs: " + file);
             }
 
@@ -51,7 +48,10 @@ namespace jamconverter
                 WorkingDirectory = tmpDir.ToString()
             };
             Console.WriteLine(args.Arguments);
-            Console.Write(Shell.Execute(args));
+            var executeResult = Shell.Execute(args);
+            Console.Write(executeResult.StdErr +executeResult.StdOut);
+            if (executeResult.ExitCode != 0)
+                throw new Exception();
 
             foreach (var lib in additionalLibs)
                 lib.Copy(tmpDir);

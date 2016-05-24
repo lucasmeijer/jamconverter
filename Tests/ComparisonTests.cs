@@ -483,7 +483,33 @@ Echo $(myvar) ;
 ");
         }
 
-	    [Test]
+
+        [Test]
+        public void EvaluationOrder()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+
+rule One
+{
+   Echo One ;
+   return one harry ;
+}
+
+rule Two
+{
+   Echo Two ;
+   return two sally ;
+}
+
+myvar = [ One ] [ Two ] ;
+Echo $(myvar) ;
+
+");
+        }
+
+
+        [Test]
 	    public void GreaterThanOperator()
 	    {
 			AssertConvertedProgramHasIdenticalOutput(
@@ -727,6 +753,13 @@ for t in $(mylist)
 }
 
 
+#forloop using a already declared local:
+local harry = 3 ;
+for harry in $(mylist)
+{
+   Echo $(harry) ;
+}
+
 ");
         }
 
@@ -736,30 +769,26 @@ for t in $(mylist)
             var jam1 =
 @"
 
+
 myvar = 123 ;
-Echo $(myvar) ;
+
 include file2.jam ;
-Echo $(myvar) ;
-PrintMyVarFromFile2 ;
-Echo $(myvar) ;
+
+Echo $(myvar) from file 1 ;
+MyRule ;
 
 ";
             var jam2 =
 @"
 
-local myvar ;
-Echo $(myvar) ;
-myvar = harry ;
-rule PrintMyVarFromFile2
+local myvar = harry ;
+
+rule MyRule
 {
-    Echo $(myvar) from file2 rule ;
-    local myvar ;
-    myvar = 321 ;
-    Echo $(myvar) ;
+   Echo $(myvar) from MyRule ;
 }
 
-PrintMyVarFromFile2 ;
-Echo $(myvar) ;
+MyRule ;
 
 ";
 
@@ -889,26 +918,6 @@ Echo $(mylist:X=\\.c\$) ;
 filter = hello there ;
 Echo $(mylist:X=$(filter)) ;
 
-
-");
-        }
-
-
-        [Test]
-        public void LocalInTopLevelIsVisible()
-        {
-            AssertConvertedProgramHasIdenticalOutput(
-@"
-
-rule MyFunc
-{
-  echo $(global) ;
-  echo $(harry) ;
-}
-
-global = hello ;
-local harry = sally ;
-MyFunc ;
 
 ");
         }
