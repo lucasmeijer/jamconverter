@@ -284,21 +284,16 @@ namespace jamconverter
             var accoladeOpen = _scanResult.Next();
             if (accoladeOpen.tokenType != TokenType.AccoladeOpen)
                 throw new ParsingException();
-            _scanResult.ProduceStringUntilEndOfLine();
-            var actions = new List<string>();
-            while (true)
-            {
-                var action = _scanResult.ProduceStringUntilEndOfLine();
-                if (action.Trim() == "}")
-                    break;
-                actions.Add(action);
-            }
-            return new ActionsDeclarationStatement()
+            
+            var result = new ActionsDeclarationStatement()
             {
                 Name = expressionList.Last().As<LiteralExpression>().Value,
                 Modifiers = expressionList.Take(expressionList.Length - 1).ToNodeList(),
-                Actions = actions.ToArray()
+                Actions = _scanResult.Next().literal
             };
+
+            _scanResult.Next().Is(TokenType.AccoladeClose);
+            return result;
         }
 
         private Statement ParseRuleDeclarationStatement()

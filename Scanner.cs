@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using Mono.Cecil;
 
 namespace jamconverter
 {
@@ -14,6 +16,7 @@ namespace jamconverter
         private bool _insideVariableExpansionModifierSpan;
         private bool _insideVariableExpansionModifierValueSpan;
         private int _insideVariableExpansionDepth = 0;
+        private bool _enterringActions;
 
         List<ScanToken> _previouslyScannedTokens = new List<ScanToken>();
 
@@ -52,6 +55,23 @@ namespace jamconverter
                 return new ScanToken() {literal = "", tokenType = TokenType.EOF};
 
             var c = _input[nextChar];
+
+            if (_enterringActions)
+            {
+                if (_previouslyScannedTokens.Last().tokenType == TokenType.AccoladeOpen)
+                { 
+                    var sb = new StringBuilder();
+                    while (true)
+                    {
+                        nextChar++;
+                        if (_input[nextChar] == '}')
+                            break;
+                        sb.Append(_input[nextChar]);
+                    }
+                    _enterringActions = false;
+                    return new ScanToken() {  literal = sb.ToString(), tokenType = TokenType.Literal};
+                }
+            }
 
             if (_insideVariableExpansionModifierSpan)
             {
@@ -136,6 +156,8 @@ namespace jamconverter
 				tokenType = TokenTypeFor(literal, hasWhitespaceAfter && hasWhitespaceBefore);
 			}
 
+            if (tokenType == TokenType.Actions)
+                _enterringActions = true;
             return new ScanToken() {tokenType = tokenType, literal = literal};
         }
 

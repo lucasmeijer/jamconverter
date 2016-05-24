@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using jamconverter.AST;
 using jamconverter.Tests;
 using NiceIO;
@@ -366,7 +367,7 @@ namespace jamconverter
 	    {
 			return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("MakeActions"), new NRefactory.Expression[]{
 				new NRefactory.PrimitiveExpression(statement.Name),
-				new NRefactory.PrimitiveExpression(String.Join("\n", statement.Actions)),
+				new NRefactory.PrimitiveExpression(statement.Actions),
 				GetActionModifiers(statement),
 				new NRefactory.PrimitiveExpression(GetModifierValue(statement, Jam.ActionsFlags.MaxTargets)),
 				new NRefactory.PrimitiveExpression(GetModifierValue(statement, Jam.ActionsFlags.MaxLine))
@@ -840,7 +841,10 @@ namespace jamconverter
             var combineExpression = e as CombineExpression;
             if (combineExpression != null)
             {
-                var combineMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("LocalJamList"), "Combine");
+                if (combineExpression.Elements.All(CanBePlacedInsideCSharpStringInterpolation))
+                    return StringInterpolationFor(combineExpression);
+
+                var combineMethod = new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(nameof(JamListBase)), nameof(JamListBase.Combine));
                 return new NRefactory.InvocationExpression(combineMethod, combineExpression.Elements.Select(e2=>ProcessExpression(e2)));
             }
 
@@ -878,7 +882,56 @@ namespace jamconverter
             throw new NotImplementedException("CSharpFor cannot deal with " + e);
         }
 
-	    private NRefactory.Expression ProcessInvocationExpression(InvocationExpression invocationExpression)
+        private NRefactory.Expression StringInterpolationFor(CombineExpression combineExpression)
+        {
+            var sb = new StringBuilder("$\"");
+            foreach (var element in combineExpression.Elements)
+                sb.Append(InterpolationValueFor(element));
+            sb.Append("\"");
+            return new NRefactory.IdentifierExpression(sb.ToString());
+        }
+
+        string InterpolationValueFor(Expression e)
+        {
+            var literal = e as LiteralExpression;
+            if (literal != null)
+                return literal.Value;
+
+            var deref = e as VariableDereferenceExpression;
+            if (deref != null)
+            {
+                var variableExpression = deref.VariableExpression;
+                var literalValue = variableExpression as LiteralExpression;
+                if (literalValue != null)
+                {
+                    if (IsGuaranteedToBeSingleItem(literalValue))
+                        return "{" + ProcessExpression(e) + "}";
+                    return null;
+                }
+               
+            }
+            return null;
+        }
+
+        private static bool IsGuaranteedToBeSingleItem(LiteralExpression literalValue)
+        {
+            switch (literalValue.Value)
+            {
+                case "TOP":
+                case "PLATFORM":
+                case "CONFIG":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private bool CanBePlacedInsideCSharpStringInterpolation(Expression arg)
+        {
+            return InterpolationValueFor(arg) != null;
+        }
+
+        private NRefactory.Expression ProcessInvocationExpression(InvocationExpression invocationExpression)
 	    {
 		    var ruleExpression = invocationExpression.RuleExpression;
 

@@ -307,7 +307,7 @@ namespace jamconverter.AST
             set { SetChild(Roles.ActionModifiers, value); }
         }
         
-        public string[] Actions { get; set; }
+        public string Actions { get; set; }
     }
 
     public class OnStatement : Statement

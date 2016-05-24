@@ -515,16 +515,24 @@ actions response myactionname
 {
     echo something
     echo somethingelse
+    echo ""harry""
+    echo \pieter
 }");
             Assert.AreEqual("myactionname", actionsDeclarationStatement.Name);
             CollectionAssert.AreEqual(new[] { "response"}, actionsDeclarationStatement.Modifiers.Cast<LiteralExpression>().Select(le => le.Value));
 
-            Assert.AreEqual(2, actionsDeclarationStatement.Actions.Length);
-            Assert.AreEqual("echo something", actionsDeclarationStatement.Actions[0].TrimStart());
-            Assert.AreEqual("echo somethingelse", actionsDeclarationStatement.Actions[1].TrimStart());
+            Assert.IsTrue(actionsDeclarationStatement.Actions.Contains("echo something"));
+            Assert.IsTrue(actionsDeclarationStatement.Actions.Contains("echo somethingelse"));
+            
+            //preserve quotes:
+            Assert.IsTrue(actionsDeclarationStatement.Actions.Contains("echo \"harry\""));
+
+            //preserve backslash
+            Assert.IsTrue(actionsDeclarationStatement.Actions.Contains("echo \\pieter"));
+            
         }
-		
-      
+
+
         [Test]
         public void InCondition()
         {

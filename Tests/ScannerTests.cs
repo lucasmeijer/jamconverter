@@ -295,6 +295,8 @@ on_new_line");
             Assert.AreEqual("=", result[0].literal);
         }
 
+
+
         [Test]
         public void QuotedLiteral()
         {
@@ -338,6 +340,23 @@ on_new_line");
 			Assert.That(result[0].literal, Is.EqualTo("(aa)"));
 		}
 
+
+        [Test]
+        public void Action()
+        {
+            var a = new Scanner(
+@"actions mymodifier {
+  line1
+  line2
+}");
+            var result = a.ScanAllTokens().ToArray();
+
+            CollectionAssert.AreEqual(new[] { TokenType.Actions, TokenType.WhiteSpace, TokenType.Literal, TokenType.WhiteSpace, TokenType.AccoladeOpen, TokenType.Literal, TokenType.AccoladeClose, TokenType.EOF}, result.Select(r => r.tokenType));
+
+            Assert.IsTrue(result[5].literal.Contains("line1"));
+            Assert.IsTrue(result[5].literal.Contains("line2"));
+
+        }
 
 
         [Test]
