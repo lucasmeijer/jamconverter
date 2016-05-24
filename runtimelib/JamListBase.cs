@@ -142,13 +142,6 @@ public abstract class JamListBase : IEnumerable<string>
 		return new LocalJamList(Enumerable.Select<string, string>(Elements, e => e.ToLowerInvariant()).ToArray());
 	}
 
-	private string UnGrist(string s)
-	{
-		if (!s.StartsWith("<"))
-			return s;
-		return s.Substring(s.IndexOf('>')+1);
-	}
-
 	public static LocalJamList Combine(params JamListBase[] values)
 	{
 		IEnumerable<IEnumerable<string>> a = values.Select(v => v.Elements);
@@ -169,6 +162,11 @@ public abstract class JamListBase : IEnumerable<string>
 	}
 
     private LocalJamList InvokeInternalModifier(char modifierLetter, JamListBase argument = null)
+    {
+        return InvokeInternalModifier(modifierLetter.ToString(), argument);
+    }
+
+    private LocalJamList InvokeInternalModifier(string modifierLetter, JamListBase argument = null)
     {
         GlobalVariables.Singleton["internal_temp1"].Assign(this);
         if (argument == null)
@@ -301,6 +299,11 @@ public abstract class JamListBase : IEnumerable<string>
     public LocalJamList Rooted(JamListBase value)
 	{
         return InvokeInternalModifier('R', value);
+    }
+
+    public LocalJamList BaseAndSuffix()
+    {
+        return InvokeInternalModifier("BS");
     }
 
     public LocalJamList SetBasePath(JamListBase value)

@@ -844,7 +844,20 @@ namespace jamconverter
                 resultExpression = new NRefactory.InvocationExpression(memberReferenceExpression, indexerExpression);
             }
 
-            foreach (var modifier in expansionStyleExpression.Modifiers)
+
+	        var variableDereferenceModifiers = new List<VariableDereferenceModifier>(expansionStyleExpression.Modifiers);
+
+	        var sModfier = variableDereferenceModifiers.FirstOrDefault(v => v.Command == 'S' && v.Value == null);
+            var bModfier = variableDereferenceModifiers.FirstOrDefault(v => v.Command == 'B' && v.Value == null);
+	        bool hadSandB = false;
+            if (sModfier != null && bModfier != null)
+	        {
+	            variableDereferenceModifiers.Remove(sModfier);
+	            variableDereferenceModifiers.Remove(bModfier);
+	            hadSandB = true;
+	        }
+
+            foreach (var modifier in variableDereferenceModifiers)
             {
                 var csharpMethod = CSharpMethodForModifier(modifier, modifier.Value != null);
 
@@ -853,7 +866,13 @@ namespace jamconverter
                 var args = modifier.Value == null ? new NRefactory.Expression[0] : new[] {ProcessExpression(modifier.Value)};
                 resultExpression = new NRefactory.InvocationExpression(memberReferenceExpression, args);
             }
-            return resultExpression;
+
+	        if (hadSandB)
+	        {
+                var memberReferenceExpression = new NRefactory.MemberReferenceExpression(resultExpression, "BaseAndSuffix");
+                resultExpression = new NRefactory.InvocationExpression(memberReferenceExpression);
+	        }
+	        return resultExpression;
         }
 
 	    private NRefactory.Expression ProcessExpansionStyleExpressionVariablePreModifiers(ExpansionStyleExpression expansionStyleExpression)

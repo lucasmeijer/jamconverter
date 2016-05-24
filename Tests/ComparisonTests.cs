@@ -91,7 +91,7 @@ if $(empty) = """" { Echo yes ; } else { Echo no ; }
 
 
         [Test]
-        [Ignore("not implemented yet")]
+        [Ignore("too hard")]
         public void ImplicitReturnValues()
         {
             AssertConvertedProgramHasIdenticalOutput(
@@ -105,10 +105,28 @@ rule OtherRule
 rule LooksLikeIDoNotReturnAnything
 {
    OtherRule ;
-   if a = 3 { }
+}
+
+rule LooksLikeIDoNotReturnAnything2
+{
+   a = 3 ;
+}
+
+rule LooksLikeIDoNotReturnAnything3
+{
+    if b = c { a = 1 ; } else { a = 2 ; }
+}
+
+rule LooksLikeIDoNotReturnAnything3
+{
+    if b = b { a = 1 ; } 
+    
 }
 
 Echo [ LooksLikeIDoNotReturnAnything ] ;
+Echo [ LooksLikeIDoNotReturnAnything2 ] ;
+Echo [ LooksLikeIDoNotReturnAnything3 ] ;
+Echo close ;
 
 "
 
@@ -712,6 +730,47 @@ for t in $(mylist)
 ");
         }
 
+        [Test]
+        public void LocalScoping()
+        {
+            var jam1 =
+@"
+
+myvar = 123 ;
+Echo $(myvar) ;
+include file2.jam ;
+Echo $(myvar) ;
+PrintMyVarFromFile2 ;
+Echo $(myvar) ;
+
+";
+            var jam2 =
+@"
+
+local myvar ;
+Echo $(myvar) ;
+myvar = harry ;
+rule PrintMyVarFromFile2
+{
+    Echo $(myvar) from file2 rule ;
+    local myvar ;
+    myvar = 321 ;
+    Echo $(myvar) ;
+}
+
+PrintMyVarFromFile2 ;
+Echo $(myvar) ;
+
+";
+
+            var jamProgram = new ProgramDescripton()
+            {
+                new SourceFileDescription() { Contents = jam1, File = new NPath("file1.jam") },
+                new SourceFileDescription() { Contents = jam2, File = new NPath("file2.jam") },
+            };
+
+            AssertConvertedProgramHasIdenticalOutput(jamProgram);
+        }
 
         [Test]
         public void SwitchStatement()
@@ -836,6 +895,25 @@ Echo $(mylist:X=$(filter)) ;
 
 
         [Test]
+        public void LocalInTopLevelIsVisible()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+
+rule MyFunc
+{
+  echo $(global) ;
+  echo $(harry) ;
+}
+
+global = hello ;
+local harry = sally ;
+MyFunc ;
+
+");
+        }
+
+        [Test]
         public void BModifier()
         {
             AssertConvertedProgramHasIdenticalOutput(
@@ -843,6 +921,9 @@ Echo $(mylist:X=$(filter)) ;
 myfile = a/b/c/d.hello ;
 Echo $(myfile:B) ;
 Echo $(myfile:B=amazing) ;
+
+Echo $(myfile:BS) ;
+
 ");
         }
 

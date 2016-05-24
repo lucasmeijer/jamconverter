@@ -91,19 +91,19 @@ namespace jamconverter.Tests
             var args2 = new Shell.ExecuteArgs() { Arguments = finalArg, Executable = jamBinary.ToString() };
 		    var output_cs = dropbox.Combine("output_cs");
 		    Shell.Execute(args2, null, output_cs);
-            Truncate(output_cs);
+            //Truncate(output_cs);
 
             var args = new Shell.ExecuteArgs() { Arguments = startupArg + " " + instructions.AdditionalArg, Executable = jamBinary.ToString() };
 		    var output_jam = dropbox.Combine("output_jam");
 		    Shell.Execute(args, null, output_jam);
-            Truncate(output_jam);
+           // Truncate(output_jam);
 
         }
 
 	    private void Truncate(NPath outputJam)
 	    {
 	        var text = outputJam.ReadAllText();
-	        var limit = 8000*1000;
+	        var limit = 10000*1000;
 	        if (text.Length > limit)
 	            outputJam.WriteAllText(text.Substring(0, limit));
 	    }

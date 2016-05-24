@@ -48,10 +48,11 @@ public class GlobalVariables
         
 	    if (count > 1)
 	    {
+            /*
 	        var sb = new StringBuilder("Warning, you are creating an OnTargetContext with multiple targets, which does not do what you expect. everything past the first target is ignored. values are: ");
 	        foreach (var e in targetName.Elements)
 	            sb.AppendLine(e);
-            Console.WriteLine(sb);
+            Console.WriteLine(sb);*/
 	    }
 
 	    return new TemporaryTargetContext(targetName.Elements.First());
