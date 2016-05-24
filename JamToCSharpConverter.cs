@@ -652,9 +652,6 @@ namespace jamconverter
 				}
 			}
 
-			if (arguments.Length == 0)
-				arguments = new[] { "dummyArgument" };
-
 			return arguments;
 		}
 
@@ -686,7 +683,7 @@ namespace jamconverter
 			//if (IsActions(methodName))
 			//	body.Statements.Add (new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(ActionsNameFor(methodName)), arguments.Select(a => new NRefactory.IdentifierExpression(ArgumentNameFor(a)))));
 
-	        foreach (var arg in arguments)
+            foreach (var arg in arguments.Where(a => IsArgumentModified(ruleDeclaration, a) || optionalArguments.Contains(a)))
 	        {
 				var identifier = new NRefactory.IdentifierExpression(ArgumentNameFor(arg));
 		        var cloneExpression = new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(identifier, "Clone")); 
@@ -709,6 +706,11 @@ namespace jamconverter
 			var methodInfo = new NRefactory.IdentifierExpression ($"MethodBase.GetCurrentMethod().DeclaringType.GetMethod(nameof({methodName}))");
 
 			return new NRefactory.ExpressionStatement(new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("RegisterRule"), new NRefactory.PrimitiveExpression(ruleDeclaration.Name), methodInfo));
+        }
+
+        bool IsArgumentModified(RuleDeclarationStatement rule, string argument)
+        {
+            return rule.GetAllChildrenOfType<AssignmentStatement>().Where(a => a.Left is LiteralExpression).Any(a => a.Left.As<LiteralExpression>().Value == argument);
         }
 
         private string[] FindOptionalArgumentsFor(RuleDeclarationStatement ruleDeclaration)
@@ -995,7 +997,12 @@ namespace jamconverter
                 ? (NRefactory.Expression) new NRefactory.IdentifierExpression(methodName)
                 : new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(jamFileOfRule.File)), methodName);
 
-            return new NRefactory.InvocationExpression(methodReference, invocationExpression.Arguments.Select(a => ProcessExpressionList(a)));
+            var invocationArguments = invocationExpression.Arguments;
+
+            if (rule.Arguments.Length == 0 && invocationArguments.Length == 1 && invocationArguments[0].Length == 0)
+                invocationArguments = new NodeList<NodeList<Expression>>();
+
+            return new NRefactory.InvocationExpression(methodReference, invocationArguments.Select(a => ProcessExpressionList(a)));
         }
 
         private NRefactory.Expression ProcessExpansionStyleExpression(ExpansionStyleExpression expansionStyleExpression)
