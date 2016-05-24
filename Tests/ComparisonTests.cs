@@ -199,7 +199,20 @@ Echo $(myreturnvalue) ;
 ");
 		}
 
-		[Test]
+        [Test]
+        public void CompareWithString()
+        {
+            AssertConvertedProgramHasIdenticalOutput(
+@"
+myvar = harry ;
+if $(myvar) = harry { Echo yes ; } else { Echo no ; }
+myvar = ;
+if $(myvar) = """" { Echo yes ; } else { Echo no ; }
+
+");
+        }
+
+        [Test]
         public void DoubleVariableAssignment()
         {
             AssertConvertedProgramHasIdenticalOutput("myvar = 123 ; myvar = 234 ; Echo $(myvar) ;");

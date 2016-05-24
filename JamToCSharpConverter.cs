@@ -45,8 +45,8 @@ namespace jamconverter
 			        Console.WriteLine("Parsing error in: "+sourceFile.File);
 			    }
 			}
-			_allActions = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<ActionsDeclarationStatement>());
-			_allRules = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<RuleDeclarationStatement>());
+		    _allActions = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<ActionsDeclarationStatement>()).ToArray();
+		    _allRules = _filesToTopLevel.Values.SelectMany(top => top.GetAllChildrenOfType<RuleDeclarationStatement>()).ToArray();
 
 			var globalsFile = NewSyntaxTree();
 			_staticGlobals = new NRefactory.TypeDeclaration { Name = "StaticGlobals", BaseTypes = { new NRefactory.SimpleType("GlobalVariables") } };
@@ -673,10 +673,13 @@ namespace jamconverter
                 Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
                 Body = body
             };
+
+            var optionalArguments = FindOptionalArgumentsFor(ruleDeclaration);
+
             processRuleDeclarationStatement.Parameters.AddRange(arguments.Select(a =>
             {
 	            var parameterDeclaration = new NRefactory.ParameterDeclaration(JamListBaseAstType, ArgumentNameFor(a));
-				parameterDeclaration.DefaultExpression = new NRefactory.NullReferenceExpression();
+				parameterDeclaration.DefaultExpression = optionalArguments.Contains(a) ? new NRefactory.NullReferenceExpression() : null;
 	            return parameterDeclaration;
             }));
 
@@ -708,7 +711,23 @@ namespace jamconverter
 			return new NRefactory.ExpressionStatement(new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("RegisterRule"), new NRefactory.PrimitiveExpression(ruleDeclaration.Name), methodInfo));
         }
 
-	    private static bool DoesBodyEndWithReturnStatement(RuleDeclarationStatement ruleDeclaration)
+        private string[] FindOptionalArgumentsFor(RuleDeclarationStatement ruleDeclaration)
+        {
+            var invocationExpressions =
+                _filesToTopLevel.Values.SelectMany(
+                    t =>
+                        t.GetAllChildrenOfType<InvocationExpression>()
+                            .Where(i => i.RuleExpression is LiteralExpression)
+                            .Where(i => i.RuleExpression.As<LiteralExpression>().Value == ruleDeclaration.Name)).ToArray();
+
+            if (invocationExpressions.Length == 0)
+                return new string[0];
+
+            int allInvokersHaveAtLeastNArguments = invocationExpressions.Min(i => i.Arguments.Length);
+            return ruleDeclaration.Arguments.Skip(allInvokersHaveAtLeastNArguments).ToArray();
+        }
+
+        private static bool DoesBodyEndWithReturnStatement(RuleDeclarationStatement ruleDeclaration)
 	    {
 		    var statements = ruleDeclaration.Body.Statements;
 		    if (statements.Length == 0)
@@ -866,8 +885,11 @@ namespace jamconverter
 
                 var left2 = ProcessExpression(binaryOperatorExpression.Left, allowConversionToStringLiteral:false);
 		        var right2 = ProcessExpressionList(binaryOperatorExpression.Right);
-                
-                return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(left2, CSharpMethodForConditionOperator(binaryOperatorExpression.Operator)), right2);
+
+		        if (CanUseCustomIsIsOperator(binaryOperatorExpression, right2))
+		            return new NRefactory.BinaryOperatorExpression(left2, NRefactory.BinaryOperatorType.Equality, right2);
+
+		        return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(left2, CSharpMethodForConditionOperator(binaryOperatorExpression.Operator)), right2);
 		    }
 
 		    var notOperatorExpression = e as NotOperatorExpression;
@@ -880,6 +902,13 @@ namespace jamconverter
                 return new NRefactory.ObjectCreateExpression(LocalJamListAstType);
 
             throw new NotImplementedException("CSharpFor cannot deal with " + e);
+        }
+
+        private bool CanUseCustomIsIsOperator(BinaryOperatorExpression binaryOperatorExpression, NRefactory.Expression right2)
+        {
+            if (binaryOperatorExpression.Operator != Operator.Assignment)
+                return false;
+            return right2 is NRefactory.PrimitiveExpression;
         }
 
         private NRefactory.Expression StringInterpolationFor(CombineExpression combineExpression)
@@ -932,27 +961,44 @@ namespace jamconverter
         }
 
         private NRefactory.Expression ProcessInvocationExpression(InvocationExpression invocationExpression)
-	    {
-		    var ruleExpression = invocationExpression.RuleExpression;
-
-			/*
-		    var literalExpression = ruleExpression as LiteralExpression;
-		    if (literalExpression != null)
-		    {
-			    var methodName = MethodNameFor(invocationExpression.RuleExpression.As<LiteralExpression>().Value);
-
-				if (IsActions (methodName) && !IsRule(methodName))
-					methodName = ActionsNameFor(methodName);
-
-			    return new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression(methodName),
-				    invocationExpression.Arguments.Select(a => ProcessExpressionList(a)));
-		    }*/
-
-		    var arguments = invocationExpression.Arguments.Select(a => ProcessExpressionList(a)).Prepend(ProcessExpression(ruleExpression));
+        {
+            var directInvocation = EmitAsCSharpCallIfPossible(invocationExpression);
+            if (directInvocation != null)
+                return directInvocation;
+            
+            var arguments = invocationExpression.Arguments.Select(a => ProcessExpressionList(a)).Prepend(ProcessExpression(invocationExpression.RuleExpression));
 			return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(nameof(DynamicRuleInvocationService)+".Instance"),"InvokeRule"),arguments);
 		}
 
-	    private NRefactory.Expression ProcessExpansionStyleExpression(ExpansionStyleExpression expansionStyleExpression)
+        private NRefactory.Expression EmitAsCSharpCallIfPossible(InvocationExpression invocationExpression)
+        {
+            var literalExpression = invocationExpression.RuleExpression as LiteralExpression;
+            if (literalExpression == null)
+                return null;
+
+            if (_allActions.Any(a => a.Name == literalExpression.Value))
+                return null;
+
+            var matchingRules = _allRules.Where(r => r.Name == literalExpression.Value).ToArray();
+            if (matchingRules.Length != 1)
+                return null;
+
+            var rule = matchingRules.Single();
+
+            var methodName = MethodNameFor(invocationExpression.RuleExpression.As<LiteralExpression>().Value);
+
+            var topLevelOfRule = FindParentOfType<TopLevel>(rule);
+
+            var jamFileOfRule = _filesToTopLevel.Single(kvp => kvp.Value == topLevelOfRule).Key;
+
+            var methodReference = topLevelOfRule == FindParentOfType<TopLevel>(invocationExpression)
+                ? (NRefactory.Expression) new NRefactory.IdentifierExpression(methodName)
+                : new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(ConverterLogic.ClassNameForJamFile(jamFileOfRule.File)), methodName);
+
+            return new NRefactory.InvocationExpression(methodReference, invocationExpression.Arguments.Select(a => ProcessExpressionList(a)));
+        }
+
+        private NRefactory.Expression ProcessExpansionStyleExpression(ExpansionStyleExpression expansionStyleExpression)
         {
 			//righthandside:
 			//mads         ->   "mads"

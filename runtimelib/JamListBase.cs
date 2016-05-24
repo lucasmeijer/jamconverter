@@ -364,4 +364,24 @@ public abstract class JamListBase : IEnumerable<string>
     {
         return x.AsBool();
     }
+
+    public static bool operator ==(JamListBase a, string value)
+    {
+        if (value == null)
+            return ((object)a) == null;
+        if ((object) a == null)
+            return false;
+
+        if (value.Length == 0 && a.Elements.Length == 0)
+            return true;
+
+        if (a.Elements.Length != 1)
+            return false;
+        return a.Elements[0] == value;
+    }
+
+    public static bool operator !=(JamListBase a, string value)
+    {
+        return !(a == value);
+    }
 }
