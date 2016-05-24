@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using jamconverter.AST;
@@ -16,8 +17,9 @@ namespace jamconverter
 		private IEnumerable<ActionsDeclarationStatement> _allActions;
 		private IEnumerable<RuleDeclarationStatement> _allRules;
 	    private readonly Dictionary<SourceFileDescription, TopLevel> _filesToTopLevel = new Dictionary<SourceFileDescription, TopLevel>();
+        private readonly string _variableRestorerVariableName = "variableRestorer";
 
-	    public string Convert(string simpleProgram)
+        public string Convert(string simpleProgram)
 	    {
 	        var sd = new SourceFileDescription() {Contents = simpleProgram, File = new NPath("Jamfile.jam")};
 
@@ -73,7 +75,7 @@ namespace jamconverter
 				syntaxTree.Members.Add(typeForJamFile);
 
 
-//			    try
+			    try
 			    {
 			        typeForJamFile.Members.Add(new NRefactory.FieldDeclaration()
 			        {
@@ -83,25 +85,34 @@ namespace jamconverter
 			        });
 
 			        var body = new NRefactory.BlockStatement();
-			        foreach (var statement in topLevel.Statements)
+
+			        var variableRestorerType = new NRefactory.SimpleType(nameof(VariableRestorer));
+			        var variableRestoreUsing = new NRefactory.UsingStatement()
 			        {
-			            var nStatement = ProcessStatement(statement);
-			            if (nStatement != null)
-			                body.Statements.Add(nStatement);
+			            EmbeddedStatement = body,
+			            ResourceAcquisition = new NRefactory.VariableDeclarationStatement(variableRestorerType.Clone(), _variableRestorerVariableName, new NRefactory.ObjectCreateExpression(variableRestorerType.Clone())),
+			        };
+                    
+                    foreach (var statement in topLevel.Statements)
+			        {
+			            body.Statements.AddRange(ProcessStatement(statement));
 			        }
+
+			        var topLevelBody = new NRefactory.BlockStatement();
+                    topLevelBody.Statements.Add(variableRestoreUsing);
 
 			        typeForJamFile.Members.Add(new NRefactory.MethodDeclaration
 			        {
 			            Name = "TopLevel",
 			            ReturnType = new NRefactory.PrimitiveType("void"),
 			            Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
-			            Body = body
+			            Body =topLevelBody
 			        });
 			        result.Add(new SourceFileDescription() {File = new NPath(typeForJamFile.Name + ".cs"), Contents = syntaxTree.ToString()});
 			    }
-			    //catch (Exception e)
+			    catch (Exception e)
 			    {
-			      //  Console.WriteLine($"failed converting {file.FileName}");
+			        Console.WriteLine($"failed converting {file.File.FileName}");
 			    }
 			}
 
@@ -218,59 +229,58 @@ namespace jamconverter
 
 	    private NRefactory.SimpleType StaticGlobalsType => new NRefactory.SimpleType(_staticGlobals.Name);
 
-        private NRefactory.Statement ProcessStatement(Statement statement)
+        private IEnumerable<NRefactory.Statement> ProcessStatement(Statement statement)
         {
             if (statement == null)
-                return null;
+                return new NRefactory.Statement[0];
 
             if (statement is IfStatement)
-                return ProcessIfStatement((IfStatement) statement);
-
+            {
+                return new[] {ProcessIfStatement((IfStatement) statement)};
+            }
             if (statement is WhileStatement)
-                return ProcessWhileStatement((WhileStatement) statement);
+                return new[] { ProcessWhileStatement((WhileStatement) statement) };
 
             if (statement is RuleDeclarationStatement)
-            {
-                return ProcessRuleDeclarationStatement((RuleDeclarationStatement) statement);
-            }
+                return new[] {ProcessRuleDeclarationStatement((RuleDeclarationStatement) statement)};
 
             if (statement is ReturnStatement)
-                return ProcessReturnStatement(statement);
+                return new[] { ProcessReturnStatement(statement)};
 
             if (statement is ForStatement)
-                return ProcessForStatement((ForStatement) statement);
+                return new[] { ProcessForStatement((ForStatement) statement)};
 
             if (statement is BreakStatement)
-                return new NRefactory.BreakStatement();
+                return new[] { new NRefactory.BreakStatement()};
 
             if (statement is ContinueStatement)
-                return new NRefactory.ContinueStatement();
+                return new[] { new NRefactory.ContinueStatement()};
 
             if (statement is BlockStatement)
-                return ProcessBlockStatement((BlockStatement) statement);
+                return new[] { ProcessBlockStatement((BlockStatement) statement)};
 
             if (statement is SwitchStatement)
-                return ProcessSwitchStatement((SwitchStatement) statement);
+                return new[] { ProcessSwitchStatement((SwitchStatement) statement)};
 
 	        if (statement is LocalStatement)
-		        return ProcessLocalStatement((LocalStatement) statement);
+                return ProcessLocalStatement((LocalStatement) statement);
 
 	        if (statement is ActionsDeclarationStatement)
-		        return ProcessActionsDeclarationStatement((ActionsDeclarationStatement) statement);
+                return new[] { ProcessActionsDeclarationStatement((ActionsDeclarationStatement) statement)};
 			
 			if (statement is AssignmentStatement)
 			{
 				AssignmentStatement assignmentStatement = (AssignmentStatement)statement;
-				return ProcessAssignment(assignmentStatement.Left, assignmentStatement.Operator, assignmentStatement.Right);
+                return new[] { ProcessAssignment(assignmentStatement.Left, assignmentStatement.Operator, assignmentStatement.Right)};
 			}
 
 	        if (statement is OnStatement)
-		        return ProcessOnStatement((OnStatement) statement);
+                return new[] { ProcessOnStatement((OnStatement) statement)};
 
 	        if (statement is IncludeStatement)
-		        return ProcessIncludeStatement((IncludeStatement) statement);
+                return new[] { ProcessIncludeStatement((IncludeStatement) statement)};
 
-	        return ProcessExpressionStatement((ExpressionStatement) statement);
+            return new[] { ProcessExpressionStatement((ExpressionStatement) statement)};
         }
 
         private NRefactory.Statement ProcessReturnStatement(Statement statement)
@@ -342,7 +352,7 @@ namespace jamconverter
 		    return new NRefactory.UsingStatement
 		    {
 			    ResourceAcquisition = onStartContextInvocation,
-			    EmbeddedStatement = ProcessStatement(statement.Body)
+			    EmbeddedStatement = ProcessStatement(statement.Body).Single()
 		    };
 		}
 
@@ -357,12 +367,50 @@ namespace jamconverter
 			});
 	    }
     
-	    private NRefactory.Statement ProcessLocalStatement(LocalStatement statement)
+	    private IEnumerable<NRefactory.Statement> ProcessLocalStatement(LocalStatement statement)
 	    {
-			return ProcessAssignment(statement.Variable, Operator.Assignment, statement.Value);
+	        if (IsThisLocalOnlyUsedToNotMakeAnUpcomingForLoopNotWriteToGlobal(statement))
+	            yield break;
+            
+            //because it happens so often that we have jamfiles that write to a local in a file, and then expect it to be usable in an upcoming rule,  let's convert these locals to globals instead. how does anything even work?!
+	        if (IsInTopLevel(statement))
+	        {
+	            var restoreafterfunction = nameof(VariableRestorer.RestoreAfterFunction);
+	            yield return
+	                new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(_variableRestorerVariableName), restoreafterfunction), new NRefactory.PrimitiveExpression(statement.Variable.Value));
+	            yield return ProcessAssignment(statement.Variable, Operator.Assignment, statement.Value);
+	            yield break;
+	        }
+
+            yield return new NRefactory.VariableDeclarationStatement(LocalJamListAstType, ConverterLogic.CleanIllegalCharacters(statement.Variable.Value), new NRefactory.ObjectCreateExpression(LocalJamListAstType, ExpressionsForJamListConstruction(statement.Value)));
 		}
 
-	    private NRefactory.SwitchStatement ProcessSwitchStatement(SwitchStatement switchStatement)
+        private bool IsInTopLevel(LocalStatement statement)
+        {
+            return FindParentOfType<RuleDeclarationStatement>(statement) == null;
+        }
+
+        private bool IsThisLocalOnlyUsedToNotMakeAnUpcomingForLoopNotWriteToGlobal(LocalStatement statement)
+        {
+            //if the initializer value has sideeffects, lets not throw away this localstatement
+            if (statement.Value.Any(e => e is InvocationExpression))
+                return false;
+
+            var childrenAfterMe = statement.Parent.MyChildren.SkipWhile(n => n != statement).Skip(1);
+
+            var expressionsReferringToThisLocal = childrenAfterMe.SelectMany(c => c.GetAllChildrenOfType<LiteralExpression>()).Where(l => l.Value == statement.Variable.Value);
+            if (!expressionsReferringToThisLocal.Any())
+                return false;
+
+            return expressionsReferringToThisLocal.All(RefersToForLoopVariable);
+        }
+
+        private bool RefersToForLoopVariable(LiteralExpression arg)
+        {
+            return FindAllParentsOfType<ForStatement>(arg).Any(f => f.LoopVariable.Value == arg.Value);
+        }
+
+        private NRefactory.SwitchStatement ProcessSwitchStatement(SwitchStatement switchStatement)
         {
             var invocationExpression = new NRefactory.InvocationExpression(new NRefactory.IdentifierExpression("SwitchTokenFor"), ProcessExpression(switchStatement.Variable));
             var result = new NRefactory.SwitchStatement() {Expression = invocationExpression};
@@ -373,7 +421,7 @@ namespace jamconverter
                     throw new NotImplementedException("We dont support * yet in case");
                 var section = new NRefactory.SwitchSection();
                 section.CaseLabels.Add(new NRefactory.CaseLabel(new NRefactory.PrimitiveExpression(switchCase.CaseExpression.Value)));
-                section.Statements.AddRange(switchCase.Statements.Select(ProcessStatement));
+                section.Statements.AddRange(switchCase.Statements.SelectMany(ProcessStatement));
                 section.Statements.Add(new NRefactory.BreakStatement());
                 result.SwitchSections.Add(section);
             }
@@ -387,7 +435,7 @@ namespace jamconverter
                 VariableType = LocalJamListAstType,
                 VariableName = statement.LoopVariable.Value,
                 InExpression = new NRefactory.MemberReferenceExpression(ProcessExpressionList(statement.List),"ElementsAsJamLists"),
-                EmbeddedStatement = ProcessStatement(statement.Body)
+                EmbeddedStatement = ProcessStatement(statement.Body).Single()
             };
         }
 
@@ -446,13 +494,13 @@ namespace jamconverter
 		    return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression("Globals"), "DereferenceElementsNonFlat"), expression);
 	    }
 
-	    private NRefactory.Expression ProcessIdentifier(Expression parentExpression, string identifierName)
+	    private NRefactory.Expression ProcessIdentifier(Node node, string identifierName)
 	    {
 		    var cleanName = ConverterLogic.CleanIllegalCharacters(identifierName);
 
-		    if (parentExpression != null)
+		    if (node != null)
 		    {
-				var parentRule = FindParentOfType<RuleDeclarationStatement>(parentExpression);
+				var parentRule = FindParentOfType<RuleDeclarationStatement>(node);
 
 				if (parentRule != null) 
 				{
@@ -467,14 +515,35 @@ namespace jamconverter
 						return new NRefactory.IdentifierExpression (cleanName);
 				}
 
-		        if (FindAllParentsOfType<ForStatement>(parentExpression).Any(f => f.LoopVariable.Value == identifierName))
+		        bool identifierRefersToForLoopVariable = FindAllParentsOfType<ForStatement>(node).Any(f => f.LoopVariable.Value == identifierName);
+		        bool identifierReferesToLocal = AllReachableLocals(node).Any(l => l.Variable.Value == identifierName && !IsInTopLevel(l));
+
+		        if (identifierRefersToForLoopVariable || identifierReferesToLocal)
                     return new NRefactory.IdentifierExpression(cleanName);
+
 		    }
 
 		    return StaticGlobalVariableFor(identifierName);
 	    }
 
-	    private NRefactory.MemberReferenceExpression StaticGlobalVariableFor(string nonCleanName)
+        private IEnumerable<LocalStatement> AllReachableLocals(Node node)
+        {
+            if (node.Parent == null)
+                yield break;
+
+            var visibleSibblings = node.Parent.MyChildren.TakeWhile(sibbling => sibbling != node).AppendOne(node);
+            
+            foreach (var l in visibleSibblings.OfType<LocalStatement>())
+                yield return l;
+
+            if (node.Parent is RuleDeclarationStatement)
+                yield break;
+
+            foreach (var l in AllReachableLocals(node.Parent))
+                yield return l;
+        }
+
+        private NRefactory.MemberReferenceExpression StaticGlobalVariableFor(string nonCleanName)
 	    {
 	        var cleanName = ConverterLogic.CleanIllegalCharacters(nonCleanName);
             if (_staticGlobals.Members.OfType<NRefactory.PropertyDeclaration>().All(p => p.Name != cleanName))
@@ -617,7 +686,7 @@ namespace jamconverter
            // body.Statements.Add(new NRefactory.IdentifierExpression($"System.Console.WriteLine(\"{ruleDeclaration.Name}\")"));
 
             foreach (var subStatement in ruleDeclaration.Body.Statements)
-                body.Statements.Add(ProcessStatement(subStatement));
+                body.Statements.AddRange(ProcessStatement(subStatement));
 
             if (!DoesBodyEndWithReturnStatement(ruleDeclaration))
                 body.Statements.Add(new NRefactory.ReturnStatement(new NRefactory.ObjectCreateExpression(LocalJamListAstType)));
@@ -645,19 +714,19 @@ namespace jamconverter
 
 		private NRefactory.IfElseStatement ProcessIfStatement(IfStatement ifStatement)
         {
-            return new NRefactory.IfElseStatement(ProcessCondition(ifStatement.Condition), ProcessStatement(ifStatement.Body), ProcessStatement(ifStatement.Else));
+            return new NRefactory.IfElseStatement(ProcessCondition(ifStatement.Condition), ProcessBlockStatement(ifStatement.Body), ProcessStatement(ifStatement.Else).SingleOrDefault());
         }
         
         private NRefactory.BlockStatement ProcessBlockStatement(BlockStatement blockStatement)
         {
             var processBlockStatement = new NRefactory.BlockStatement();
-            processBlockStatement.Statements.AddRange(blockStatement.Statements.Select(ProcessStatement));
+            processBlockStatement.Statements.AddRange(blockStatement.Statements.SelectMany(ProcessStatement));
             return processBlockStatement;
         }
 
         private NRefactory.WhileStatement ProcessWhileStatement(WhileStatement whileStatement)
         {
-            return new NRefactory.WhileStatement(ProcessCondition(whileStatement.Condition), ProcessStatement(whileStatement.Body));
+            return new NRefactory.WhileStatement(ProcessCondition(whileStatement.Condition), ProcessBlockStatement(whileStatement.Body));
         }
 
         private string ArgumentNameFor(string argumentName)
@@ -723,30 +792,31 @@ namespace jamconverter
 
         public NRefactory.Expression ProcessExpressionList(NodeList<Expression> expressionList, bool mightModify = false)
         {
-			var expressionsForJamListConstruction = ExpressionsForJamListConstruction(expressionList).ToArray();
-
+			
 			if (expressionList.Length == 1 && mightModify)
 	        {
 		        if (expressionList[0] is VariableDereferenceExpression)
 					return new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(ProcessExpression(expressionList[0]), "Clone"));
 	        }
-			
-	        if (expressionsForJamListConstruction.Length == 1)
+
+            var expressionsForJamListConstruction = ExpressionsForJamListConstruction(expressionList).ToArray();
+
+            if (expressionsForJamListConstruction.Length == 1)
 		        return expressionsForJamListConstruction[0];
 
-	        return new NRefactory.ObjectCreateExpression(LocalJamListAstType, expressionsForJamListConstruction);
+            return new NRefactory.ObjectCreateExpression(LocalJamListAstType, expressionsForJamListConstruction);
         }
 
 	    IEnumerable<NRefactory.Expression> ExpressionsForJamListConstruction(NodeList<Expression> expressionList)
-	    {
-  //          if (expressionList.OfType<AST.InvocationExpression>().Count() > 1)
-    //            throw new NotSupportedException("jam uses back to front evaluatino order for multiple invocation expressions in one list.  change the jam code to not do that");
+        {
+	        var result = expressionList.Select(e => ProcessExpression(e));
 
-            foreach (var expression in expressionList)
-		    {
-			    yield return ProcessExpression(expression);
-		    }
-	    }
+	        if (expressionList.OfType<AST.InvocationExpression>().Count() <= 1)
+                return result;
+
+	        NRefactory.Expression[] expressions = result.Reverse().ToArray();
+	        return new [] { new NRefactory.InvocationExpression(new NRefactory.MemberReferenceExpression(new NRefactory.IdentifierExpression(nameof(LocalJamList)), nameof(LocalJamList.CreateReversed)), expressions)};
+        }
 
 	    NRefactory.Expression ProcessExpression(Expression e, bool allowConversionToStringLiteral = true)
         {
