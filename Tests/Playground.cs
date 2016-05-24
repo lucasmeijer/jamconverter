@@ -51,7 +51,8 @@ namespace jamconverter.Tests
             var csharpOnlyArgs = "-m " + tempDir.Combine("csharp.exe").InQuotes();
 		    var finalArg = genericArgs + " " + csharpOnlyArgs;
 		    Console.WriteLine("args: " + JamBinary()+" "+finalArg);
-            
+
+		    throw new Exception();
             var args2 = new Shell.ExecuteArgs() {Arguments = finalArg, Executable = JamBinary().ToString()};
 		    var output_cs = DropBox().Combine("output_cs");
 		    Shell.Execute(args2, null, output_cs);

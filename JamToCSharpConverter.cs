@@ -85,29 +85,35 @@ namespace jamconverter
 			        });
 
 			        var body = new NRefactory.BlockStatement();
-
-			        var variableRestorerType = new NRefactory.SimpleType(nameof(VariableRestorer));
-			        var variableRestoreUsing = new NRefactory.UsingStatement()
-			        {
-			            EmbeddedStatement = body,
-			            ResourceAcquisition = new NRefactory.VariableDeclarationStatement(variableRestorerType.Clone(), _variableRestorerVariableName, new NRefactory.ObjectCreateExpression(variableRestorerType.Clone())),
-			        };
-                    
-                    foreach (var statement in topLevel.Statements)
+			        foreach (var statement in topLevel.Statements)
 			        {
 			            body.Statements.AddRange(ProcessStatement(statement));
 			        }
 
-			        var topLevelBody = new NRefactory.BlockStatement();
-                    topLevelBody.Statements.Add(variableRestoreUsing);
+			        var allLocalStatements = topLevel.Statements.SelectMany(s => s.GetAllChildrenOfType<LocalStatement>()).Concat(topLevel.Statements.OfType<LocalStatement>());
+			        var topLevelLocalsOnly = allLocalStatements.Where(l => FindParentOfType<RuleDeclarationStatement>(l) == null);
+                    if (topLevelLocalsOnly.Any())
+			        {
+			            var variableRestorerType = new NRefactory.SimpleType(nameof(VariableRestorer));
+			            var variableRestoreUsing = new NRefactory.UsingStatement()
+			            {
+			                EmbeddedStatement = body,
+			                ResourceAcquisition =
+			                    new NRefactory.VariableDeclarationStatement(variableRestorerType.Clone(), _variableRestorerVariableName, new NRefactory.ObjectCreateExpression(variableRestorerType.Clone())),
+			            };
+
+			            var topLevelBody = new NRefactory.BlockStatement();
+			            topLevelBody.Statements.Add(variableRestoreUsing);
+			            body = topLevelBody;
+			        }
 
 			        typeForJamFile.Members.Add(new NRefactory.MethodDeclaration
 			        {
 			            Name = "TopLevel",
 			            ReturnType = new NRefactory.PrimitiveType("void"),
 			            Modifiers = NRefactory.Modifiers.Static | NRefactory.Modifiers.Public,
-			            Body =topLevelBody
-			        });
+			            Body = body
+                    });
 			        result.Add(new SourceFileDescription() {File = new NPath(typeForJamFile.Name + ".cs"), Contents = syntaxTree.ToString()});
 			    }
 			    catch (Exception e)
