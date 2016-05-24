@@ -57,6 +57,7 @@ namespace jamconverter
                 {
                     stack.Push(new OperatorNode(Operator.Not));
                     _scanResult.Next();
+                    mostRecentOperator = Operator.Not;
                     continue;
                 }
 
@@ -82,8 +83,12 @@ namespace jamconverter
 
                 var nextOperator = OperatorFor(nextTokenType);
                 if (mostRecentOperator.HasValue)
-                    if (PrecendenceFor(nextOperator) < PrecendenceFor(mostRecentOperator.Value))
+                {
+                    var nextPrecedence = PrecendenceFor(nextOperator);
+                    var mostRecentPrecedence = PrecendenceFor(mostRecentOperator.Value);
+                    if (nextPrecedence < mostRecentPrecedence)
                         CollapseStack(stack);
+                }
 
                 stack.Push(new OperatorNode(nextOperator));
                 mostRecentOperator = nextOperator;
@@ -144,14 +149,13 @@ namespace jamconverter
         {
             var order = new List<Operator>()
             {
-                Operator.Not,
                 Operator.Or,
                 Operator.And,
 
                 Operator.Subtract,
                 Operator.AssignmentIfEmpty,
                 Operator.Append,
-
+                Operator.Not,
                 Operator.In,
                 Operator.Assignment,
                 Operator.NotEqual,

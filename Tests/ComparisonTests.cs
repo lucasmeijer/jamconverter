@@ -716,6 +716,10 @@ if $(zero) { Echo with parenthesis ; }
 
 if $(zero) && $(one) = 1 { Echo Yes ; } else { Echo no ; }
 
+a = 1 ;
+c = 1 ;
+if ( ! $(a) || ! $(b) ) && $(c) { Echo Yes ; } else { Echo no ; }
+
 
 ");
 		}
@@ -758,6 +762,14 @@ local harry = 3 ;
 for harry in $(mylist)
 {
    Echo $(harry) ;
+}
+
+
+#forloop over an empty value
+myempty = ;
+for v in $(myempty)
+{
+  Echo ohreally ;
 }
 
 ");

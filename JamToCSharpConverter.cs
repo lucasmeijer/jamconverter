@@ -927,7 +927,7 @@ namespace jamconverter
 	            hadSandB = true;
 	        }
 
-            foreach (var modifier in variableDereferenceModifiers)
+            foreach (var modifier in variableDereferenceModifiers.OrderBy(m => JamModifierOrderFor(m.Command)))
             {
                 var csharpMethod = CSharpMethodForModifier(modifier, modifier.Value != null);
 
@@ -945,7 +945,13 @@ namespace jamconverter
 	        return resultExpression;
         }
 
-	    private NRefactory.Expression ProcessExpansionStyleExpressionVariablePreModifiers(ExpansionStyleExpression expansionStyleExpression)
+        private int JamModifierOrderFor(char command)
+        {
+            const string order = "EWT  GRDBSM   UL/\\CJXI";
+            return order.IndexOf(command);
+        }
+
+        private NRefactory.Expression ProcessExpansionStyleExpressionVariablePreModifiers(ExpansionStyleExpression expansionStyleExpression)
 	    {
 			if (expansionStyleExpression is LiteralExpansionExpression)
 				return new NRefactory.ObjectCreateExpression(LocalJamListAstType, ProcessExpression(expansionStyleExpression.VariableExpression));

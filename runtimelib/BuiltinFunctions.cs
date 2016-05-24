@@ -48,6 +48,9 @@ public static class BuiltinFunctions
 
 	public static void MakeActions(string name,string actions,Jam.ActionsFlags flags = Jam.ActionsFlags.None, int maxTargets=0, int maxLines=0)
 	{
+        //jam seems to tack on a newline at beginning and end.   lets do the same so it's easy to compare
+	    actions = Environment.NewLine + actions + Environment.NewLine;
+
 		Jam.Interop.MakeActions (name, actions, (int)flags, maxTargets, maxLines);
 	}
 

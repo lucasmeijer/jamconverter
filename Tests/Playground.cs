@@ -17,46 +17,25 @@ namespace jamconverter.Tests
         //[Ignore("Playground")]
 		public void A()
 		{
-			var converter = new JamToCSharpConverter();
+		    var converter = new JamToCSharpConverter();
 
-
-            var convertfiles = new[] {"Projects/Jam/Editor.jam", "Projects/Jam/SetupRuntimeModules2.jam", "PlatformDependent/WinPlayer/StandalonePlayer.jam" };
-
-            /*
-			var files =
-				convertfiles
-					.Where(l => l[0] != '#' && !l.Contains("Config.jam"))
-					.Select(fn => new NPath(fn));
-                    */
-            
-			var basePath = new NPath("c:/unity");
+		    var basePath = new NPath("c:/unity");
 
 		    var files = new List<NPath>();
-            files.AddRange(basePath.Combine("Runtime").Files("*.jam", true));
-            files.AddRange(basePath.Combine("Editor").Files("*.jam", true));
-            files.AddRange(basePath.Combine("Projects/Jam").Files("*.jam", true));
-            files.AddRange(basePath.Files("*.jam", false));
-            files.AddRange(basePath.Combine("PlatformDependent").Files("*.jam", true));
-            
-			var program =
-				files.Where(f=>!f.ToString().Contains("Config"))
-					.Select(f => new SourceFileDescription() {File = f.RelativeTo(basePath), Contents = f.ReadAllText()})
-					.ToArray();
-            //var program = new[] {new SourceFileDescription() { Contents = new NPath(inputFile).ReadAllText(), FileName = "Main.cs"} };
+		    files.AddRange(basePath.Combine("Runtime").Files("*.jam", true));
+		    files.AddRange(basePath.Combine("Editor").Files("*.jam", true));
+		    files.AddRange(basePath.Combine("Projects/Jam").Files("*.jam", true));
+		    files.AddRange(basePath.Files("*.jam", false));
+		    files.AddRange(basePath.Combine("PlatformDependent").Files("*.jam", true));
 
-            var csProgram = converter.Convert(new ProgramDescripton(program));
-			
-			
-			var jambase = @"C:\jamconverter\external\jamplus\bin\Jambase.jam";
-			var jamrunner = new JamRunner();
+		    var program = files.Where(f => !f.ToString().Contains("Config")).Select(f => new SourceFileDescription() {File = f.RelativeTo(basePath), Contents = f.ReadAllText()}).ToArray();
 
-			var instructions = new JamRunnerInstructions()
-			{
-				CSharpFiles = csProgram,
-				WorkingDir = new NPath("c:/unity"),
-				JamFileToInvokeOnStartup = jambase.InQuotes(),
-				AdditionalArg = "\"<StandalonePlayer>Runtime/Graphics/Texture2D.obj\" -sPLATFORM=win64 -q -dx"
-            };
+		    var csProgram = converter.Convert(new ProgramDescripton(program));
+
+
+		    var jambase = @"C:\jamconverter\external\jamplus\bin\Jambase.jam";
+
+		    var instructions = new JamRunnerInstructions() {CSharpFiles = csProgram, WorkingDir = new NPath("c:/unity"), JamFileToInvokeOnStartup = jambase.InQuotes(),};
 
 		    var tempDir = NPath.SystemTemp.Combine("JamRunner");
 		    instructions.WorkingDir = instructions.WorkingDir ?? tempDir;
@@ -64,43 +43,37 @@ namespace jamconverter.Tests
 		    foreach (var f1 in instructions.JamfilesToCreate)
 		        instructions.WorkingDir.Combine(f1.File).WriteAllText(f1.Contents);
 
-		    string startupArg = "";
-		    string csharparg = "";
-		    if (instructions.CSharpFiles.Any())
-		    {
-		        var csharpExe = tempDir.Combine("csharp.exe");
-		        CSharpRunner.Compile(instructions.CSharpFiles, JamToCSharpConverter.RuntimeDependencies, csharpExe);
-		        csharparg = "-m " + csharpExe.InQuotes();
-		    }
 
-		    var jamPath = Environment.OSVersion.Platform == PlatformID.Win32NT ? "external/jamplus/bin/win32/jam.exe" : "external/jamplus/macosx64/jam";
-		    var jamBinary = JamRunner.ConverterRoot.Combine(jamPath);
-
-		    startupArg += "-f " + (instructions.JamFileToInvokeOnStartup ?? instructions.JamfilesToCreate[0].File.FileName);
-
-		    startupArg += " -C " + instructions.WorkingDir;
-
-		    startupArg += " -d +16" + instructions.AdditionalArg;
+		    CSharpRunner.Compile(csProgram, JamToCSharpConverter.RuntimeDependencies, tempDir.Combine("csharp.exe"));
             
+		    string genericArgs = $"-f {jambase.InQuotes()} -C {instructions.WorkingDir}  \"<StandalonePlayer>Runtime/Graphics/Texture2D.obj\" -sPLATFORM=win64 -q -dx";
 
-            var dropbox = new NPath(@"C:\Users\lucas\Dropbox");
+            var csharpOnlyArgs = "-m " + tempDir.Combine("csharp.exe").InQuotes();
+		    var finalArg = genericArgs + " " + csharpOnlyArgs;
+		    Console.WriteLine("args: " + JamBinary()+" "+finalArg);
+            
+            var args2 = new Shell.ExecuteArgs() {Arguments = finalArg, Executable = JamBinary().ToString()};
+		    var output_cs = DropBox().Combine("output_cs");
+		    Shell.Execute(args2, null, output_cs);
 
-		    var finalArg = jamBinary.ToString() + " "+startupArg + " " + csharparg+" "+instructions.AdditionalArg;
-            Console.WriteLine("args: " + finalArg);
+		    //Truncate(output_cs);
 
-            var args2 = new Shell.ExecuteArgs() { Arguments = finalArg, Executable = jamBinary.ToString() };
-		    var output_cs = dropbox.Combine("output_cs");
-		    var result = Shell.Execute(args2, null, output_cs);
+		    var args = new Shell.ExecuteArgs() {Arguments = genericArgs, Executable = JamBinary().ToString()};
+		    var output_jam = DropBox().Combine("output_jam");
+		    Shell.Execute(args, null, output_jam);
 
-            //Truncate(output_cs);
+		    // Truncate(output_jam);
+		}
 
-            var args = new Shell.ExecuteArgs() { Arguments = startupArg + " " + instructions.AdditionalArg, Executable = jamBinary.ToString() };
-		    var output_jam = dropbox.Combine("output_jam");
-		    var result2 = Shell.Execute(args, null, output_jam);
-  
-           // Truncate(output_jam);
+	    private static NPath DropBox()
+	    {
+	        return new NPath(@"C:\Users\lucas\Dropbox");
+	    }
 
-        }
+	    private static NPath JamBinary()
+	    {
+	        return JamRunner.ConverterRoot.Combine(Environment.OSVersion.Platform == PlatformID.Win32NT ? "external/jamplus/bin/win32/jam.exe" : "external/jamplus/macosx64/jam");
+	    }
 
 	    private void Truncate(NPath outputJam)
 	    {

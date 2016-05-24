@@ -265,6 +265,23 @@ namespace jamconverter.Tests
         }
 
         [Test]
+        public void NotOperatorPrecedence()
+        {
+            var ifStatement = ParseStatement<IfStatement>("if ( ! $(a) || ! $(b) ) && $(c) { }");
+
+            var condition = ifStatement.Condition;
+
+            var binary = condition.As<BinaryOperatorExpression>();
+            Assert.AreEqual(Operator.And, binary.Operator);
+
+            var orExpr = binary.Left.As<BinaryOperatorExpression>();
+
+            orExpr.Left.As<NotOperatorExpression>();
+            orExpr.Right[0].As<NotOperatorExpression>();        
+        }
+        
+
+        [Test]
 		[Ignore("investigate failure after parenthesis support")]
         public void IfStatementWithNegationAndRightSide()
         {
